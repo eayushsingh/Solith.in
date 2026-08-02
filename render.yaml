@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: speakfree-backend
+    name: solith-backend
     env: node
     buildCommand: npm install --prefix server
     startCommand: npm run server
@@ -11,7 +11,9 @@ services:
         value: 3000
       - key: ALLOWED_ORIGIN
         sync: false
-      - key: DAILY_API_KEY
+      - key: LIVEKIT_API_KEY
         sync: false
-      - key: DAILY_DOMAIN
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: LIVEKIT_URL
         sync: false

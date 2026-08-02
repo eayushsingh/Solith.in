@@ -74,8 +74,6 @@ export default function RoomCard({ room, inThisRoom, onJoin }) {
       duration: 0.4 
     });
 
-    // Change cursor
-    document.body.classList.add('cursor-hover-card');
   });
 
   const onMouseLeave = contextSafe(() => {
@@ -136,8 +134,6 @@ export default function RoomCard({ room, inThisRoom, onJoin }) {
       duration: 0.4 
     });
 
-    // Reset cursor
-    document.body.classList.remove('cursor-hover-card');
   });
 
   // Small organic magnetic mouse-tracking follow for card content
@@ -171,8 +167,6 @@ export default function RoomCard({ room, inThisRoom, onJoin }) {
     <div 
       ref={cardRef}
       onClick={() => {
-        // Clean cursor state on click if card will close/transition
-        document.body.classList.remove('cursor-hover-card');
         onJoin(room);
       }}
       onMouseEnter={onMouseEnter}

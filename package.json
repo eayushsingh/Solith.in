@@ -1,7 +1,7 @@
 {
-  "name": "speakfree-workspace",
+  "name": "solith-workspace",
   "version": "1.0.0",
-  "description": "SpeakFree language exchange voice app monorepo",
+  "description": "Solith language exchange voice app monorepo",
   "scripts": {
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
