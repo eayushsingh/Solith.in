@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import axios from 'axios';
+import { AccessToken } from 'livekit-server-sdk';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
@@ -25,8 +26,9 @@ app.use(express.json());
 
 // In-Memory Configuration (fallback/runtime update)
 let runtimeConfig = {
-  dailyApiKey: process.env.DAILY_API_KEY || '',
-  dailyDomain: process.env.DAILY_DOMAIN || '' // e.g. "mycompany" (without .daily.co)
+  livekitApiKey: process.env.LIVEKIT_API_KEY || '',
+  livekitApiSecret: process.env.LIVEKIT_API_SECRET || '',
+  livekitUrl: process.env.LIVEKIT_URL || ''
 };
 
 // Rooms Database State
@@ -121,43 +123,30 @@ setInterval(() => {
   }
 }, 4000);
 
-// Helper: Daily.co REST APIs
-const getDailyHeaders = () => {
-  const key = runtimeConfig.dailyApiKey;
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${key}`
-  };
-};
-
-const cleanDomain = (domain) => {
-  if (!domain) return '';
-  return domain.replace(/^https?:\/\//i, '').replace(/\.daily\.co\/?$/i, '').trim();
-};
-
 // GET /api/health - Health check endpoint for Render
 app.get('/api/health', (req, res) => res.status(200).send('OK'));
 
 // GET /api/config - Returns configuration to the frontend
 app.get('/api/config', (req, res) => {
-  if (!runtimeConfig.dailyApiKey || !runtimeConfig.dailyDomain) {
-    console.warn('⚠️ WARNING: Daily.co credentials are not configured.');
+  if (!runtimeConfig.livekitApiKey || !runtimeConfig.livekitApiSecret) {
+    console.warn('⚠️ WARNING: LiveKit credentials are not configured.');
   }
   res.json({
-    hasApiKey: !!runtimeConfig.dailyApiKey,
-    dailyDomain: cleanDomain(runtimeConfig.dailyDomain)
+    hasApiKey: !!runtimeConfig.livekitApiKey,
+    livekitUrl: runtimeConfig.livekitUrl
   });
 });
 
 // API Endpoint: Update Config dynamically
 app.post('/api/config', (req, res) => {
-  const { apiKey, domain } = req.body;
-  if (apiKey !== undefined) runtimeConfig.dailyApiKey = apiKey.trim();
-  if (domain !== undefined) runtimeConfig.dailyDomain = cleanDomain(domain);
+  const { apiKey, apiSecret, url } = req.body;
+  if (apiKey !== undefined) runtimeConfig.livekitApiKey = apiKey.trim();
+  if (apiSecret !== undefined) runtimeConfig.livekitApiSecret = apiSecret.trim();
+  if (url !== undefined) runtimeConfig.livekitUrl = url.trim();
   res.json({
     success: true,
-    hasApiKey: !!runtimeConfig.dailyApiKey,
-    dailyDomain: cleanDomain(runtimeConfig.dailyDomain)
+    hasApiKey: !!runtimeConfig.livekitApiKey,
+    livekitUrl: runtimeConfig.livekitUrl
   });
 });
 
@@ -183,35 +172,16 @@ app.post('/api/rooms', async (req, res) => {
     : [];
 
   const roomId = 'room-' + Math.random().toString(36).substring(2, 9);
-  let dailyUrl = '';
+  let livekitUrl = '';
 
-  // 1. If Daily.co API is available, create a real room
-  if (runtimeConfig.dailyApiKey && runtimeConfig.dailyDomain) {
-    try {
-      const response = await axios.post(
-        'https://api.daily.co/v1/rooms',
-        {
-          name: roomId,
-          properties: {
-            enable_chat: true,
-            start_audio_off: true,
-            start_video_off: true,
-            exp: Math.floor(Date.now() / 1000) + 86400 // Expire in 24 hours
-          }
-        },
-        { headers: getDailyHeaders() }
-      );
-      dailyUrl = response.data.url;
-      console.log(`Real Daily.co Room Created: ${dailyUrl}`);
-    } catch (err) {
-      console.error('Failed to create Daily.co room, falling back to mock. Details:', err.response?.data || err.message);
-      // Fallback
-      dailyUrl = `https://${cleanDomain(runtimeConfig.dailyDomain)}.daily.co/${roomId}`;
-    }
+  // 1. If LiveKit API is available, use real URL
+  if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
+    livekitUrl = runtimeConfig.livekitUrl;
+    console.log(`Real LiveKit Room Created Implicitly: ${roomId}`);
   } else {
     // 2. Demo fallback
-    console.warn('⚠️ DAILY_API_KEY missing - running in Demo Mode');
-    dailyUrl = `https://solith-demo.daily.co/${roomId}`;
+    console.warn('⚠️ LIVEKIT_API_KEY missing - running in Demo Mode');
+    livekitUrl = `wss://solith-demo.livekit.cloud`;
   }
 
   const newRoom = {
@@ -222,7 +192,7 @@ app.post('/api/rooms', async (req, res) => {
     tags: validTags,
     participants: [],
     messages: [],
-    dailyUrl,
+    livekitUrl,
     createdAt: Date.now()
   };
 
@@ -264,35 +234,25 @@ app.post('/api/rooms/:id/join', async (req, res) => {
   saveDB();
 
   let token = '';
-  const isRealConnection = !!(runtimeConfig.dailyApiKey && runtimeConfig.dailyDomain);
+  const isRealConnection = !!(runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret);
 
-  // Generate Daily.co token if credentials exist
+  // Generate LiveKit token if credentials exist
   if (isRealConnection) {
     try {
-      // API Name format: rooms create endpoint uses the ID as room name
-      const roomName = room.dailyUrl.split('/').pop();
-      const response = await axios.post(
-        'https://api.daily.co/v1/meeting-tokens',
-        {
-          properties: {
-            room_name: roomName,
-            user_name: name,
-            is_owner: false,
-            start_video_off: true,
-            start_audio_off: true
-          }
-        },
-        { headers: getDailyHeaders() }
-      );
-      token = response.data.token;
+      const at = new AccessToken(runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret, {
+        identity: userId,
+        name: name,
+      });
+      at.addGrant({ roomJoin: true, room: room.id, canPublish: true, canSubscribe: true });
+      token = await at.toJwt();
     } catch (err) {
-      console.error('Failed to create Daily.co meeting token:', err.response?.data || err.message);
+      console.error('Failed to create LiveKit meeting token:', err.message);
     }
   }
 
   res.json({
     room,
-    dailyUrl: room.dailyUrl,
+    livekitUrl: room.livekitUrl,
     token,
     isRealConnection
   });

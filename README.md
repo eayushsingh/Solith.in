@@ -1,6 +1,6 @@
-# SpeakFree Voice Chat
+# Solith Voice Chat
 
-SpeakFree is a real-time, browser-based voice chat app built with React, Express, Socket.IO, and Daily.co.
+Solith is a real-time, browser-based voice chat app built with React, Express, Socket.IO, and Daily.co.
 
 ## Deployment Guide
 
@@ -18,11 +18,11 @@ The backend needs to be deployed first so you can get the API URL for the fronte
 3. Select this GitHub repository. Render will automatically read the `render.yaml` file included in this repo.
 4. Render will prompt you to fill in the missing Environment Variables (`sync: false`). Fill them in as follows:
    - `DAILY_API_KEY`: *(Optional)* Your production API Key from the Daily.co dashboard.
-   - `DAILY_DOMAIN`: *(Optional)* Your domain name from Daily.co (e.g., `speakfree-demo`). Do not include `.daily.co`.
+   - `DAILY_DOMAIN`: *(Optional)* Your domain name from Daily.co (e.g., `solith-demo`). Do not include `.daily.co`.
    - `ALLOWED_ORIGIN`: Leave this blank or put `*` for now (you will come back and change this after deploying the frontend).
 5. Click **Apply**.
-6. Wait for the deploy to finish. Once it says "Live", click on your Web Service (`speakfree-backend`). 
-7. At the top of the page, **copy your Render URL** (e.g., `https://speakfree-backend.onrender.com`).
+6. Wait for the deploy to finish. Once it says "Live", click on your Web Service (`solith-backend`). 
+7. At the top of the page, **copy your Render URL** (e.g., `https://solith-backend.onrender.com`).
 
 ### Phase 2: Deploy the Frontend on Vercel
 Now that you have your backend URL, you can deploy the frontend.
@@ -34,17 +34,17 @@ Now that you have your backend URL, you can deploy the frontend.
 5. Set the **Root Directory** to `client` (Click edit and type `client`, then save).
 6. Open the **Environment Variables** dropdown and add:
    - Name: `VITE_API_URL`
-   - Value: *(Paste the Render URL you copied in Phase 1, make sure there is no trailing slash! e.g., `https://speakfree-backend.onrender.com`)*
+   - Value: *(Paste the Render URL you copied in Phase 1, make sure there is no trailing slash! e.g., `https://solith-backend.onrender.com`)*
 7. Click **Deploy**.
-8. Once deployed, **copy your new Vercel domain** (e.g., `https://speakfree-xxx.vercel.app`).
+8. Once deployed, **copy your new Vercel domain** (e.g., `https://solith-xxx.vercel.app`).
 
 ### Phase 3: Final Integration (CORS)
 To secure your backend, we need to tell it to only accept requests from your Vercel URL.
 
-1. Go back to the **Render Dashboard** and open your `speakfree-backend` Web Service.
+1. Go back to the **Render Dashboard** and open your `solith-backend` Web Service.
 2. Click on **Environment** in the left sidebar.
 3. Find the `ALLOWED_ORIGIN` variable.
-4. Paste your Vercel URL (e.g., `https://speakfree-xxx.vercel.app`). *Make sure there is no trailing slash!*
+4. Paste your Vercel URL (e.g., `https://solith-xxx.vercel.app`). *Make sure there is no trailing slash!*
 5. Click **Save Changes**. This will trigger a quick restart of your backend.
 
 ### What to expect if you don't add Daily.co Keys

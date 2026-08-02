@@ -4,7 +4,7 @@ import {
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft
 } from 'lucide-react';
-import { DailyService } from './daily';
+import { LiveKitService } from './livekit';
 import { io } from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -44,7 +44,7 @@ export default function App() {
 
   // Identity & Local States
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('speakfree_user');
+    const saved = localStorage.getItem('solith_user');
     if (saved) return JSON.parse(saved);
     
     // Default initial user
@@ -62,7 +62,7 @@ export default function App() {
   });
 
   // Config States
-  const [config, setConfig] = useState({ hasApiKey: false, dailyDomain: '' });
+  const [config, setConfig] = useState({ hasApiKey: false, livekitUrl: '' });
   const [rooms, setRooms] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('All Languages');
@@ -81,7 +81,8 @@ export default function App() {
 
   // Dev Settings fields
   const [devApiKey, setDevApiKey] = useState('');
-  const [devDomain, setDevDomain] = useState('');
+  const [devApiSecret, setDevApiSecret] = useState('');
+  const [livekitUrl, setLivekitUrl] = useState('');
 
   // Active Voice Call States
   const [activeRoom, setActiveRoom] = useState(null);
@@ -95,65 +96,11 @@ export default function App() {
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
 
   const chatEndRef = useRef(null);
-  const cursorDotRef = useRef(null);
-  const cursorFollowerRef = useRef(null);
 
-  // Global custom cursor — bound to window, not a container.
-  // This ensures cursor is visible over call bar, modals, portals, everything.
-  useEffect(() => {
-    const dot = cursorDotRef.current;
-    const follower = cursorFollowerRef.current;
-    if (!dot || !follower) return;
-
-    let mouseX = 0, mouseY = 0;
-    let followerX = 0, followerY = 0;
-    let rafId = null;
-
-    const onMouseMove = (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      // Dot follows instantly
-      dot.style.left = `${mouseX}px`;
-      dot.style.top = `${mouseY}px`;
-      dot.style.opacity = '1';
-      follower.style.opacity = '1';
-    };
-
-    // Smooth follower lag via requestAnimationFrame
-    const animate = () => {
-      followerX += (mouseX - followerX) * 0.15;
-      followerY += (mouseY - followerY) * 0.15;
-      follower.style.left = `${followerX}px`;
-      follower.style.top = `${followerY}px`;
-      rafId = requestAnimationFrame(animate);
-    };
-
-    const onMouseLeave = () => {
-      dot.style.opacity = '0';
-      follower.style.opacity = '0';
-    };
-
-    const onMouseEnter = () => {
-      dot.style.opacity = '1';
-      follower.style.opacity = '1';
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseleave', onMouseLeave);
-    document.addEventListener('mouseenter', onMouseEnter);
-    rafId = requestAnimationFrame(animate);
-
-    return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseleave', onMouseLeave);
-      document.removeEventListener('mouseenter', onMouseEnter);
-      cancelAnimationFrame(rafId);
-    };
-  }, []);
 
   // Sync profile details to localStorage on change
   useEffect(() => {
-    localStorage.setItem('speakfree_user', JSON.stringify(user));
+    localStorage.setItem('solith_user', JSON.stringify(user));
   }, [user]);
 
   // Load configuration and room list on mount
@@ -276,8 +223,8 @@ export default function App() {
       const res = await fetch(`${API_URL}/api/config`);
       const data = await res.json();
       setConfig(data);
-      if (data.dailyDomain) {
-        setDevDomain(data.dailyDomain);
+      if (data.livekitUrl) {
+        setLivekitUrl(data.livekitUrl);
       }
     } catch (err) {
       console.error('Failed to load server config:', err);
@@ -310,12 +257,12 @@ export default function App() {
       const res = await fetch(`${API_URL}/api/config`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: devApiKey, domain: devDomain })
+        body: JSON.stringify({ apiKey: devApiKey, apiSecret: devApiSecret, livekitUrl: livekitUrl })
       });
       const data = await res.json();
       setConfig(data);
       setShowDevModal(false);
-      alert('Daily.co configuration saved successfully!');
+      alert('LiveKit configuration saved successfully!');
     } catch (err) {
       alert('Error updating configuration on backend.');
     }
@@ -409,8 +356,8 @@ export default function App() {
       // Join Socket.IO room for chat
       socket.emit('join-room', room.id);
 
-      // Setup Daily WebRTC
-      DailyService.setCallbacks({
+      // Setup LiveKit WebRTC
+      LiveKitService.setCallbacks({
         onAudioLevels: (levels) => {
           setAudioLevels(levels);
         },
@@ -426,8 +373,8 @@ export default function App() {
         }
       });
 
-      // Connect via Daily.js helper
-      await DailyService.join(data.dailyUrl, data.token, data.isRealConnection, user);
+      // Connect via LiveKit helper
+      await LiveKitService.join(data.livekitUrl, data.token, data.isRealConnection, user);
 
       fetchRooms(); // refresh listing UI
     } catch (err) {
@@ -443,7 +390,7 @@ export default function App() {
     if (!activeRoom) return;
 
     try {
-      await DailyService.leave(isRealCall);
+      await LiveKitService.leave(isRealCall);
       
       // Leave Socket.IO room
       socket.emit('leave-room', activeRoom.id);
@@ -468,7 +415,7 @@ export default function App() {
   // Local Microphone Mute controller
   const toggleMute = () => {
     const nextMute = !isMuted;
-    const resolved = DailyService.setLocalAudio(nextMute, isRealCall);
+    const resolved = LiveKitService.setLocalAudio(nextMute, isRealCall);
     setIsMuted(resolved);
     
     setParticipants(prev => 
@@ -569,11 +516,7 @@ export default function App() {
   if (view === 'landing') {
     return (
       <>
-        {/* Global Custom Cursor — rendered at root, above everything */}
-        <div ref={cursorDotRef} className="custom-cursor" style={{ opacity: 0 }} />
-        <div ref={cursorFollowerRef} className="custom-cursor-follower" style={{ opacity: 0 }}>
-          <span className="cursor-text">join</span>
-        </div>
+
 
         <div 
           id="hero" 
@@ -671,11 +614,7 @@ export default function App() {
   // RENDER MAIN LOBBY DASHBOARD
   return (
     <>
-      {/* Global Custom Cursor — rendered at root, above everything */}
-      <div ref={cursorDotRef} className="custom-cursor" style={{ opacity: 0 }} />
-      <div ref={cursorFollowerRef} className="custom-cursor-follower" style={{ opacity: 0 }}>
-        <span className="cursor-text">join</span>
-      </div>
+
 
       <div className="min-h-screen relative font-mono pb-28 flex flex-col items-center" style={{ backgroundColor: 'var(--bg)' }}>
         {/* Premium Background Layers */}
@@ -694,7 +633,7 @@ export default function App() {
               title="Return to home page"
             >
               <h1 className="text-xl font-mono tracking-tighter text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors uppercase">
-                SpeakFree_
+                Solith_
               </h1>
             </div>
 
@@ -1149,13 +1088,13 @@ export default function App() {
         </div>
       )}
 
-      {/* DEVELOPER DAILY.CO API CREDENTIALS MODAL */}
+      {/* DEVELOPER LIVEKIT CREDENTIALS MODAL */}
       {showDevModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
           <div className="w-full max-w-md glass rounded-2xl p-6 animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-[var(--ink)] flex items-center gap-2">
-                <Settings className="w-5 h-5 text-[var(--accent)]" /> Daily.co Credentials
+                <Settings className="w-5 h-5 text-[var(--accent)]" /> LiveKit Credentials
               </h3>
               <button 
                 onClick={() => setShowDevModal(false)}
@@ -1166,26 +1105,37 @@ export default function App() {
             </div>
 
             <div className="p-3.5 bg-[var(--accent-bg)] border border-[var(--accent-glow)] rounded-xl text-xs text-[var(--accent)] leading-normal mb-5">
-              Inputting credentials here lets the server call the real Daily.co WebRTC service to generate active meeting rooms and voice channels. 
+              Inputting credentials here lets the server call the real LiveKit WebRTC service to generate active meeting rooms and voice channels. 
               <br />
-              If you leave these fields empty, SpeakFree works in <strong>Demo Simulator Mode</strong> with simulated speech visualisers and mock partners.
+              If you leave these fields empty, Solith works in <strong>Demo Simulator Mode</strong> with simulated speech visualisers and mock partners.
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Daily.co Developer Domain</label>
+                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">LiveKit WebSocket URL</label>
                 <input 
                   type="text" 
-                  placeholder="e.g. my-developer-subdomain" 
-                  value={devDomain}
-                  onChange={(e) => setDevDomain(e.target.value)}
+                  placeholder="wss://your-project.livekit.cloud" 
+                  value={livekitUrl}
+                  onChange={(e) => setLivekitUrl(e.target.value)}
                   className="w-full text-sm"
                 />
-                <span className="text-[10px] text-[var(--ink-tertiary)] mt-1 block">Your subdomain (the word before .daily.co)</span>
+                <span className="text-[10px] text-[var(--ink-tertiary)] mt-1 block">Your project's WSS URL</span>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Daily.co Secret API Key</label>
+                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">LiveKit API Key</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. API..." 
+                  value={devApiKey}
+                  onChange={(e) => setDevApiKey(e.target.value)}
+                  className="w-full text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">LiveKit API Secret</label>
                 <input 
                   type="password" 
                   placeholder="e.g. 5ca7...da8b" 

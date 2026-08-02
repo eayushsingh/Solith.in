@@ -47,12 +47,7 @@
   background-color: var(--bg);
 }
 
-/* Force native cursor OFF everywhere on desktop — no exceptions */
-@media (pointer: fine) {
-  *, *::before, *::after {
-    cursor: none !important;
-  }
-}
+
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
@@ -89,88 +84,7 @@ body {
   display: none; /* not needed in light mode */
 }
 
-/* Custom cursor — sits above modals, call bars, everything */
-.custom-cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 20px;
-  height: 20px;
-  background-color: var(--accent);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 999999;
-  transform: translate(-50%, -50%);
-  will-change: transform;
-  mix-blend-mode: difference;
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
-              height 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
-              background-color 0.25s ease,
-              opacity 0.15s ease;
-}
 
-.custom-cursor-follower {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 36px;
-  height: 36px;
-  border: 1.5px solid rgba(88, 86, 214, 0.3);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 999998;
-  transform: translate(-50%, -50%);
-  will-change: transform;
-  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
-              height 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
-              border-color 0.35s ease, 
-              background-color 0.35s ease,
-              opacity 0.15s ease;
-}
-
-/* Custom cursor modifier states */
-body.cursor-hover-card .custom-cursor {
-  width: 0px;
-  height: 0px;
-  opacity: 0;
-}
-
-body.cursor-hover-card .custom-cursor-follower {
-  width: 64px;
-  height: 64px;
-  background-color: var(--accent);
-  border-color: var(--accent);
-  mix-blend-mode: normal;
-  opacity: 0.12;
-}
-
-.cursor-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-family: 'Inter', sans-serif;
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--accent);
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-body.cursor-hover-card .cursor-text {
-  opacity: 1;
-}
-
-body.cursor-hover-clickable .custom-cursor-follower {
-  width: 44px;
-  height: 44px;
-  border-color: rgba(88, 86, 214, 0.4);
-  background-color: rgba(88, 86, 214, 0.06);
-}
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Inter', system-ui, sans-serif;
