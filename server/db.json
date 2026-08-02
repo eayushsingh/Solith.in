@@ -1,0 +1,87 @@
+[
+  {
+    "id": "room-1",
+    "name": "Chill Coffee Chat ☕",
+    "language": "English",
+    "topic": "Casual conversation, hobbies, and weekend plans. Everyone is welcome!",
+    "tags": [
+      "Casual",
+      "Beginner Friendly"
+    ],
+    "participants": [
+      {
+        "id": "mock-user-1",
+        "name": "Sophia",
+        "color": "#ff4d4d",
+        "emoji": "👩‍🦰",
+        "joinedAt": 1785338067855,
+        "lastPing": 1785338067855
+      },
+      {
+        "id": "mock-user-2",
+        "name": "Hiro",
+        "color": "#4da6ff",
+        "emoji": "👦",
+        "joinedAt": 1785338067855,
+        "lastPing": 1785338067855
+      }
+    ],
+    "createdAt": 1785338067855,
+    "messages": [
+      {
+        "id": "msg-1785675476132",
+        "senderId": "user-q4q67ne",
+        "senderName": "PolyglotPro",
+        "senderEmoji": "🦊",
+        "senderColor": "#a64dff",
+        "text": "Hello world this is a chat test",
+        "timestamp": "06:27 PM"
+      }
+    ]
+  },
+  {
+    "id": "room-2",
+    "name": "Debate: AI & Human Creativity 🧠",
+    "language": "Spanish",
+    "topic": "Discusión sobre si la inteligencia artificial reemplazará a los artistas.",
+    "tags": [
+      "Debate",
+      "Intermediate"
+    ],
+    "participants": [
+      {
+        "id": "mock-user-3",
+        "name": "Elena",
+        "color": "#33cc33",
+        "emoji": "👩",
+        "joinedAt": 1785338067855,
+        "lastPing": 1785338067855
+      }
+    ],
+    "createdAt": 1785338067855
+  },
+  {
+    "id": "room-3",
+    "name": "Job Interview Practice 💼",
+    "language": "French",
+    "topic": "Pratique des questions typiques d'entretien d'embauche. Formel.",
+    "tags": [
+      "Interview Prep",
+      "Advanced"
+    ],
+    "participants": [],
+    "createdAt": 1785338067855
+  },
+  {
+    "id": "room-efud975",
+    "name": "hi",
+    "language": "English",
+    "topic": "",
+    "tags": [
+      "Casuyesal"
+    ],
+    "participants": [],
+    "dailyUrl": "https://speakfree-demo.daily.co/room-efud975",
+    "createdAt": 1785348081600
+  }
+]

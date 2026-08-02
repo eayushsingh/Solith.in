@@ -1,0 +1,392 @@
+import express from 'express';
+import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import axios from 'axios';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DB_PATH = path.join(__dirname, 'db.json');
+
+const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: { origin: process.env.ALLOWED_ORIGIN || '*' } // Strictly allow frontend URL in prod
+});
+
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
+app.use(express.json());
+
+// In-Memory Configuration (fallback/runtime update)
+let runtimeConfig = {
+  dailyApiKey: process.env.DAILY_API_KEY || '',
+  dailyDomain: process.env.DAILY_DOMAIN || '' // e.g. "mycompany" (without .daily.co)
+};
+
+// Rooms Database State
+let rooms = [];
+
+// Load rooms from db.json if exists
+const loadDB = () => {
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      const data = fs.readFileSync(DB_PATH, 'utf8');
+      rooms = JSON.parse(data);
+    } else {
+      rooms = [];
+    }
+  } catch (err) {
+    console.error('Error loading DB, initializing empty rooms list:', err);
+    rooms = [];
+  }
+
+  // Inject standard mock rooms if the list is empty
+  if (rooms.length === 0) {
+    rooms = [
+      {
+        id: 'room-1',
+        name: 'Chill Coffee Chat ☕',
+        language: 'English',
+        topic: 'Casual conversation, hobbies, and weekend plans. Everyone is welcome!',
+        tags: ['Casual', 'Beginner Friendly'],
+        participants: [
+          { id: 'mock-user-1', name: 'Sophia', color: '#ff4d4d', emoji: '👩‍🦰', joinedAt: Date.now(), lastPing: Date.now() },
+          { id: 'mock-user-2', name: 'Hiro', color: '#4da6ff', emoji: '👦', joinedAt: Date.now(), lastPing: Date.now() }
+        ],
+        messages: [],
+        createdAt: Date.now()
+      },
+      {
+        id: 'room-2',
+        name: 'Debate: AI & Human Creativity 🧠',
+        language: 'Spanish',
+        topic: 'Discusión sobre si la inteligencia artificial reemplazará a los artistas.',
+        tags: ['Debate', 'Intermediate'],
+        participants: [
+          { id: 'mock-user-3', name: 'Elena', color: '#33cc33', emoji: '👩', joinedAt: Date.now(), lastPing: Date.now() }
+        ],
+        messages: [],
+        createdAt: Date.now()
+      },
+      {
+        id: 'room-3',
+        name: 'Job Interview Practice 💼',
+        language: 'French',
+        topic: 'Pratique des questions typiques d\'entretien d\'embauche. Formel.',
+        tags: ['Interview Prep', 'Advanced'],
+        participants: [],
+        messages: [],
+        createdAt: Date.now()
+      }
+    ];
+    saveDB();
+  }
+};
+
+const saveDB = () => {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(rooms, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error writing to DB:', err);
+  }
+};
+
+// Auto-clean stale users (who closed their tab without leaving)
+setInterval(() => {
+  const now = Date.now();
+  let modified = false;
+
+  rooms.forEach(room => {
+    // Filter out mock users from stale cleaning so the rooms feel alive during first look!
+    // But remove real users who haven't pinged in 8 seconds
+    const originalCount = room.participants.length;
+    room.participants = room.participants.filter(p => {
+      if (p.id.startsWith('mock-user-')) return true;
+      return (now - p.lastPing) < 8000;
+    });
+
+    if (room.participants.length !== originalCount) {
+      modified = true;
+    }
+  });
+
+  if (modified) {
+    saveDB();
+  }
+}, 4000);
+
+// Helper: Daily.co REST APIs
+const getDailyHeaders = () => {
+  const key = runtimeConfig.dailyApiKey;
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${key}`
+  };
+};
+
+const cleanDomain = (domain) => {
+  if (!domain) return '';
+  return domain.replace(/^https?:\/\//i, '').replace(/\.daily\.co\/?$/i, '').trim();
+};
+
+// GET /api/health - Health check endpoint for Render
+app.get('/api/health', (req, res) => res.status(200).send('OK'));
+
+// GET /api/config - Returns configuration to the frontend
+app.get('/api/config', (req, res) => {
+  if (!runtimeConfig.dailyApiKey || !runtimeConfig.dailyDomain) {
+    console.warn('⚠️ WARNING: Daily.co credentials are not configured.');
+  }
+  res.json({
+    hasApiKey: !!runtimeConfig.dailyApiKey,
+    dailyDomain: cleanDomain(runtimeConfig.dailyDomain)
+  });
+});
+
+// API Endpoint: Update Config dynamically
+app.post('/api/config', (req, res) => {
+  const { apiKey, domain } = req.body;
+  if (apiKey !== undefined) runtimeConfig.dailyApiKey = apiKey.trim();
+  if (domain !== undefined) runtimeConfig.dailyDomain = cleanDomain(domain);
+  res.json({
+    success: true,
+    hasApiKey: !!runtimeConfig.dailyApiKey,
+    dailyDomain: cleanDomain(runtimeConfig.dailyDomain)
+  });
+});
+
+// API Endpoint: List Rooms
+app.get('/api/rooms', (req, res) => {
+  res.json(rooms);
+});
+
+// API Endpoint: Create Room
+app.post('/api/rooms', async (req, res) => {
+  const { name, language, topic, tags } = req.body;
+
+  if (!name || name.trim().length < 3) {
+    return res.status(400).json({ error: 'Room name must be at least 3 characters long' });
+  }
+  if (!language || language.trim().length < 2) {
+    return res.status(400).json({ error: 'Language is required' });
+  }
+
+  // Filter out any garbage tags (must be strings, at least 3 chars)
+  const validTags = Array.isArray(tags) 
+    ? tags.filter(t => typeof t === 'string' && t.trim().length >= 3).slice(0, 5) // max 5 tags
+    : [];
+
+  const roomId = 'room-' + Math.random().toString(36).substring(2, 9);
+  let dailyUrl = '';
+
+  // 1. If Daily.co API is available, create a real room
+  if (runtimeConfig.dailyApiKey && runtimeConfig.dailyDomain) {
+    try {
+      const response = await axios.post(
+        'https://api.daily.co/v1/rooms',
+        {
+          name: roomId,
+          properties: {
+            enable_chat: true,
+            start_audio_off: true,
+            start_video_off: true,
+            exp: Math.floor(Date.now() / 1000) + 86400 // Expire in 24 hours
+          }
+        },
+        { headers: getDailyHeaders() }
+      );
+      dailyUrl = response.data.url;
+      console.log(`Real Daily.co Room Created: ${dailyUrl}`);
+    } catch (err) {
+      console.error('Failed to create Daily.co room, falling back to mock. Details:', err.response?.data || err.message);
+      // Fallback
+      dailyUrl = `https://${cleanDomain(runtimeConfig.dailyDomain)}.daily.co/${roomId}`;
+    }
+  } else {
+    // 2. Demo fallback
+    console.warn('⚠️ DAILY_API_KEY missing - running in Demo Mode');
+    dailyUrl = `https://speakfree-demo.daily.co/${roomId}`;
+  }
+
+  const newRoom = {
+    id: roomId,
+    name,
+    language,
+    topic: topic ? topic.trim() : '',
+    tags: validTags,
+    participants: [],
+    messages: [],
+    dailyUrl,
+    createdAt: Date.now()
+  };
+
+  rooms.push(newRoom);
+  saveDB();
+
+  res.status(201).json(newRoom);
+});
+
+// API Endpoint: Join Room
+app.post('/api/rooms/:id/join', async (req, res) => {
+  const { id } = req.params;
+  const { userId, name, color, emoji } = req.body;
+
+  if (!userId || !name) {
+    return res.status(400).json({ error: 'userId and name are required' });
+  }
+
+  const room = rooms.find(r => r.id === id);
+  if (!room) {
+    return res.status(404).json({ error: 'Room not found' });
+  }
+
+  // Remove user from any other rooms they might be in
+  rooms.forEach(r => {
+    r.participants = r.participants.filter(p => p.id !== userId);
+  });
+
+  // Add user to the target room
+  const participant = {
+    id: userId,
+    name,
+    color: color || '#ff4d4d',
+    emoji: emoji || '😊',
+    joinedAt: Date.now(),
+    lastPing: Date.now()
+  };
+  room.participants.push(participant);
+  saveDB();
+
+  let token = '';
+  const isRealConnection = !!(runtimeConfig.dailyApiKey && runtimeConfig.dailyDomain);
+
+  // Generate Daily.co token if credentials exist
+  if (isRealConnection) {
+    try {
+      // API Name format: rooms create endpoint uses the ID as room name
+      const roomName = room.dailyUrl.split('/').pop();
+      const response = await axios.post(
+        'https://api.daily.co/v1/meeting-tokens',
+        {
+          properties: {
+            room_name: roomName,
+            user_name: name,
+            is_owner: false,
+            start_video_off: true,
+            start_audio_off: true
+          }
+        },
+        { headers: getDailyHeaders() }
+      );
+      token = response.data.token;
+    } catch (err) {
+      console.error('Failed to create Daily.co meeting token:', err.response?.data || err.message);
+    }
+  }
+
+  res.json({
+    room,
+    dailyUrl: room.dailyUrl,
+    token,
+    isRealConnection
+  });
+});
+
+// API Endpoint: Keep-Alive Ping
+app.post('/api/rooms/:id/ping', (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  const room = rooms.find(r => r.id === id);
+  if (!room) {
+    return res.status(404).json({ error: 'Room not found' });
+  }
+
+  const participant = room.participants.find(p => p.id === userId);
+  if (participant) {
+    participant.lastPing = Date.now();
+    res.json({ success: true });
+  } else {
+    // Re-register if somehow cleared
+    res.status(400).json({ error: 'Participant not in room, please join again' });
+  }
+});
+
+// API Endpoint: Leave Room
+app.post('/api/rooms/:id/leave', (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  const room = rooms.find(r => r.id === id);
+  if (room) {
+    room.participants = room.participants.filter(p => p.id !== userId);
+    saveDB();
+  }
+
+  res.json({ success: true });
+});
+
+// Serve frontend in production build if needed
+const clientDistPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
+
+// Socket.IO Logic
+io.on('connection', (socket) => {
+  console.log('Socket connected:', socket.id);
+
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    
+    // Send existing message history to the user joining
+    const room = rooms.find(r => r.id === roomId);
+    if (room && room.messages) {
+      socket.emit('chat-history', room.messages);
+    }
+  });
+
+  socket.on('leave-room', (roomId) => {
+    socket.leave(roomId);
+  });
+
+  socket.on('chat-message', (data) => {
+    const { roomId, message } = data;
+    
+    // Broadcast immediately to everyone else in the room
+    socket.to(roomId).emit('chat-message', message);
+
+    // Save to persistence
+    const room = rooms.find(r => r.id === roomId);
+    if (room) {
+      if (!room.messages) room.messages = [];
+      room.messages.push(message);
+      
+      // Keep only the last 50 messages
+      if (room.messages.length > 50) {
+        room.messages = room.messages.slice(-50);
+      }
+      saveDB();
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Socket disconnected:', socket.id);
+  });
+});
+
+// Start Server
+const PORT = process.env.PORT || 3000;
+loadDB();
+server.listen(PORT, () => {
+  console.log(`SpeakFree Backend running on port ${PORT}`);
+});

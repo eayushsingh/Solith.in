@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: speakfree-backend
+    env: node
+    buildCommand: npm install --prefix server
+    startCommand: npm run server
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 3000
+      - key: ALLOWED_ORIGIN
+        sync: false
+      - key: DAILY_API_KEY
+        sync: false
+      - key: DAILY_DOMAIN
+        sync: false
