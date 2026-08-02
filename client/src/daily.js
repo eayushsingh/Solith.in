@@ -142,7 +142,7 @@ export const DailyService = {
     } catch (err) {
       console.error('DailyService.join failed:', err);
       connectionCallback?.({ state: 'error', error: err.message });
-      cleanupRealCall();
+      await cleanupRealCall();
       throw err;
     }
   },
@@ -167,7 +167,7 @@ export const DailyService = {
       } catch (err) {
         console.error('DailyService.leave error:', err);
       } finally {
-        cleanupRealCall();
+        await cleanupRealCall();
       }
     }
   },
@@ -211,14 +211,15 @@ function updateParticipantsList() {
 /**
  * Destroy call object and reset listeners
  */
-function cleanupRealCall() {
+async function cleanupRealCall() {
   if (callObject) {
+    const toDestroy = callObject;
+    callObject = null; // clear reference first to prevent reentrancy
     try {
-      callObject.stopAudioLevelUpdates();
-      callObject.destroy();
+      toDestroy.stopAudioLevelUpdates();
+      await toDestroy.destroy();
     } catch (e) {
       console.warn('Error during Daily teardown:', e);
     }
-    callObject = null;
   }
 }
