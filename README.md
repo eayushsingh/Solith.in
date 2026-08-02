@@ -57,3 +57,5 @@ It will automatically fall back into **Demo Mode**. Real users visiting your Ver
 - Interact with mock participants and the moderation UI (Kick, Mute, Report)
 
 However, they will **not** be able to hear or transmit real voice audio until you add your Daily.co keys to the Render dashboard.
+
+Open to Contribute
