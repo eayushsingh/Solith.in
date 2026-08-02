@@ -211,7 +211,7 @@ app.post('/api/rooms', async (req, res) => {
   } else {
     // 2. Demo fallback
     console.warn('⚠️ DAILY_API_KEY missing - running in Demo Mode');
-    dailyUrl = `https://speakfree-demo.daily.co/${roomId}`;
+    dailyUrl = `https://solith-demo.daily.co/${roomId}`;
   }
 
   const newRoom = {
@@ -388,5 +388,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 loadDB();
 server.listen(PORT, () => {
-  console.log(`SpeakFree Backend running on port ${PORT}`);
+  console.log(`Solith Backend running on port ${PORT}`);
 });
