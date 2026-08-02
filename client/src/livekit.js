@@ -127,7 +127,9 @@ export const LiveKitService = {
       });
 
       roomObject.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
-        track.detach().forEach(el => el.remove());
+        const detached = track.detach();
+        const els = Array.isArray(detached) ? detached : (detached ? [detached] : []);
+        els.forEach(el => el.remove());
         updateParticipantsList();
       });
 
@@ -136,10 +138,12 @@ export const LiveKitService = {
           const levels = {};
           // LiveKit provides an array of active participants
           // We'll give active speakers a baseline level of 0.8 to trigger our UI pulsing
-          speakers.forEach(speaker => {
-            const speakerId = speaker.isLocal ? localUser.id : speaker.identity;
-            levels[speakerId] = speaker.audioLevel || 0.8;
-          });
+          if (speakers) {
+            speakers.forEach(speaker => {
+              const speakerId = speaker.isLocal ? localUser.id : speaker.identity;
+              levels[speakerId] = speaker.audioLevel || 0.8;
+            });
+          }
           audioLevelCallback(levels);
         }
       });
@@ -222,15 +226,17 @@ function updateParticipantsList() {
   }
 
   // Add remote participants
-  roomObject.participants.forEach(p => {
-    const isMuted = !p.isMicrophoneEnabled;
-    list.push({
-      id: p.identity,
-      name: p.name || 'Guest Practicer',
-      isLocal: false,
-      muted: isMuted
+  if (roomObject.participants) {
+    roomObject.participants.forEach(p => {
+      const isMuted = !p.isMicrophoneEnabled;
+      list.push({
+        id: p.identity,
+        name: p.name || 'Guest Practicer',
+        isLocal: false,
+        muted: isMuted
+      });
     });
-  });
+  }
 
   participantCallback?.(list);
 }
