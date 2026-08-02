@@ -1,7 +1,7 @@
 {
-  "name": "speakfree-server",
+  "name": "solith-server",
   "version": "1.0.0",
-  "description": "SpeakFree Express Backend Server",
+  "description": "Solith Express Backend Server",
   "main": "server.js",
   "type": "module",
   "scripts": {
