@@ -106,86 +106,88 @@ export default function App() {
       try {
         if (currentUser && !currentUser.isAnonymous) {
           console.log("onAuthStateChanged: Authenticated as", currentUser.email);
-          const userRef = doc(db, 'users', currentUser.uid);
           
-          let userData;
-          const today = new Date().toDateString();
-          const yesterday = new Date(Date.now() - 86400000).toDateString();
-
-          try {
-            console.log("Fetching user from Firestore...");
-            const userSnap = await getDoc(userRef);
-            console.log("Firestore fetch complete! Exists:", userSnap.exists());
-
-            if (userSnap.exists()) {
-              userData = userSnap.data();
-              let updates = {};
-
-              if (userData.lastActiveDay === yesterday) {
-                updates.streak = (userData.streak || 0) + 1;
-                updates.lastActiveDay = today;
-                userData.streak = updates.streak;
-                userData.lastActiveDay = updates.lastActiveDay;
-              } else if (userData.lastActiveDay !== today) {
-                updates.streak = 1;
-                updates.lastActiveDay = today;
-                userData.streak = 1;
-                userData.lastActiveDay = today;
-              }
-
-              if (currentUser.displayName && (!userData.name || userData.name.startsWith('learner_') || userData.name !== currentUser.displayName)) {
-                updates.name = currentUser.displayName;
-                userData.name = currentUser.displayName;
-              }
-              
-              if (currentUser.photoURL && userData.photoUrl !== currentUser.photoURL) {
-                updates.photoUrl = currentUser.photoURL;
-                userData.photoUrl = currentUser.photoURL;
-              }
-
-              if (Object.keys(updates).length > 0) {
-                console.log("Updating existing user in Firestore...");
-                await setDoc(userRef, updates, { merge: true });
-                console.log("Update complete.");
-              }
-            } else {
-              console.log("Creating new user in Firestore...");
-              userData = {
-                id: currentUser.uid,
-                name: currentUser.displayName,
-                photoUrl: currentUser.photoURL,
-                email: currentUser.email,
-                xp: 25,
-                streak: 1,
-                lastActiveDay: today,
-                createdAt: serverTimestamp()
-              };
-              await setDoc(userRef, userData);
-              console.log("Creation complete.");
-            }
-          } catch (dbError) {
-            console.warn("Firestore fetch failed! Client is offline or DB is blocked. Falling back to local profile:", dbError.message);
-            // Fallback to local profile based on Google Auth payload
-            userData = {
+          // 1. Instantly get the token (cached by Firebase, very fast)
+          const token = await currentUser.getIdToken();
+          
+          // 2. OPTIMISTIC UI UPDATE for lightning-fast perceived performance
+          setUser(prev => {
+            if (prev && prev.id === currentUser.uid) return prev; // Avoid unnecessary re-renders if already set
+            return {
               id: currentUser.uid,
               name: currentUser.displayName || 'Anonymous Learner',
               photoUrl: currentUser.photoURL || '',
               email: currentUser.email,
               xp: 25,
               streak: 1,
-              lastActiveDay: today,
-              createdAt: Date.now()
+              token: token
             };
-          }
-          
-          console.log("Getting ID token...");
-          const token = await currentUser.getIdToken();
-          
-          console.log("Setting user state in React!");
-          setUser({
-            ...userData,
-            token
           });
+
+          // 3. BACKGROUND DATABASE SYNC (Does not block the UI!)
+          (async () => {
+            try {
+              const userRef = doc(db, 'users', currentUser.uid);
+              const today = new Date().toDateString();
+              const yesterday = new Date(Date.now() - 86400000).toDateString();
+              
+              const userSnap = await getDoc(userRef);
+              let dbData;
+
+              if (userSnap.exists()) {
+                dbData = userSnap.data();
+                let updates = {};
+
+                if (dbData.lastActiveDay === yesterday) {
+                  updates.streak = (dbData.streak || 0) + 1;
+                  updates.lastActiveDay = today;
+                  dbData.streak = updates.streak;
+                  dbData.lastActiveDay = updates.lastActiveDay;
+                } else if (dbData.lastActiveDay !== today) {
+                  updates.streak = 1;
+                  updates.lastActiveDay = today;
+                  dbData.streak = 1;
+                  dbData.lastActiveDay = today;
+                }
+
+                if (currentUser.displayName && (!dbData.name || dbData.name.startsWith('learner_') || dbData.name !== currentUser.displayName)) {
+                  updates.name = currentUser.displayName;
+                  dbData.name = currentUser.displayName;
+                }
+                
+                if (currentUser.photoURL && dbData.photoUrl !== currentUser.photoURL) {
+                  updates.photoUrl = currentUser.photoURL;
+                  dbData.photoUrl = currentUser.photoURL;
+                }
+
+                if (Object.keys(updates).length > 0) {
+                  await setDoc(userRef, updates, { merge: true });
+                }
+              } else {
+                dbData = {
+                  id: currentUser.uid,
+                  name: currentUser.displayName || 'Anonymous Learner',
+                  photoUrl: currentUser.photoURL || '',
+                  email: currentUser.email,
+                  xp: 25,
+                  streak: 1,
+                  lastActiveDay: today,
+                  createdAt: serverTimestamp()
+                };
+                await setDoc(userRef, dbData);
+              }
+
+              // Silently update the UI with the real stats from the database once loaded
+              setUser(prev => {
+                if (!prev || prev.id !== currentUser.uid) return prev;
+                return { ...prev, ...dbData, token };
+              });
+
+            } catch (dbError) {
+              console.warn("Background DB sync failed! Client is offline or DB is blocked. Using local profile.", dbError.message);
+            }
+          })(); // IIFE to run in background
+
         } else {
           if (currentUser && currentUser.isAnonymous) {
             console.warn("Detected old anonymous session. Clearing it out.");
