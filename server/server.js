@@ -42,7 +42,7 @@ app.use(express.json());
 // Apply global rate limiting (100 reqs / 15 mins per IP)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 5000,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -72,50 +72,7 @@ const loadDB = () => {
     rooms = [];
   }
 
-  // Inject standard mock rooms if the list is empty
-  if (rooms.length === 0) {
-    rooms = [
-      {
-        id: 'room-1',
-        name: 'Chill Coffee Chat ☕',
-        language: 'English',
-        topic: 'Casual conversation, hobbies, and weekend plans. Everyone is welcome!',
-        tags: ['Casual', 'Beginner Friendly'],
-        participants: [
-          { id: 'mock-user-1', name: 'Sophia', color: '#ff4d4d', emoji: '👩‍🦰', joinedAt: Date.now(), lastPing: Date.now() },
-          { id: 'mock-user-2', name: 'Hiro', color: '#4da6ff', emoji: '👦', joinedAt: Date.now(), lastPing: Date.now() }
-        ],
-        roles: { 'mock-user-1': 'owner', 'mock-user-2': 'co-host' },
-        messages: [],
-        createdAt: Date.now()
-      },
-      {
-        id: 'room-2',
-        name: 'Debate: AI & Human Creativity 🧠',
-        language: 'Spanish',
-        topic: 'Discusión sobre si la inteligencia artificial reemplazará a los artistas.',
-        tags: ['Debate', 'Intermediate'],
-        participants: [
-          { id: 'mock-user-3', name: 'Elena', color: '#33cc33', emoji: '👩', joinedAt: Date.now(), lastPing: Date.now() }
-        ],
-        roles: { 'mock-user-3': 'owner' },
-        messages: [],
-        createdAt: Date.now()
-      },
-      {
-        id: 'room-3',
-        name: 'Job Interview Practice 💼',
-        language: 'French',
-        topic: 'Pratique des questions typiques d\'entretien d\'embauche. Formel.',
-        tags: ['Interview Prep', 'Advanced'],
-        participants: [],
-        roles: {},
-        messages: [],
-        createdAt: Date.now()
-      }
-    ];
-    saveDB();
-  }
+
 };
 
 const saveDB = () => {
@@ -133,11 +90,9 @@ setInterval(() => {
   const initialRoomCount = rooms.length;
 
   rooms = rooms.filter(room => {
-    // Filter out mock users from stale cleaning so the rooms feel alive during first look!
-    // But remove real users who haven't pinged in 8 seconds
+    // Remove real users who haven't pinged in 8 seconds
     const originalCount = room.participants.length;
     room.participants = room.participants.filter(p => {
-      if (p.id.startsWith('mock-user-')) return true;
       return (now - p.lastPing) < 8000;
     });
 
@@ -208,24 +163,21 @@ app.get('/api/rooms', (req, res) => {
 
 const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean'];
 
-function isJunkText(text) {
-  if (!text) return true;
-  const trimmed = text.trim();
-  if (trimmed.length < 4) return true; // Too short (e.g. "hi")
+function isJunkText(str) {
+  if (!str) return true;
+  const trimmed = str.trim();
+  if (trimmed.length < 2) return true;
   
   // Rule 2: Check for 4+ identical consecutive characters (e.g. "hiiii99")
-  if (/(.)\1{3,}/.test(trimmed)) return true;
+  if (/(.)\1{4,}/.test(trimmed)) return true;
   
-  // Rule 3: Check for 5+ consecutive consonants (catches keyboard smashes like "hjhhj")
-  if (/[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]{5,}/.test(trimmed)) return true;
-
   return false;
 }
 
 // Strict rate limiting for Room Creation (15 reqs / 15 mins)
 const roomCreationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 1500,
   message: { error: 'Too many rooms created from this IP, please try again after 15 minutes.' }
 });
 
@@ -241,9 +193,8 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Room name must be a valid, descriptive phrase.' });
   }
 
-  if (topic && topic.trim().length > 0 && isJunkText(topic)) {
-    return res.status(400).json({ error: 'Room topic must be a valid, descriptive phrase.' });
-  }
+  // We no longer strictly validate topic to make it fully optional and flexible
+  // The client can send whatever they want in the topic.
 
   // Filter out any garbage tags (must be strings, at least 3 chars)
   const validTags = Array.isArray(tags) 
@@ -258,9 +209,7 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     livekitUrl = runtimeConfig.livekitUrl;
     console.log(`Real LiveKit Room Created Implicitly: ${roomId}`);
   } else {
-    // 2. Demo fallback
-    console.warn('⚠️ LIVEKIT_API_KEY missing - running in Demo Mode');
-    livekitUrl = `wss://solith-demo.livekit.cloud`;
+    return res.status(500).json({ error: 'LiveKit configuration is missing. Cannot create real rooms.' });
   }
 
   const newRoom = {

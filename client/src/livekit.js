@@ -30,40 +30,7 @@ export const LiveKitService = {
    * Join a room (Real LiveKit connection OR Mock connection)
    */
   join: async (url, token, isReal, localUser) => {
-    if (!isReal) {
-      console.log('LiveKitService: Joining in Mock Demo Mode');
-      connectionCallback?.({ state: 'joining' });
 
-      // Simulate network latency
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      connectionCallback?.({ state: 'joined', isMock: true });
-
-      // Start simulated speaking pulses for mock participants
-      mockActiveSpeakers = {};
-      mockSpeakingInterval = setInterval(() => {
-        const levels = {};
-        // Randomly pick a mock participant to "speak"
-        const mockIds = ['mock-user-1', 'mock-user-2', 'mock-user-3'];
-        mockIds.forEach(id => {
-          if (Math.random() > 0.6) {
-            levels[id] = Math.random() * 0.8 + 0.2; // random volume
-          } else {
-            levels[id] = 0;
-          }
-        });
-        audioLevelCallback?.(levels);
-      }, 1000);
-
-      // Trigger initial mock participant list
-      participantCallback?.([
-        { id: localUser.id, name: localUser.name, isLocal: true, muted: true },
-        { id: 'mock-user-1', name: 'Sophia', isLocal: false, muted: false },
-        { id: 'mock-user-2', name: 'Hiro', isLocal: false, muted: false },
-        { id: 'mock-user-3', name: 'Elena', isLocal: false, muted: true }
-      ]);
-      return true;
-    }
 
     try {
       console.log(`LiveKitService: Joining real room at: ${url}`);
@@ -167,15 +134,7 @@ export const LiveKitService = {
    * Leave current room
    */
   leave: async (isReal) => {
-    if (!isReal) {
-      console.log('LiveKitService: Leaving Mock Demo Mode');
-      if (mockSpeakingInterval) {
-        clearInterval(mockSpeakingInterval);
-        mockSpeakingInterval = null;
-      }
-      connectionCallback?.({ state: 'left' });
-      return;
-    }
+
 
     if (roomObject) {
       try {
@@ -192,10 +151,7 @@ export const LiveKitService = {
    * Mute/Unmute local user microphone
    */
   setLocalAudio: (muted, isReal) => {
-    if (!isReal) {
-      console.log(`LiveKitService: Set mock audio muted to ${muted}`);
-      return muted;
-    }
+
 
     if (roomObject) {
       roomObject.localParticipant.setMicrophoneEnabled(!muted)

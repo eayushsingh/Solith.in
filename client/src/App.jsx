@@ -83,6 +83,7 @@ export default function App() {
   const [newRoomLanguage, setNewRoomLanguage] = useState('English');
   const [newRoomTopic, setNewRoomTopic] = useState('');
   const [newRoomTags, setNewRoomTags] = useState('Casual');
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
   // Dev Settings fields
   const [devApiKey, setDevApiKey] = useState('');
@@ -409,44 +410,11 @@ export default function App() {
       });
     }, 10000); // every 10 seconds
 
-    // Mock Chat Simulator for Demo Mode
-    let mockChatInterval = null;
-    if (!isRealCall) {
-      const mockPhrases = [
-        "Hey everyone! How is it going?",
-        "My native language is French, happy to help!",
-        "Let's talk about our favorite hobbies today ☕",
-        "Could someone explain the difference between 'make' and 'do'?",
-        "Awesome room topic!",
-        "Pratiquons le français !",
-        "Can we try a quick language challenge?"
-      ];
 
-      mockChatInterval = setInterval(() => {
-        const speakers = participants.filter(p => !p.isLocal);
-        if (speakers.length === 0) return;
-        const randomSpeaker = speakers[Math.floor(Math.random() * speakers.length)];
-        const randomPhrase = mockPhrases[Math.floor(Math.random() * mockPhrases.length)];
-
-        setChatMessages(prev => [
-          ...prev,
-          {
-            id: 'mock-msg-' + Math.random(),
-            senderId: randomSpeaker.id,
-            senderName: randomSpeaker.name,
-            senderEmoji: randomSpeaker.id === 'mock-user-1' ? '👩‍🦰' : randomSpeaker.id === 'mock-user-2' ? '👦' : '👩',
-            senderColor: randomSpeaker.id === 'mock-user-1' ? '#ff4d4d' : randomSpeaker.id === 'mock-user-2' ? '#4da6ff' : '#33cc33',
-            text: randomPhrase,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        ]);
-      }, 15000); // message every 15 seconds
-    }
 
     return () => {
       clearInterval(pingInterval);
       clearInterval(xpInterval);
-      if (mockChatInterval) clearInterval(mockChatInterval);
     };
   }, [callState, activeRoom, isMuted, participants, isRealCall]);
 
@@ -533,10 +501,7 @@ export default function App() {
       return;
     }
     
-    if (newRoomTopic && newRoomTopic.trim().length < 5) {
-      alert("Topic should be a bit more descriptive, or left blank.");
-      return;
-    }
+    setIsCreatingRoom(true);
 
     const tagsArray = newRoomTags.split(',').map(t => t.trim()).filter(t => t.length >= 3).slice(0, 5);
 
@@ -554,6 +519,11 @@ export default function App() {
           tags: tagsArray
         })
       });
+
+      if (res.status === 429) {
+        throw new Error("Too many requests. Please wait a moment and try again.");
+      }
+
       const newRoom = await res.json();
       
       if (!res.ok) {
@@ -573,6 +543,8 @@ export default function App() {
     } catch (err) {
       console.error('Error creating room:', err);
       alert(err.message || 'Failed to create new practice room.');
+    } finally {
+      setIsCreatingRoom(false);
     }
   };
 
@@ -610,8 +582,12 @@ export default function App() {
           emoji: user.emoji
         })
       });
-      const data = await res.json();
 
+      if (res.status === 429) {
+        throw new Error("Too many requests. Please wait a moment and try again.");
+      }
+
+      const data = await res.json();
       setActiveRoom(room);
       setIsRealCall(data.isRealConnection);
 
@@ -1040,7 +1016,7 @@ export default function App() {
     <>
 
 
-      <div className="min-h-screen relative font-mono pb-28 flex flex-col items-center" style={{ backgroundColor: 'var(--bg)' }}>
+      <div className={activeRoom ? 'hidden' : "min-h-screen relative font-mono pb-28 flex flex-col items-center"} style={{ backgroundColor: 'var(--bg)' }}>
         {/* Premium Background Layers */}
         <div className="particles-bg" />
         <div className="noise-overlay" />
@@ -1053,11 +1029,21 @@ export default function App() {
             {/* Logo */}
             <div 
               onClick={() => setView('landing')}
-              className="cursor-pointer group"
+              className="cursor-pointer group flex items-center justify-start gap-3 md:gap-4"
               title="Return to home page"
             >
-              <h1 className="text-xl font-mono tracking-tighter text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors uppercase">
-                Solith_
+              <div className="w-24 h-10 md:w-32 md:h-12 rounded-lg overflow-hidden shadow-sm border border-transparent group-hover:border-[var(--line-bright)] transition-all">
+                <video 
+                  src="/freevideo2.mp4" 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+              </div>
+              <h1 className="text-2xl md:text-3xl font-sans font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white to-[var(--ink-secondary)] group-hover:from-[var(--accent)] group-hover:to-[#b042ff] transition-all duration-500 uppercase drop-shadow-sm group-hover:drop-shadow-[0_0_12px_rgba(0,229,255,0.6)]">
+                SOLITH
               </h1>
             </div>
 
@@ -1150,9 +1136,24 @@ export default function App() {
         </div>
       </div>
 
-      <main className="w-full flex justify-center animate-fade-in relative z-10">
+      <main className="w-full flex justify-center animate-fade-in relative z-10 flex-col items-center">
+        {/* Modern Hero Section */}
+        <div className="w-full max-w-[1400px] px-8 flex flex-col items-center mt-20 mb-10 text-center">
+           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-elevated)] border border-[var(--line-bright)] text-[var(--accent)] text-[10px] font-bold uppercase tracking-[0.2em] mb-6 shadow-xl shadow-[var(--accent-bg)]">
+             <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse"></span>
+             Welcome to Solith
+           </div>
+           <h2 className="text-4xl md:text-6xl font-extrabold text-[var(--ink)] tracking-tight mb-6 leading-[1.15]">
+             Find your people, <br className="hidden md:block" />
+             <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--accent)] to-[#b042ff]">start a conversation.</span>
+           </h2>
+           <p className="text-[var(--ink-secondary)] text-base md:text-lg max-w-xl text-center mb-4 font-medium">
+             Join vibrant language communities and practice with native speakers instantly in stunning, high-quality audio rooms.
+           </p>
+        </div>
+
         {/* Rooms list */}
-        <div className="w-full max-w-[1400px] px-8 mt-12 pb-16">
+        <div className="w-full max-w-[1400px] px-8 pb-16">
           {filteredRooms.length === 0 ? (
             <div className="py-32 flex flex-col items-center justify-center text-center border border-[var(--line)] bg-[var(--bg-hover)] rounded-xl">
               <h3 className="text-3xl font-serif text-[var(--ink)] mb-3">No active rooms found</h3>
@@ -1182,315 +1183,205 @@ export default function App() {
           )}
         </div>
       </main>
+      </div>
 
-      {/* Clubhouse / Discord-style Active Room Bottom Drawer */}
+      {/* Full-Screen Active Room Redesign */}
       {activeRoom && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 animate-slide-up" style={{ backgroundColor: 'var(--bg-elevated-2)', borderTop: '1px solid var(--line-bright)', boxShadow: '0 -8px 32px rgba(0,0,0,0.4)' }}>
-          <div className="max-w-4xl mx-auto px-6 py-4">
+        <div className="call-room-bg font-sans animate-fade-in relative z-40 fixed inset-0">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 w-full max-w-6xl mx-auto">
+            <button onClick={leaveVoiceRoom} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div className="flex flex-col items-center">
+              <h2 className="text-sm font-bold text-white tracking-wide">{activeRoom.name}</h2>
+              <span className="text-[10px] text-[var(--success)] flex items-center gap-1.5 mt-0.5">
+                <span className="live-dot" style={{width: 6, height: 6, opacity: 1}}></span> Online
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="p-2 bg-white/10 rounded-full text-white"><Flame className="w-4 h-4"/></button>
+              <button onClick={() => setShowSettingsModal(true)} className="p-2 bg-white/10 rounded-full text-white"><Settings className="w-4 h-4"/></button>
+            </div>
+          </div>
+
+          <div className="flex justify-center -mt-2 mb-6">
+             <div className="call-timer">
+               12:47
+             </div>
+          </div>
+
+          {/* Main Layout Grid */}
+          <div className="flex-1 overflow-hidden flex flex-col md:flex-row max-w-6xl w-full mx-auto pb-28 px-4 gap-8">
             
-            {/* Header: Title and controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-glass">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded bg-[var(--accent-bg)] text-[var(--accent)] text-[10px] font-bold uppercase tracking-wider">
-                    Listening Room
-                  </span>
-                  <span className="text-xs text-[var(--ink-tertiary)]">•</span>
-                  <span className="text-xs font-semibold text-[var(--accent)]">{activeRoom.language}</span>
-                  <span className="text-xs text-[var(--ink-tertiary)]">•</span>
-                  <span className="text-xs text-[var(--ink-tertiary)] flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" /> {participants.length} active
-                  </span>
+            {/* Chat Section */}
+            <div className="flex-1 flex flex-col justify-end gap-3 pb-6 max-h-[35vh] md:max-h-[70vh] overflow-y-auto pr-2" id="chat-container">
+              {chatMessages.length === 0 && (
+                <div className="text-center text-white/40 text-xs italic mb-4">Chat is empty. Start the conversation!</div>
+              )}
+              {chatMessages.map(msg => (
+                <div key={msg.id} className={`flex gap-3 w-full items-end ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
+                  {msg.senderId !== user?.id && (
+                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-md flex-shrink-0 z-10" style={{ backgroundColor: msg.senderColor }}>
+                       {msg.senderEmoji || '👤'}
+                     </div>
+                  )}
+                  <div className={msg.senderId === user?.id ? 'chat-bubble-right' : 'chat-bubble-left'}>
+                    <span className="font-bold block text-[10px] opacity-70 mb-1">{msg.senderName}</span>
+                    {msg.text}
+                  </div>
+                  {msg.senderId === user?.id && (
+                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-md flex-shrink-0 z-10" style={{ backgroundColor: msg.senderColor }}>
+                       {msg.senderEmoji || '👤'}
+                     </div>
+                  )}
                 </div>
-                <h2 className="text-lg font-bold text-[var(--ink)] leading-snug">{activeRoom.name}</h2>
-              </div>
-
-              {/* Call Controls */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleMute}
-                  className={`p-3 rounded-xl flex items-center gap-2 text-sm font-semibold transition ${
-                    isMuted 
-                      ? 'bg-[var(--danger-bg)] border border-[var(--danger)] text-[var(--danger)] hover:bg-red-50' 
-                      : 'bg-[var(--success-bg)] border border-[var(--success)] text-[var(--success)] hover:bg-green-50'
-                  }`}
-                >
-                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  <span>{isMuted ? 'Muted' : 'Speaking'}</span>
-                </button>
-
-                <button
-                  onClick={leaveVoiceRoom}
-                  className="btn-danger p-3 rounded-xl flex items-center gap-2 text-sm font-semibold"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Leave</span>
-                </button>
-                {getRole(user?.id) === 'owner' && (
-                  <button
-                    onClick={() => {
-                      if (window.confirm("Are you sure you want to end this room for everyone?")) {
-                        endRoom();
-                      }
-                    }}
-                    className="p-3 rounded-xl flex items-center gap-2 text-sm font-semibold bg-[var(--danger-bg)] border border-[var(--danger)] text-[var(--danger)] hover:bg-red-900/30 transition"
-                  >
-                    <X className="w-4 h-4" />
-                    <span>End Room</span>
-                  </button>
-                )}
-              </div>
+              ))}
+              <div ref={chatEndRef} />
             </div>
 
-            {/* Content: Participant icons & Real-time Text chat */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 max-h-[300px] overflow-y-auto">
-              
-              {/* Speaker Avatars */}
-              <div className="md:col-span-7 flex flex-wrap gap-4 content-start">
+            {/* Participants Grid */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-8 content-start justify-items-center pb-8">
                 {participants.map(p => {
                   const level = audioLevels[p.id] || 0;
                   const isSpeaking = level > 0.05;
-                  const role = getRole(p.id);
                   const myRole = getRole(user?.id);
                   const isLocalUserOwner = myRole === 'owner';
                   const isLocalUserMod = myRole === 'owner' || myRole === 'co-host';
 
                   return (
-                    <div 
-                      key={p.id} 
-                      className="flex flex-col items-center gap-1.5 w-16"
-                    >
-                      <div 
-                        className="relative cursor-pointer"
-                        onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)}
-                      >
-                        <div 
-                          className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shadow-md select-none border-2 transition-all ${
-                            isSpeaking ? 'avatar-speaking' : 'border-transparent'
-                          } ${selectedParticipant === p.id ? 'ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg-elevated-2)]' : ''}`}
-                          style={{ backgroundColor: p.isLocal ? user.color : (p.color || '#ff4d4d'), color: '#fff' }}
-                        >
-                          {p.isLocal ? (user.name ? user.name.charAt(0).toUpperCase() : '👤') : (p.name ? p.name.charAt(0).toUpperCase() : '👤')}
-                        </div>
-                        {role === 'owner' && (
-                          <div className="absolute -top-2 -left-2 text-lg drop-shadow-md z-10" title="Room Owner">👑</div>
-                        )}
-                        {role === 'co-host' && (
-                          <div className="absolute -top-1 -left-1 text-sm drop-shadow-md z-10" title="Co-host">🛡️</div>
-                        )}
-                        {p.muted && (
-                          <div className="absolute -bottom-1 -right-1 border p-0.5 rounded-full z-10" style={{ backgroundColor: 'var(--bg-elevated-2)', borderColor: 'var(--line)' }}>
-                            <MicOff className="w-3 h-3 text-rose-400" />
-                          </div>
-                        )}
-                        {isSpeaking && (
-                          <div className="absolute -bottom-1 -right-1 bg-[var(--success)] border-2 border-[var(--bg-elevated-2)] p-0.5 rounded-full animate-bounce z-10">
-                            <Volume2 className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                        
-                        {/* Moderation Popover Menu */}
-                        {selectedParticipant === p.id && !p.isLocal && (
-                          <div className="absolute top-14 left-1/2 -translate-x-1/2 w-36 bg-[var(--bg-elevated)] border border-[var(--line-bright)] rounded-lg shadow-xl z-50 overflow-hidden text-xs">
-                            <div className="px-3 py-2 border-b border-[var(--line)] font-semibold text-[var(--ink)] truncate bg-[var(--bg-secondary)] text-center">
-                              {p.name}
-                            </div>
-                            <button 
-                              className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-colors flex items-center gap-2"
-                              onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }}
-                            >
-                              <Users className="w-3.5 h-3.5"/> View Profile
-                            </button>
-                            
-                            {isLocalUserMod && role !== 'owner' && (
-                              <button 
-                                className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-colors flex items-center gap-2"
-                                onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }}
-                              >
-                                <MicOff className="w-3.5 h-3.5"/> Mute user
-                              </button>
-                            )}
-                            
-                            {isLocalUserOwner && role === 'guest' && (
-                              <button 
-                                className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-colors flex items-center gap-2"
-                                onClick={(e) => { e.stopPropagation(); promoteUser(p.id); setSelectedParticipant(null); }}
-                              >
-                                <Shield className="w-3.5 h-3.5 text-blue-400"/> Make Co-host
-                              </button>
-                            )}
-
-                            {isLocalUserMod && role !== 'owner' && (
-                              <button 
-                                className="w-full text-left px-3 py-2 hover:bg-[var(--danger-bg)] text-[var(--danger)] transition-colors flex items-center gap-2"
-                                onClick={(e) => { 
-                                  e.stopPropagation(); 
-                                  if (window.confirm(`Kick ${p.name}?`)) kickUser(p.id); 
-                                  setSelectedParticipant(null); 
-                                }}
-                              >
-                                <UserMinus className="w-3.5 h-3.5"/> Kick user
-                              </button>
-                            )}
-                            
-                            <button 
-                              className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink-secondary)] transition-colors flex items-center gap-2"
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setReportTarget(p);
-                                setShowReportModal(true);
-                                setSelectedParticipant(null); 
-                              }}
-                            >
-                              <Flag className="w-3.5 h-3.5"/> Report
-                            </button>
-                          </div>
-                        )}
+                    <div key={p.id} className="flex flex-col items-center gap-2 cursor-pointer relative" onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)}>
+                      <div className="grid-avatar-container">
+                         <div className={`grid-avatar ${isSpeaking ? 'speaking' : ''}`} style={{ backgroundColor: p.isLocal ? (user?.color || '#0d94a8') : (p.color || '#ff4d4d') }}>
+                           {p.isLocal ? (user?.emoji || '👤') : (p.emoji || '👤')}
+                         </div>
+                         {p.muted && (
+                           <div className="mic-badge"><MicOff className="w-3 h-3 text-white opacity-80" /></div>
+                         )}
                       </div>
-                      <span className="text-[10px] font-medium text-[var(--ink-secondary)] text-center w-full truncate">
-                        {p.isLocal ? 'Me' : p.name}
-                      </span>
+                      <span className="text-[11px] font-medium text-white/80 w-[80px] text-center truncate">{p.isLocal ? 'You' : p.name}</span>
+                      
+                      {/* Moderation Dropdown */}
+                      {selectedParticipant === p.id && !p.isLocal && (
+                          <div className="absolute top-[85px] w-36 bg-[var(--bg-elevated)] border border-[var(--line-bright)] rounded-lg shadow-xl z-50 overflow-hidden text-xs text-left">
+                            <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-white transition-colors flex items-center gap-2"><Users className="w-3.5 h-3.5"/> Profile</button>
+                            {isLocalUserMod && (
+                              <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-white transition-colors flex items-center gap-2"><MicOff className="w-3.5 h-3.5"/> Mute</button>
+                            )}
+                            {isLocalUserMod && (
+                              <button onClick={(e) => { e.stopPropagation(); kickUser(p.id); setSelectedParticipant(null); }} className="w-full text-left px-3 py-2 hover:bg-[var(--danger-bg)] text-[var(--danger)] transition-colors flex items-center gap-2"><UserMinus className="w-3.5 h-3.5"/> Kick</button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); setReportTarget(p); setShowReportModal(true); setSelectedParticipant(null); }} className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-white/50 transition-colors flex items-center gap-2"><Flag className="w-3.5 h-3.5"/> Report</button>
+                          </div>
+                      )}
                     </div>
-                  );
+                  )
                 })}
               </div>
-
-              {/* Text Chat Feed */}
-              <div className="md:col-span-5 flex flex-col justify-between border-l border-glass pl-6 min-h-[180px] max-h-[220px]">
-                <div className="flex items-center gap-1.5 pb-2 text-xs font-semibold text-[var(--ink-secondary)] border-b border-glass">
-                  <MessageSquare className="w-3.5 h-3.5 text-[var(--accent)]" />
-                  <span>Room Text Chat</span>
-                </div>
-
-                <div className="flex-1 overflow-y-auto py-2 space-y-2.5 text-xs">
-                  {chatMessages.length === 0 ? (
-                    <div className="h-full flex items-center justify-center text-[var(--ink-tertiary)] italic">
-                      No chat messages yet. Type below!
-                    </div>
-                  ) : (
-                    chatMessages.map(msg => (
-                      <div key={msg.id} className="flex gap-2">
-                        <div 
-                          className="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px]"
-                          style={{ backgroundColor: msg.senderColor }}
-                        >
-                          {msg.senderEmoji || '👤'}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-baseline justify-between mb-0.5">
-                            <span className="font-bold text-[var(--ink)] text-[10px]">{msg.senderName}</span>
-                            <span className="text-[9px] text-[var(--ink-tertiary)]">{msg.timestamp}</span>
-                          </div>
-                          <p className="text-[var(--ink)] bg-[var(--bg-secondary)] p-1.5 rounded border border-[var(--line)] leading-normal">
-                            {msg.text}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  <div ref={chatEndRef} />
-                </div>
-
-                <form onSubmit={sendChatMessage} className="flex gap-2 pt-2 border-t border-[var(--line)]">
-                  <input
-                    type="text"
-                    placeholder="Type practice tips, words..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-xs bg-[var(--bg-secondary)] border-[var(--line)] rounded-lg text-[var(--ink)]"
-                  />
-                  <button
-                    type="submit"
-                    className="btn-primary px-3 py-1.5 rounded-lg flex items-center justify-center"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-              </div>
-
             </div>
+          </div>
+
+          {/* Bottom Floating Bar */}
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 flex justify-center">
+             <div className="bottom-control-bar w-full">
+                <form onSubmit={sendChatMessage} className="flex-1 flex bg-white/10 rounded-full p-1.5 pl-4 items-center border border-white/5">
+                   <span className="text-[10px] uppercase font-bold text-white/50 mr-2">+ New</span>
+                   <input type="text" placeholder="Type Message.." value={chatInput} onChange={e => setChatInput(e.target.value)} className="flex-1 bg-transparent border-none text-white text-sm outline-none shadow-none focus:box-shadow-none px-2" />
+                   <button type="submit" className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center justify-center text-white"><Send className="w-3.5 h-3.5"/></button>
+                </form>
+                <div className="flex items-center gap-3 px-2">
+                   <button onClick={toggleMute} className="call-action-btn">{isMuted ? <MicOff className="w-5 h-5"/> : <Mic className="w-5 h-5"/>}</button>
+                   <button onClick={leaveVoiceRoom} className="call-action-btn end-call"><LogOut className="w-5 h-5 ml-1"/></button>
+                </div>
+             </div>
           </div>
         </div>
       )}
 
       {/* CREATE ROOM MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md glass rounded-2xl p-6 animate-fade-in">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
-                <Plus className="w-5 h-5 text-[var(--accent)]" /> Start Practice Lounge
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-md rounded-3xl p-8 animate-fade-in relative bg-gradient-to-b from-[#1a1c23] to-[#0d0d0f] border border-[var(--accent-glow)] shadow-[0_0_50px_rgba(0,229,255,0.15)]">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[var(--ink-secondary)] flex items-center gap-3">
+                <div className="p-2 bg-[var(--accent-bg)] rounded-xl border border-[var(--accent-glow)]">
+                  <Plus className="w-5 h-5 text-[var(--accent)]" /> 
+                </div>
+                Start Practice Lounge
               </h3>
               <button 
                 onClick={() => setShowCreateModal(false)}
-                className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition text-[var(--ink-tertiary)] hover:text-[var(--ink)]"
+                className="text-white/40 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full p-2"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateRoom} className="space-y-4">
+            <form onSubmit={handleCreateRoom} className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Room Title</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Room Title</label>
                 <input 
                   type="text" 
                   placeholder="e.g. Intermediate Spanish Chat & Tacos 🌮" 
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  className="w-full text-sm"
+                  className="w-full text-sm bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-inner"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Language Focus</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Language Focus</label>
                   <select 
                     value={newRoomLanguage}
                     onChange={(e) => setNewRoomLanguage(e.target.value)}
-                    className="w-full text-sm"
+                    className="w-full text-sm bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--accent)] transition-all shadow-inner"
                   >
                     {LANGUAGES.slice(1).map(lang => (
-                      <option key={lang} value={lang}>{lang}</option>
+                      <option key={lang} value={lang} className="bg-[#1a1c23]">{lang}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Tags (comma separated)</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Tags (comma separated)</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Casual, Debate" 
                     value={newRoomTags}
                     onChange={(e) => setNewRoomTags(e.target.value)}
-                    className="w-full text-sm"
+                    className="w-full text-sm bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-inner"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Lounge Description / Topic</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Lounge Description / Topic</label>
                 <textarea 
                   placeholder="Give speakers details about what you want to talk about..." 
                   value={newRoomTopic}
                   onChange={(e) => setNewRoomTopic(e.target.value)}
-                  className="w-full text-sm h-20 resize-none"
+                  className="w-full text-sm h-24 resize-none bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-inner"
                 />
               </div>
 
-              <div className="flex gap-3 justify-end pt-2">
+              <div className="flex gap-3 justify-end pt-4">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="btn-secondary px-4 py-2 text-sm"
+                  className="px-6 py-3 rounded-xl text-sm font-bold bg-[#121212] border border-white/10 text-white/70 hover:bg-white/10 hover:text-white transition-all shadow-lg"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary px-5 py-2 text-sm"
+                  disabled={isCreatingRoom}
+                  className={`px-6 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-[var(--accent)] to-[#b042ff] text-white shadow-lg hover:shadow-[0_0_20px_rgba(0,229,255,0.4)] hover:scale-[1.02] transition-all flex items-center justify-center min-w-[150px] ${isCreatingRoom ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                  Create and Launch
+                  {isCreatingRoom ? 'Launching...' : 'Create & Launch'}
                 </button>
               </div>
             </form>
@@ -1702,46 +1593,53 @@ export default function App() {
 
       {/* PROFILE MODAL */}
       {showProfileModal && user && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-sm rounded-3xl p-8 animate-fade-in relative bg-gradient-to-b from-[#1a1814] to-[#0a0a0a] border border-yellow-500/20 shadow-[0_0_50px_rgba(234,179,8,0.15)]">
             <button 
               onClick={() => setShowProfileModal(false)}
-              className="absolute top-4 right-4 text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20"
             >
               <X className="w-5 h-5" />
             </button>
             
-            <div className="flex flex-col items-center mt-4">
-              <img src={user.photoUrl} alt="Profile" className="w-20 h-20 rounded-full border-4 border-[var(--bg-hover)] shadow-xl mb-4" />
-              <h3 className="text-xl font-bold text-[var(--ink)]">{user.name}</h3>
-              <p className="text-sm text-[var(--ink-secondary)] mb-6">{user.email}</p>
+            <div className="flex flex-col items-center mt-2 relative z-10">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-tr from-yellow-300 via-yellow-500 to-yellow-700 rounded-full blur-md opacity-70 animate-pulse"></div>
+                <img src={user.photoUrl} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
+                <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
+              </div>
+
+              <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-yellow-300 to-yellow-600 mb-1">{user.name}</h3>
+              <p className="text-xs text-yellow-500/60 mb-8 font-mono">{user.email}</p>
               
               <div className="w-full grid grid-cols-2 gap-4 mb-8">
-                <div className="bg-[var(--bg-hover)] rounded-xl p-4 text-center border border-[var(--line)]">
-                  <div className="flex justify-center mb-1"><Flame className="w-5 h-5 text-orange-500" /></div>
-                  <div className="text-2xl font-bold text-[var(--ink)]">{user.streak || 0}</div>
-                  <div className="text-[10px] uppercase tracking-widest text-[var(--ink-tertiary)]">Day Streak</div>
+                <div className="bg-gradient-to-b from-yellow-500/10 to-transparent rounded-2xl p-4 text-center border border-yellow-500/20 shadow-inner">
+                  <div className="flex justify-center mb-2"><Flame className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
+                  <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-500">{user.streak || 0}</div>
+                  <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Day Streak</div>
                 </div>
-                <div className="bg-[var(--bg-hover)] rounded-xl p-4 text-center border border-[var(--line)]">
-                  <div className="flex justify-center mb-1"><Award className="w-5 h-5 text-[var(--accent)]" /></div>
-                  <div className="text-2xl font-bold text-[var(--ink)]">{user.xp || 0}</div>
-                  <div className="text-[10px] uppercase tracking-widest text-[var(--ink-tertiary)]">Total XP</div>
+                <div className="bg-gradient-to-b from-yellow-500/10 to-transparent rounded-2xl p-4 text-center border border-yellow-500/20 shadow-inner">
+                  <div className="flex justify-center mb-2"><Award className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
+                  <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-500">{user.xp || 0}</div>
+                  <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Total XP</div>
                 </div>
               </div>
-              <div className="w-full flex justify-around border-t border-b border-[var(--line)] py-3 mb-6">
+
+              <div className="w-full flex justify-around py-4 mb-8 bg-yellow-500/5 rounded-2xl border border-yellow-500/10 shadow-inner">
                 <div 
-                  className="text-center cursor-pointer hover:bg-[var(--bg-secondary)] px-4 py-1 rounded-xl transition-colors"
+                  className="text-center cursor-pointer hover:scale-110 transition-transform"
                   onClick={() => setFollowListState({ isOpen: true, type: 'followers', ids: user.followers || [], title: 'Followers' })}
                 >
-                  <div className="font-bold text-[var(--ink)]">{user.followers?.length || 0}</div>
-                  <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Followers</div>
+                  <div className="font-extrabold text-xl text-yellow-100">{user.followers?.length || 0}</div>
+                  <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Followers</div>
                 </div>
+                <div className="w-px bg-yellow-500/20"></div>
                 <div 
-                  className="text-center cursor-pointer hover:bg-[var(--bg-secondary)] px-4 py-1 rounded-xl transition-colors"
+                  className="text-center cursor-pointer hover:scale-110 transition-transform"
                   onClick={() => setFollowListState({ isOpen: true, type: 'following', ids: user.following || [], title: 'Following' })}
                 >
-                  <div className="font-bold text-[var(--ink)]">{user.following?.length || 0}</div>
-                  <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Following</div>
+                  <div className="font-extrabold text-xl text-yellow-100">{user.following?.length || 0}</div>
+                  <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Following</div>
                 </div>
               </div>
               
@@ -1750,7 +1648,7 @@ export default function App() {
                   signOut(auth);
                   setShowProfileModal(false);
                 }}
-                className="w-full btn-secondary py-2.5 text-sm flex items-center justify-center gap-2 text-red-500 hover:text-red-600 hover:bg-red-500/10 hover:border-red-500/30"
+                className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-[#121212] border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg hover:shadow-red-500/20"
               >
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
@@ -1761,60 +1659,68 @@ export default function App() {
 
       {/* PUBLIC PROFILE MODAL */}
       {showTargetProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-sm rounded-3xl p-8 animate-fade-in relative bg-gradient-to-b from-[#1a1814] to-[#0a0a0a] border border-yellow-500/20 shadow-[0_0_50px_rgba(234,179,8,0.15)]">
             <button 
               onClick={() => setShowTargetProfileModal(false)}
-              className="absolute top-4 right-4 text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20"
             >
               <X className="w-5 h-5" />
             </button>
             
             {profileLoading || !targetProfile ? (
-              <div className="flex flex-col items-center justify-center h-48 text-[var(--ink-secondary)] text-sm">
-                Loading profile...
+              <div className="flex flex-col items-center justify-center h-48 text-yellow-500/50 text-sm font-bold uppercase tracking-widest animate-pulse">
+                Loading...
               </div>
             ) : (
-              <div className="flex flex-col items-center mt-4">
-                <img src={targetProfile.photoUrl || ''} alt="Profile" className="w-20 h-20 rounded-full border-4 border-[var(--bg-hover)] shadow-xl mb-4 bg-gray-500" />
-                <h3 className="text-xl font-bold text-[var(--ink)] mb-1">{targetProfile.name}</h3>
-                <p className="text-xs text-[var(--ink-tertiary)] mb-6">Joined {new Date(targetProfile.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}</p>
+              <div className="flex flex-col items-center mt-2 relative z-10">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-yellow-300 via-yellow-500 to-yellow-700 rounded-full blur-md opacity-70 animate-pulse"></div>
+                  <img src={targetProfile.photoUrl || ''} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
+                  <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
+                </div>
                 
-                <div className="w-full grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-[var(--bg-hover)] rounded-xl p-3 text-center border border-[var(--line)]">
-                    <div className="flex justify-center mb-1"><Flame className="w-4 h-4 text-orange-500" /></div>
-                    <div className="text-lg font-bold text-[var(--ink)]">{targetProfile.streak || 0}</div>
+                <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-yellow-300 to-yellow-600 mb-1">{targetProfile.name}</h3>
+                <p className="text-xs text-yellow-500/60 mb-8 font-mono">Joined {new Date(targetProfile.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}</p>
+                
+                <div className="w-full grid grid-cols-2 gap-4 mb-8">
+                  <div className="bg-gradient-to-b from-yellow-500/10 to-transparent rounded-2xl p-4 text-center border border-yellow-500/20 shadow-inner">
+                    <div className="flex justify-center mb-2"><Flame className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
+                    <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-500">{targetProfile.streak || 0}</div>
+                    <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Day Streak</div>
                   </div>
-                  <div className="bg-[var(--bg-hover)] rounded-xl p-3 text-center border border-[var(--line)]">
-                    <div className="flex justify-center mb-1"><Award className="w-4 h-4 text-[var(--accent)]" /></div>
-                    <div className="text-lg font-bold text-[var(--ink)]">{targetProfile.xp || 0}</div>
+                  <div className="bg-gradient-to-b from-yellow-500/10 to-transparent rounded-2xl p-4 text-center border border-yellow-500/20 shadow-inner">
+                    <div className="flex justify-center mb-2"><Award className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
+                    <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-500">{targetProfile.xp || 0}</div>
+                    <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Total XP</div>
                   </div>
                 </div>
 
-                <div className="w-full flex justify-around border-t border-b border-[var(--line)] py-3 mb-6">
+                <div className="w-full flex justify-around py-4 mb-8 bg-yellow-500/5 rounded-2xl border border-yellow-500/10 shadow-inner">
                   <div 
-                    className="text-center cursor-pointer hover:bg-[var(--bg-secondary)] px-4 py-1 rounded-xl transition-colors"
+                    className="text-center cursor-pointer hover:scale-110 transition-transform"
                     onClick={() => setFollowListState({ isOpen: true, type: 'followers', ids: targetProfile.followers || [], title: `${targetProfile.name.split(' ')[0]}'s Followers` })}
                   >
-                    <div className="font-bold text-[var(--ink)]">{targetProfile.followers?.length || 0}</div>
-                    <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Followers</div>
+                    <div className="font-extrabold text-xl text-yellow-100">{targetProfile.followers?.length || 0}</div>
+                    <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Followers</div>
                   </div>
+                  <div className="w-px bg-yellow-500/20"></div>
                   <div 
-                    className="text-center cursor-pointer hover:bg-[var(--bg-secondary)] px-4 py-1 rounded-xl transition-colors"
+                    className="text-center cursor-pointer hover:scale-110 transition-transform"
                     onClick={() => setFollowListState({ isOpen: true, type: 'following', ids: targetProfile.following || [], title: `${targetProfile.name.split(' ')[0]} is Following` })}
                   >
-                    <div className="font-bold text-[var(--ink)]">{targetProfile.following?.length || 0}</div>
-                    <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Following</div>
+                    <div className="font-extrabold text-xl text-yellow-100">{targetProfile.following?.length || 0}</div>
+                    <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Following</div>
                   </div>
                 </div>
                 
                 {user && (
                   <button 
                     onClick={toggleFollow}
-                    className={`w-full py-2.5 text-sm font-bold flex items-center justify-center gap-2 transition ${
+                    className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
                       user.following?.includes(targetProfile.id) 
-                        ? 'btn-secondary text-[var(--ink)]' 
-                        : 'btn-primary'
+                        ? 'bg-[#121212] border border-yellow-500/20 text-yellow-500/80 hover:text-yellow-500 hover:bg-yellow-500/10' 
+                        : 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-black hover:scale-[1.02] hover:shadow-yellow-500/30'
                     }`}
                   >
                     {user.following?.includes(targetProfile.id) ? (
@@ -1831,7 +1737,7 @@ export default function App() {
                 {!user && (
                   <button 
                     onClick={() => { setShowTargetProfileModal(false); setShowAuthModal(true); }}
-                    className="w-full btn-primary py-2.5 text-sm font-bold"
+                    className="w-full py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 text-black shadow-lg hover:scale-[1.02]"
                   >
                     Sign in to follow
                   </button>
@@ -1858,7 +1764,6 @@ export default function App() {
         title={followListState.title}
         ids={followListState.ids}
       />
-    </div>
     </>
   );
 }
