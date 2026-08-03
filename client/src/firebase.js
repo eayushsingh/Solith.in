@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, inMemoryPersistence } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, inMemoryPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
@@ -19,6 +19,13 @@ let app, auth, db, googleProvider;
 if (firebaseConfig.apiKey) {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   auth = getAuth(app);
+  
+  // Attempt local persistence, fallback to memory if blocked (e.g. Incognito / Extensions)
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.warn("Local persistence failed, falling back to in-memory:", error);
+    setPersistence(auth, inMemoryPersistence).catch(console.error);
+  });
+
   db = getFirestore(app);
   googleProvider = new GoogleAuthProvider();
 } else {
