@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import RoomCard from './components/RoomCard';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
-  Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft
+  Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, Shield, UserMinus, Flag
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
+import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence } from './firebase';
 import { io } from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -43,23 +44,13 @@ export default function App() {
   });
 
   // Identity & Local States
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('solith_user');
-    if (saved) return JSON.parse(saved);
-    
-    // Default initial user
-    const randomEmoji = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
-    const randomColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
-    return {
-      id: 'user-' + Math.random().toString(36).substring(2, 9),
-      name: 'Learner_' + Math.floor(Math.random() * 900 + 100),
-      emoji: randomEmoji,
-      color: randomColor,
-      streak: 1,
-      lastActiveDay: new Date().toDateString(),
-      xp: 25 // start with a small amount of XP
-    };
-  });
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [targetProfile, setTargetProfile] = useState(null);
+  const [showTargetProfileModal, setShowTargetProfileModal] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // Config States
   const [config, setConfig] = useState({ hasApiKey: false, livekitUrl: '' });
@@ -98,10 +89,164 @@ export default function App() {
   const chatEndRef = useRef(null);
 
 
-  // Sync profile details to localStorage on change
+  // Load configuration and room list on mount
   useEffect(() => {
-    localStorage.setItem('solith_user', JSON.stringify(user));
-  }, [user]);
+    if (!auth) {
+      setAuthLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser && !currentUser.isAnonymous) {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        let userData;
+        const today = new Date().toDateString();
+        const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+        if (userSnap.exists()) {
+          userData = userSnap.data();
+          let updates = {};
+
+          if (userData.lastActiveDay === yesterday) {
+            updates.streak = (userData.streak || 0) + 1;
+            updates.lastActiveDay = today;
+            userData.streak = updates.streak;
+            userData.lastActiveDay = updates.lastActiveDay;
+          } else if (userData.lastActiveDay !== today) {
+            updates.streak = 1;
+            updates.lastActiveDay = today;
+            userData.streak = 1;
+            userData.lastActiveDay = today;
+          }
+
+          // Sync Google profile info to replace any old anonymous 'learner_' data
+          if (currentUser.displayName && (!userData.name || userData.name.startsWith('learner_') || userData.name !== currentUser.displayName)) {
+            updates.name = currentUser.displayName;
+            userData.name = currentUser.displayName;
+          }
+          
+          if (currentUser.photoURL && userData.photoUrl !== currentUser.photoURL) {
+            updates.photoUrl = currentUser.photoURL;
+            userData.photoUrl = currentUser.photoURL;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await setDoc(userRef, updates, { merge: true });
+          }
+        } else {
+          userData = {
+            id: currentUser.uid,
+            name: currentUser.displayName,
+            photoUrl: currentUser.photoURL,
+            email: currentUser.email,
+            xp: 25,
+            streak: 1,
+            lastActiveDay: today,
+            createdAt: serverTimestamp()
+          };
+          await setDoc(userRef, userData);
+        }
+        
+        const token = await currentUser.getIdToken();
+        setUser({
+          ...userData,
+          token
+        });
+      } else {
+        if (currentUser && currentUser.isAnonymous) {
+          console.warn("Detected old anonymous session. Clearing it out.");
+          signOut(auth).catch(e => console.error("Error clearing anonymous session:", e));
+        }
+        setUser(null);
+      }
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    if (!auth) return alert("Firebase config missing!");
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log("signInWithPopup SUCCESS: Logged in as", result.user.email);
+      setShowAuthModal(false);
+    } catch (error) {
+      console.error("signInWithPopup ERROR:", error.code, error.message);
+      
+      if (error.message.includes("Database is closing") || error.message.includes("hidden") || error.code.includes("internal-error")) {
+        console.warn("IndexedDB issue detected. Falling back to in-memory persistence...");
+        try {
+          await setPersistence(auth, inMemoryPersistence);
+          const fallbackResult = await signInWithPopup(auth, googleProvider);
+          console.log("signInWithPopup (Fallback) SUCCESS:", fallbackResult.user.email);
+          setShowAuthModal(false);
+          return;
+        } catch (fallbackError) {
+          console.error("Fallback login failed:", fallbackError);
+          alert("Login completely failed: " + fallbackError.message);
+        }
+      } else {
+        alert("Login failed: " + error.message);
+      }
+    }
+  };
+
+  // Follow System Logic
+  const openUserProfile = async (userId) => {
+    if (userId === user?.id) {
+      setShowProfileModal(true);
+      return;
+    }
+    setProfileLoading(true);
+    setShowTargetProfileModal(true);
+    try {
+      const snap = await getDoc(doc(db, 'users', userId));
+      if (snap.exists()) {
+        setTargetProfile(snap.data());
+      } else {
+        alert("User not found.");
+        setShowTargetProfileModal(false);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Failed to load profile.");
+      setShowTargetProfileModal(false);
+    }
+    setProfileLoading(false);
+  };
+
+  const toggleFollow = async () => {
+    if (!user || !targetProfile) return;
+    const isFollowing = user.following?.includes(targetProfile.id);
+    
+    // Optimistic UI update
+    const newFollowing = isFollowing 
+      ? (user.following || []).filter(id => id !== targetProfile.id)
+      : [...(user.following || []), targetProfile.id];
+      
+    const newTargetFollowers = isFollowing
+      ? (targetProfile.followers || []).filter(id => id !== user.id)
+      : [...(targetProfile.followers || []), user.id];
+      
+    setUser(prev => ({ ...prev, following: newFollowing }));
+    setTargetProfile(prev => ({ ...prev, followers: newTargetFollowers }));
+
+    try {
+      if (isFollowing) {
+        await setDoc(doc(db, 'users', user.id), { following: arrayRemove(targetProfile.id) }, { merge: true });
+        await setDoc(doc(db, 'users', targetProfile.id), { followers: arrayRemove(user.id) }, { merge: true });
+      } else {
+        await setDoc(doc(db, 'users', user.id), { following: arrayUnion(targetProfile.id) }, { merge: true });
+        await setDoc(doc(db, 'users', targetProfile.id), { followers: arrayUnion(user.id) }, { merge: true });
+      }
+    } catch (e) {
+      console.error("Failed to toggle follow", e);
+      setUser(prev => ({ ...prev, following: isFollowing ? [...(prev.following||[]), targetProfile.id] : prev.following.filter(id => id !== targetProfile.id) }));
+      alert("Action failed, please try again.");
+    }
+  };
+
 
   // Load configuration and room list on mount
   useEffect(() => {
@@ -302,7 +447,10 @@ export default function App() {
     try {
       const res = await fetch(`${API_URL}/api/rooms`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
         body: JSON.stringify({
           name: newRoomName,
           language: newRoomLanguage,
@@ -311,6 +459,11 @@ export default function App() {
         })
       });
       const newRoom = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(newRoom.error || 'Failed to create room');
+      }
+
       setRooms(prev => [...prev, newRoom]);
       setShowCreateModal(false);
       
@@ -323,24 +476,32 @@ export default function App() {
       setNewRoomTags('Casual');
     } catch (err) {
       console.error('Error creating room:', err);
-      alert('Failed to create new practice room.');
+      alert(err.message || 'Failed to create new practice room.');
     }
   };
 
-  // Join Voice Room trigger
+  // Join a room logic
   const joinVoiceRoom = async (room) => {
-    if (activeRoom) {
-      await leaveVoiceRoom();
+    if (!user || !user.id) {
+      setShowAuthModal(true);
+      return;
     }
 
-    checkAndUpdateStreak();
+    if (activeRoom) {
+      // Prompt user or automatically leave old room?
+      alert('You are already in a room. Leave it first.');
+      return;
+    }
     setIsMuted(true);
     setChatMessages([]);
 
     try {
       const res = await fetch(`${API_URL}/api/rooms/${room.id}/join`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
         body: JSON.stringify({
           userId: user.id,
           name: user.name,
@@ -498,6 +659,95 @@ export default function App() {
     // no-op — global cursor effect handles tracking
   };
 
+  // Moderation API Calls
+  const promoteUser = async (targetId) => {
+    try {
+      await fetch(`${API_URL}/api/rooms/${activeRoom.id}/promote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify({ targetUserId: targetId })
+      });
+    } catch (e) { console.error('Promote failed', e); }
+  };
+
+  const kickUser = async (targetId) => {
+    try {
+      await fetch(`${API_URL}/api/rooms/${activeRoom.id}/kick`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify({ targetUserId: targetId })
+      });
+    } catch (e) { console.error('Kick failed', e); }
+  };
+
+  const muteUser = async (targetId) => {
+    try {
+      await fetch(`${API_URL}/api/rooms/${activeRoom.id}/mute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify({ targetUserId: targetId })
+      });
+    } catch (e) { console.error('Mute failed', e); }
+  };
+
+  const endRoom = async () => {
+    try {
+      await fetch(`${API_URL}/api/rooms/${activeRoom.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+    } catch (e) { console.error('End room failed', e); }
+  };
+
+  // Moderation Socket Listeners
+  useEffect(() => {
+    if (!activeRoom || !user) return;
+
+    const handleKicked = (data) => {
+      if (data.userId === user.id) {
+        alert("You have been kicked from the room by a moderator.");
+        leaveVoiceRoom();
+      } else {
+        setParticipants(prev => prev.filter(p => p.id !== data.userId));
+      }
+    };
+
+    const handleMuted = (data) => {
+      if (data.userId === user.id) {
+        alert("You have been muted by a moderator.");
+        setIsMuted(true);
+        LiveKitService.setLocalAudio(true, isRealCall);
+      }
+    };
+
+    const handleDeleted = () => {
+      alert("This room has been ended by the owner.");
+      leaveVoiceRoom();
+    };
+
+    const handleRoleChanged = () => {
+      fetchRooms(); // refresh to get new roles
+    };
+
+    socket.on('participant-kicked', handleKicked);
+    socket.on('participant-muted', handleMuted);
+    socket.on('room-deleted', handleDeleted);
+    socket.on('role-changed', handleRoleChanged);
+
+    return () => {
+      socket.off('participant-kicked', handleKicked);
+      socket.off('participant-muted', handleMuted);
+      socket.off('room-deleted', handleDeleted);
+      socket.off('role-changed', handleRoleChanged);
+    };
+  }, [activeRoom, user, isRealCall]);
+
+  const getRole = (userId) => {
+    if (!activeRoom) return 'guest';
+    const currentRoomData = rooms.find(r => r.id === activeRoom.id);
+    return currentRoomData?.roles?.[userId] || 'guest';
+  };
+
   // Calculations
   const filteredRooms = rooms.filter(room => {
     const matchLang = selectedLanguage === 'All Languages' || room.language === selectedLanguage;
@@ -509,8 +759,8 @@ export default function App() {
 
   const totalListeners = rooms.reduce((sum, r) => sum + r.participants.length, 0);
 
-  const levelInfo = getLevelInfo(user.xp);
-  const xpPercentage = Math.min(100, Math.floor(((user.xp - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100));
+  const levelInfo = user ? getLevelInfo(user.xp || 0) : null;
+  const xpPercentage = user && levelInfo ? Math.min(100, Math.floor(((user.xp - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100)) : 0;
 
   // RENDER INTERACTIVE LANDING PAGE
   if (view === 'landing') {
@@ -637,14 +887,26 @@ export default function App() {
               </h1>
             </div>
 
-            {/* Mobile Create Room */}
+            {/* Mobile Actions */}
             <div className="flex items-center gap-4 md:hidden">
-              <button 
-                onClick={() => setShowCreateModal(true)} 
-                className="create-room-btn text-[10px] uppercase tracking-widest"
-              >
-                + Room
-              </button>
+              {user ? (
+                <>
+                  <img src={user.photoUrl} alt="Profile" className="w-6 h-6 rounded-full cursor-pointer" onClick={() => setShowProfileModal(true)} />
+                  <button 
+                    onClick={() => setShowCreateModal(true)} 
+                    className="create-room-btn text-[10px] uppercase tracking-widest"
+                  >
+                    + Room
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="px-3 py-1.5 text-[10px] uppercase tracking-widest bg-[var(--accent)] text-[var(--bg)] font-bold hover:opacity-90 transition-opacity"
+                >
+                  Sign In
+                </button>
+              )}
             </div>
           </div>
 
@@ -663,18 +925,32 @@ export default function App() {
 
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-6">
-              <button 
-                onClick={() => setShowSettingsModal(true)}
-                className="text-[10px] border border-[var(--line-bright)] px-4 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-all uppercase flex items-center gap-2 tracking-widest"
-              >
-                <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full text-[7px] text-white" style={{backgroundColor: user.color}}>{user.emoji}</span>
-                {user.name}
-              </button>
-              <button 
-                onClick={() => setShowCreateModal(true)}
-                className="create-room-btn text-[10px] uppercase tracking-widest"
-              >
-                + Room
+              {user ? (
+                <>
+                  <button 
+                    onClick={() => setShowProfileModal(true)}
+                    className="text-[10px] border border-[var(--line-bright)] px-4 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-all uppercase flex items-center gap-2 tracking-widest"
+                  >
+                    <img src={user.photoUrl} alt="Profile" className="w-4 h-4 rounded-full" />
+                    {user.name.split(' ')[0]}
+                  </button>
+                  <button 
+                    onClick={() => setShowCreateModal(true)}
+                    className="create-room-btn text-[10px] uppercase tracking-widest"
+                  >
+                    + Room
+                  </button>
+                </>
+              ) : (
+                <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="px-5 py-2.5 text-xs uppercase tracking-widest bg-[var(--accent)] text-[var(--bg)] font-bold hover:shadow-[0_0_15px_rgba(var(--accent-rgb),0.4)] transition-all"
+                >
+                  Sign in with Google
+                </button>
+              )}
+              <button onClick={() => setShowSettingsModal(true)} className="text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors">
+                <Settings className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -708,7 +984,7 @@ export default function App() {
                 Initiate a new connection.
               </p>
               <button 
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => user ? setShowCreateModal(true) : setShowAuthModal(true)}
                 className="create-room-btn"
               >
                 <span>Start a Room</span>
@@ -723,6 +999,7 @@ export default function App() {
                   room={room} 
                   inThisRoom={activeRoom?.id === room.id} 
                   onJoin={joinVoiceRoom} 
+                  userFollowing={user?.following || []}
                 />
               ))}
             </div>
@@ -773,6 +1050,19 @@ export default function App() {
                   <LogOut className="w-4 h-4" />
                   <span>Leave</span>
                 </button>
+                {getRole(user?.id) === 'owner' && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to end this room for everyone?")) {
+                        endRoom();
+                      }
+                    }}
+                    className="p-3 rounded-xl flex items-center gap-2 text-sm font-semibold bg-[var(--danger-bg)] border border-[var(--danger)] text-[var(--danger)] hover:bg-red-900/30 transition"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>End Room</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -784,6 +1074,10 @@ export default function App() {
                 {participants.map(p => {
                   const level = audioLevels[p.id] || 0;
                   const isSpeaking = level > 0.05;
+                  const role = getRole(p.id);
+                  const myRole = getRole(user?.id);
+                  const isLocalUserOwner = myRole === 'owner';
+                  const isLocalUserMod = myRole === 'owner' || myRole === 'co-host';
 
                   return (
                     <div 
@@ -802,45 +1096,72 @@ export default function App() {
                         >
                           {p.isLocal ? (user.name ? user.name.charAt(0).toUpperCase() : '👤') : (p.name ? p.name.charAt(0).toUpperCase() : '👤')}
                         </div>
+                        {role === 'owner' && (
+                          <div className="absolute -top-2 -left-2 text-lg drop-shadow-md z-10" title="Room Owner">👑</div>
+                        )}
+                        {role === 'co-host' && (
+                          <div className="absolute -top-1 -left-1 text-sm drop-shadow-md z-10" title="Co-host">🛡️</div>
+                        )}
                         {p.muted && (
-                          <div className="absolute -bottom-1 -right-1 border p-0.5 rounded-full" style={{ backgroundColor: 'var(--bg-elevated-2)', borderColor: 'var(--line)' }}>
+                          <div className="absolute -bottom-1 -right-1 border p-0.5 rounded-full z-10" style={{ backgroundColor: 'var(--bg-elevated-2)', borderColor: 'var(--line)' }}>
                             <MicOff className="w-3 h-3 text-rose-400" />
                           </div>
                         )}
                         {isSpeaking && (
-                          <div className="absolute -top-1 -right-1 bg-[var(--success)] border-2 border-[var(--bg-elevated-2)] p-0.5 rounded-full animate-bounce">
+                          <div className="absolute -bottom-1 -right-1 bg-[var(--success)] border-2 border-[var(--bg-elevated-2)] p-0.5 rounded-full animate-bounce z-10">
                             <Volume2 className="w-3 h-3 text-white" />
                           </div>
                         )}
                         
                         {/* Moderation Popover Menu */}
                         {selectedParticipant === p.id && !p.isLocal && (
-                          <div className="absolute top-14 left-1/2 -translate-x-1/2 w-32 bg-[var(--bg-elevated)] border border-[var(--line-bright)] rounded-lg shadow-xl z-50 overflow-hidden text-xs">
-                            <div className="px-3 py-2 border-b border-[var(--line)] font-semibold text-[var(--ink)] truncate bg-[var(--bg-secondary)]">
+                          <div className="absolute top-14 left-1/2 -translate-x-1/2 w-36 bg-[var(--bg-elevated)] border border-[var(--line-bright)] rounded-lg shadow-xl z-50 overflow-hidden text-xs">
+                            <div className="px-3 py-2 border-b border-[var(--line)] font-semibold text-[var(--ink)] truncate bg-[var(--bg-secondary)] text-center">
                               {p.name}
                             </div>
                             <button 
-                              className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-colors"
-                              onClick={(e) => { e.stopPropagation(); alert(`Muted ${p.name}`); setSelectedParticipant(null); }}
+                              className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-colors flex items-center gap-2"
+                              onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }}
                             >
-                              Mute user
+                              <Users className="w-3.5 h-3.5"/> View Profile
                             </button>
+                            
+                            {isLocalUserMod && role !== 'owner' && (
+                              <button 
+                                className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-colors flex items-center gap-2"
+                                onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }}
+                              >
+                                <MicOff className="w-3.5 h-3.5"/> Mute user
+                              </button>
+                            )}
+                            
+                            {isLocalUserOwner && role === 'guest' && (
+                              <button 
+                                className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink)] transition-colors flex items-center gap-2"
+                                onClick={(e) => { e.stopPropagation(); promoteUser(p.id); setSelectedParticipant(null); }}
+                              >
+                                <Shield className="w-3.5 h-3.5 text-blue-400"/> Make Co-host
+                              </button>
+                            )}
+
+                            {isLocalUserMod && role !== 'owner' && (
+                              <button 
+                                className="w-full text-left px-3 py-2 hover:bg-[var(--danger-bg)] text-[var(--danger)] transition-colors flex items-center gap-2"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if (window.confirm(`Kick ${p.name}?`)) kickUser(p.id); 
+                                  setSelectedParticipant(null); 
+                                }}
+                              >
+                                <UserMinus className="w-3.5 h-3.5"/> Kick user
+                              </button>
+                            )}
+                            
                             <button 
-                              className="w-full text-left px-3 py-2 hover:bg-[var(--danger-bg)] text-[var(--danger)] transition-colors"
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                alert(`Kicked ${p.name}`); 
-                                setParticipants(prev => prev.filter(user => user.id !== p.id));
-                                setSelectedParticipant(null); 
-                              }}
-                            >
-                              Kick user
-                            </button>
-                            <button 
-                              className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink-secondary)] transition-colors"
+                              className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink-secondary)] transition-colors flex items-center gap-2"
                               onClick={(e) => { e.stopPropagation(); alert(`Reported ${p.name}`); setSelectedParticipant(null); }}
                             >
-                              Report
+                              <Flag className="w-3.5 h-3.5"/> Report
                             </button>
                           </div>
                         )}
@@ -1139,8 +1460,8 @@ export default function App() {
                 <input 
                   type="password" 
                   placeholder="e.g. 5ca7...da8b" 
-                  value={devApiKey}
-                  onChange={(e) => setDevApiKey(e.target.value)}
+                  value={devApiSecret}
+                  onChange={(e) => setDevApiSecret(e.target.value)}
                   className="w-full text-sm"
                 />
               </div>
@@ -1161,6 +1482,163 @@ export default function App() {
                 Save Configurations
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* AUTH MODAL */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in text-center">
+            <h3 className="text-2xl font-serif text-[var(--ink)] mb-2">Join Solith</h3>
+            <p className="text-sm text-[var(--ink-secondary)] mb-8">Sign in with Google to create rooms, track your language learning streak, and earn XP.</p>
+            <button 
+              onClick={handleLogin}
+              className="w-full btn-primary py-3 px-6 text-sm flex items-center justify-center gap-3"
+            >
+              <svg className="w-5 h-5 bg-white rounded-full p-1" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Sign in with Google
+            </button>
+            <button 
+              onClick={() => setShowAuthModal(false)}
+              className="mt-4 text-[var(--ink-tertiary)] hover:text-[var(--ink)] text-xs uppercase tracking-widest font-bold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PROFILE MODAL */}
+      {showProfileModal && user && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in relative">
+            <button 
+              onClick={() => setShowProfileModal(false)}
+              className="absolute top-4 right-4 text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="flex flex-col items-center mt-4">
+              <img src={user.photoUrl} alt="Profile" className="w-20 h-20 rounded-full border-4 border-[var(--bg-hover)] shadow-xl mb-4" />
+              <h3 className="text-xl font-bold text-[var(--ink)]">{user.name}</h3>
+              <p className="text-sm text-[var(--ink-secondary)] mb-6">{user.email}</p>
+              
+              <div className="w-full grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-[var(--bg-hover)] rounded-xl p-4 text-center border border-[var(--line)]">
+                  <div className="flex justify-center mb-1"><Flame className="w-5 h-5 text-orange-500" /></div>
+                  <div className="text-2xl font-bold text-[var(--ink)]">{user.streak || 0}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-[var(--ink-tertiary)]">Day Streak</div>
+                </div>
+                <div className="bg-[var(--bg-hover)] rounded-xl p-4 text-center border border-[var(--line)]">
+                  <div className="flex justify-center mb-1"><Award className="w-5 h-5 text-[var(--accent)]" /></div>
+                  <div className="text-2xl font-bold text-[var(--ink)]">{user.xp || 0}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-[var(--ink-tertiary)]">Total XP</div>
+                </div>
+              </div>
+              <div className="w-full flex justify-around border-t border-b border-[var(--line)] py-3 mb-6">
+                <div className="text-center">
+                  <div className="font-bold text-[var(--ink)]">{user.followers?.length || 0}</div>
+                  <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Followers</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-[var(--ink)]">{user.following?.length || 0}</div>
+                  <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Following</div>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => {
+                  signOut(auth);
+                  setShowProfileModal(false);
+                }}
+                className="w-full btn-secondary py-2.5 text-sm flex items-center justify-center gap-2 text-red-500 hover:text-red-600 hover:bg-red-500/10 hover:border-red-500/30"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PUBLIC PROFILE MODAL */}
+      {showTargetProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in relative">
+            <button 
+              onClick={() => setShowTargetProfileModal(false)}
+              className="absolute top-4 right-4 text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            {profileLoading || !targetProfile ? (
+              <div className="flex flex-col items-center justify-center h-48 text-[var(--ink-secondary)] text-sm">
+                Loading profile...
+              </div>
+            ) : (
+              <div className="flex flex-col items-center mt-4">
+                <img src={targetProfile.photoUrl || ''} alt="Profile" className="w-20 h-20 rounded-full border-4 border-[var(--bg-hover)] shadow-xl mb-4 bg-gray-500" />
+                <h3 className="text-xl font-bold text-[var(--ink)] mb-1">{targetProfile.name}</h3>
+                <p className="text-xs text-[var(--ink-tertiary)] mb-6">Joined {new Date(targetProfile.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}</p>
+                
+                <div className="w-full grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-[var(--bg-hover)] rounded-xl p-3 text-center border border-[var(--line)]">
+                    <div className="flex justify-center mb-1"><Flame className="w-4 h-4 text-orange-500" /></div>
+                    <div className="text-lg font-bold text-[var(--ink)]">{targetProfile.streak || 0}</div>
+                  </div>
+                  <div className="bg-[var(--bg-hover)] rounded-xl p-3 text-center border border-[var(--line)]">
+                    <div className="flex justify-center mb-1"><Award className="w-4 h-4 text-[var(--accent)]" /></div>
+                    <div className="text-lg font-bold text-[var(--ink)]">{targetProfile.xp || 0}</div>
+                  </div>
+                </div>
+
+                <div className="w-full flex justify-around border-t border-b border-[var(--line)] py-3 mb-6">
+                  <div className="text-center">
+                    <div className="font-bold text-[var(--ink)]">{targetProfile.followers?.length || 0}</div>
+                    <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Followers</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-bold text-[var(--ink)]">{targetProfile.following?.length || 0}</div>
+                    <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Following</div>
+                  </div>
+                </div>
+                
+                {user && (
+                  <button 
+                    onClick={toggleFollow}
+                    className={`w-full py-2.5 text-sm font-bold flex items-center justify-center gap-2 transition ${
+                      user.following?.includes(targetProfile.id) 
+                        ? 'btn-secondary text-[var(--ink)]' 
+                        : 'btn-primary'
+                    }`}
+                  >
+                    {user.following?.includes(targetProfile.id) ? (
+                      <>
+                        <UserMinus className="w-4 h-4" /> Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <Users className="w-4 h-4" /> Follow
+                      </>
+                    )}
+                  </button>
+                )}
+                {!user && (
+                  <button 
+                    onClick={() => { setShowTargetProfileModal(false); setShowAuthModal(true); }}
+                    className="w-full btn-primary py-2.5 text-sm font-bold"
+                  >
+                    Sign in to follow
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
