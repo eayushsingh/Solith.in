@@ -8,7 +8,7 @@ import axios from 'axios';
 import { AccessToken } from 'livekit-server-sdk';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { initFirebaseAdmin, verifyToken } from './firebaseAdmin.js';
+import { initFirebaseAdmin, verifyToken, verifyAdmin } from './firebaseAdmin.js';
 
 dotenv.config();
 
@@ -504,6 +504,11 @@ app.get('/api/users/profiles', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch profiles' });
   }
 });
+
+import setupAdminRoutes from './adminRoutes.js';
+
+// Setup admin routes
+setupAdminRoutes(app, rooms, saveDB, io);
 
 // Serve frontend in production build if needed
 const clientDistPath = path.join(__dirname, '../client/dist');

@@ -50,3 +50,35 @@ export async function verifyToken(req, res, next) {
     res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 }
+
+export async function verifyAdmin(req, res, next) {
+  // First, run standard token verification
+  verifyToken(req, res, async () => {
+    // If verifyToken succeeded, req.user will be populated
+    const adminInstance = initFirebaseAdmin();
+    if (!adminInstance || !req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const db = adminInstance.firestore();
+      const userDoc = await db.collection('users').doc(req.user.uid).get();
+      
+      if (!userDoc.exists) {
+        return res.status(403).json({ error: 'Forbidden: User not found in database' });
+      }
+
+      const userData = userDoc.data();
+      if (userData.role !== 'admin') {
+        return res.status(403).json({ error: 'Forbidden: Admin access required' });
+      }
+
+      // User is verified as admin
+      req.adminData = userData; 
+      next();
+    } catch (error) {
+      console.error('Error verifying admin role:', error);
+      res.status(500).json({ error: 'Internal server error during role verification' });
+    }
+  });
+}
