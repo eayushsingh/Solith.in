@@ -239,7 +239,6 @@ button {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  cursor: none;
 }
 
 .grain {
