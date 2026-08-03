@@ -38,7 +38,7 @@ export default function App() {
 
   // Identity & Local States
   const [user, setUser] = useState(null);
-  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+  const isAdmin = user && user.role === 'admin';
   
   // Landing Page Interactive Eye Tracking & Node Lines States
   const heroRef = useRef(null);
@@ -149,6 +149,14 @@ export default function App() {
 
               if (userSnap.exists()) {
                 dbData = userSnap.data();
+                
+                // --- Ban check ---
+                if (dbData.isBanned) {
+                  alert('This account has been banned due to severe community guideline violations.');
+                  signOut(auth);
+                  return;
+                }
+
                 let updates = {};
 
                 if (dbData.lastActiveDay === yesterday) {
@@ -860,6 +868,10 @@ export default function App() {
   }
 
   if (view === 'admin') {
+    if (!isAdmin) {
+      setTimeout(() => setView('landing'), 0); // Force redirect
+      return null;
+    }
     return <AdminPanel onBack={() => setView('lobby')} user={user} />;
   }
 
