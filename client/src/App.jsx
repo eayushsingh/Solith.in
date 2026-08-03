@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import RoomCard from './components/RoomCard';
+import Guidelines from './components/Guidelines';
+import AdminPanel from './components/AdminPanel';
+import ReportModal from './components/ReportModal';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, Shield, UserMinus, Flag
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
-import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence } from './firebase';
+import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence } from './firebase';
 import { io } from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -25,11 +28,17 @@ const getLevelInfo = (xp) => {
   return { title: 'C2 Fluent Master 👑', min: 1500, max: 99999, level: 6, next: 'MAX' };
 };
 
+const ADMIN_EMAILS = ['ayushfun01@gmail.com', 'hacksejeet@gmail.com', 'ayush.singh.something@klh.edu.in'];
+
 export default function App() {
   // Navigation / Landing Page states
   const [view, setView] = useState('landing'); // 'landing' or 'lobby'
   const [isConnected, setIsConnected] = useState(false);
 
+  // Identity & Local States
+  const [user, setUser] = useState(null);
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+  
   // Landing Page Interactive Eye Tracking & Node Lines States
   const heroRef = useRef(null);
   const charSvgRef = useRef(null);
@@ -43,14 +52,16 @@ export default function App() {
     visible: false
   });
 
-  // Identity & Local States
-  const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [targetProfile, setTargetProfile] = useState(null);
   const [showTargetProfileModal, setShowTargetProfileModal] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+  
+  // Reports
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
 
   // Config States
   const [config, setConfig] = useState({ hasApiKey: false, livekitUrl: '' });
@@ -502,6 +513,10 @@ export default function App() {
   // Room creation handling
   const handleCreateRoom = async (e) => {
     e.preventDefault();
+    if (user?.isRestricted) {
+      alert("Your account is temporarily restricted from creating or joining rooms due to community guidelines violations. Pending manual review.");
+      return;
+    }
     if (!newRoomName || newRoomName.trim().length < 3) {
       alert("Room name must be at least 3 characters.");
       return;
@@ -554,6 +569,11 @@ export default function App() {
   const joinVoiceRoom = async (room) => {
     if (!user || !user.id) {
       setShowAuthModal(true);
+      return;
+    }
+
+    if (user?.isRestricted) {
+      alert("Your account is temporarily restricted from creating or joining rooms due to community guidelines violations. Pending manual review.");
       return;
     }
 
@@ -833,6 +853,14 @@ export default function App() {
   const xpPercentage = user && levelInfo ? Math.min(100, Math.floor(((user.xp - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100)) : 0;
 
   // RENDER INTERACTIVE LANDING PAGE
+  if (view === 'guidelines') {
+    return <Guidelines onBack={() => setView('landing')} />;
+  }
+
+  if (view === 'admin') {
+    return <AdminPanel onBack={() => setView('lobby')} user={user} />;
+  }
+
   if (view === 'landing') {
     return (
       <>
@@ -926,6 +954,15 @@ export default function App() {
             enter a room ↗
           </button>
         </div>
+
+        <div className="absolute bottom-6 left-0 right-0 text-center z-10">
+          <button 
+            onClick={() => setView('guidelines')}
+            className="text-xs text-[var(--ink-tertiary)] hover:text-[var(--ink)] transition-colors opacity-70 hover:opacity-100"
+          >
+            Community Guidelines
+          </button>
+        </div>
       </div>
       </>
     );
@@ -962,9 +999,17 @@ export default function App() {
               {user ? (
                 <>
                   <img src={user.photoUrl} alt="Profile" className="w-6 h-6 rounded-full cursor-pointer" onClick={() => setShowProfileModal(true)} />
+                  {isAdmin && (
+                    <button 
+                      onClick={() => setView('admin')}
+                      className="text-[10px] uppercase tracking-widest text-red-500 hover:text-red-400 font-bold ml-2"
+                    >
+                      Admin
+                    </button>
+                  )}
                   <button 
                     onClick={() => setShowCreateModal(true)} 
-                    className="create-room-btn text-[10px] uppercase tracking-widest"
+                    className={`create-room-btn text-[10px] uppercase tracking-widest ml-2 ${user.isRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     + Room
                   </button>
@@ -1004,9 +1049,17 @@ export default function App() {
                     <img src={user.photoUrl} alt="Profile" className="w-4 h-4 rounded-full" />
                     {user.name.split(' ')[0]}
                   </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={() => setView('admin')}
+                      className="text-[10px] border border-red-500/30 px-4 py-2 hover:bg-red-500/10 text-red-500 transition-all uppercase flex items-center gap-2 tracking-widest font-bold"
+                    >
+                      Admin
+                    </button>
+                  )}
                   <button 
                     onClick={() => setShowCreateModal(true)}
-                    className="create-room-btn text-[10px] uppercase tracking-widest"
+                    className={`create-room-btn text-[10px] uppercase tracking-widest ${user.isRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     + Room
                   </button>
@@ -1229,7 +1282,12 @@ export default function App() {
                             
                             <button 
                               className="w-full text-left px-3 py-2 hover:bg-[var(--bg-hover)] text-[var(--ink-secondary)] transition-colors flex items-center gap-2"
-                              onClick={(e) => { e.stopPropagation(); alert(`Reported ${p.name}`); setSelectedParticipant(null); }}
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setReportTarget(p);
+                                setShowReportModal(true);
+                                setSelectedParticipant(null); 
+                              }}
                             >
                               <Flag className="w-3.5 h-3.5"/> Report
                             </button>
@@ -1573,9 +1631,15 @@ export default function App() {
               </svg>
               Sign in with Google
             </button>
+            <p className="mt-6 mb-4 text-[10px] text-[var(--ink-tertiary)] uppercase tracking-wide">
+              By signing in, you agree to our{' '}
+              <button onClick={() => { setShowAuthModal(false); setView('guidelines'); }} className="underline hover:text-[var(--accent)]">
+                Community Guidelines
+              </button>
+            </p>
             <button 
               onClick={() => setShowAuthModal(false)}
-              className="mt-4 text-[var(--ink-tertiary)] hover:text-[var(--ink)] text-xs uppercase tracking-widest font-bold"
+              className="text-[var(--ink-tertiary)] hover:text-[var(--ink)] text-xs uppercase tracking-widest font-bold"
             >
               Cancel
             </button>
@@ -1712,6 +1776,15 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* REPORT MODAL */}
+      <ReportModal 
+        isOpen={showReportModal} 
+        onClose={() => { setShowReportModal(false); setReportTarget(null); }} 
+        targetUser={reportTarget} 
+        currentUser={user}
+        roomId={activeRoom ? activeRoom.name : null}
+      />
     </div>
     </>
   );
