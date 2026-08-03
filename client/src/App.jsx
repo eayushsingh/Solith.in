@@ -6,7 +6,7 @@ import ReportModal from './components/ReportModal';
 import FollowListModal from './components/FollowListModal';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
-  Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, Shield, UserMinus, Flag
+  Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, Shield, UserMinus, Flag, AlertCircle
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
 import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence } from './firebase';
@@ -33,12 +33,13 @@ const ADMIN_EMAILS = ['ayushfun01@gmail.com', 'hacksejeet@gmail.com', 'ayush.sin
 
 export default function App() {
   // Navigation / Landing Page states
-  const [view, setView] = useState('landing'); // 'landing' or 'lobby'
-  const [isConnected, setIsConnected] = useState(false);
-
-  // Identity & Local States
   const [user, setUser] = useState(null);
-  const isAdmin = user && user.role === 'admin';
+  const isAdmin = user && (user.role === 'admin' || ADMIN_EMAILS.includes(user.email));
+  const [view, setView] = useState(() => {
+    if (window.location.pathname === '/admin') return 'admin';
+    return 'landing';
+  }); // 'landing' or 'lobby' or 'admin'
+  const [isConnected, setIsConnected] = useState(false);
   
   // Landing Page Interactive Eye Tracking & Node Lines States
   const heroRef = useRef(null);
@@ -213,12 +214,12 @@ export default function App() {
           if (currentUser && currentUser.isAnonymous) {
             console.warn("Detected old anonymous session. Clearing it out.");
             signOut(auth).catch(e => console.error("Error clearing anonymous session:", e));
+          } else {
+            setUser(null);
           }
-          setUser(null);
         }
       } catch (err) {
         console.error("Error in onAuthStateChanged:", err);
-        alert("Critical login failure: " + err.message);
         setUser(null);
       } finally {
         setAuthLoading(false);
@@ -868,11 +869,63 @@ export default function App() {
   }
 
   if (view === 'admin') {
-    if (!isAdmin) {
-      setTimeout(() => setView('landing'), 0); // Force redirect
-      return null;
+    if (authLoading) {
+      return (
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+          <div className="text-white text-xl animate-pulse">Loading Admin Portal...</div>
+        </div>
+      );
     }
-    return <AdminPanel onBack={() => setView('lobby')} user={user} />;
+    if (!user) {
+      return (
+        <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4">
+          <div className="bg-[#111] border border-red-900/30 p-8 rounded-2xl w-full max-w-md text-center">
+            <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-2">Admin Portal</h1>
+            <p className="text-gray-400 text-sm mb-8">Sign in with an administrator account to continue.</p>
+            <button 
+              onClick={() => signInWithPopup(auth, googleProvider)}
+              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors"
+            >
+              Sign In with Google
+            </button>
+            <button 
+              onClick={() => {
+                window.history.pushState({}, '', '/');
+                setView('landing');
+              }}
+              className="w-full py-3 mt-3 text-gray-500 hover:text-white transition-colors text-sm"
+            >
+              Return to App
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (!isAdmin) {
+      return (
+        <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4">
+          <div className="bg-[#111] border border-red-900/30 p-8 rounded-2xl w-full max-w-md text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
+            <p className="text-gray-400 text-sm mb-6">Your account ({user.email}) does not have administrative privileges.</p>
+            <div className="flex gap-4 justify-center">
+              <button onClick={() => signOut(auth)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm">Sign Out</button>
+              <button 
+                onClick={() => {
+                  window.history.pushState({}, '', '/');
+                  setView('landing');
+                }} 
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
+              >
+                Return to App
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return <AdminPanel onBack={() => { window.history.pushState({}, '', '/'); setView('landing'); }} user={user} />;
   }
 
   if (view === 'landing') {
@@ -950,7 +1003,7 @@ export default function App() {
             <circle cx="124" cy="105" r="2.5" fill="#fff"/>
             <rect x="56" y="95" width="44" height="26" rx="14" fill="none" stroke="#111" strokeWidth="3"/>
             <rect x="100" y="95" width="44" height="26" rx="14" fill="none" stroke="#111" strokeWidth="3"/>
-            <path d="M100,95 L100,121" stroke="#111" stroke-width="2"/>
+            <path d="M100,95 L100,121" stroke="#111" strokeWidth="2"/>
             <path d="M56,108 L44,108" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
             <path d="M144,108 L156,108" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
             <path d="M88,135 Q100,145 112,135" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
@@ -1013,14 +1066,7 @@ export default function App() {
               {user ? (
                 <>
                   <img src={user.photoUrl} alt="Profile" className="w-6 h-6 rounded-full cursor-pointer" onClick={() => setShowProfileModal(true)} />
-                  {isAdmin && (
-                    <button 
-                      onClick={() => setView('admin')}
-                      className="text-[10px] uppercase tracking-widest text-red-500 hover:text-red-400 font-bold ml-2"
-                    >
-                      Admin
-                    </button>
-                  )}
+
                   <button 
                     onClick={() => setShowCreateModal(true)} 
                     className={`create-room-btn text-[10px] uppercase tracking-widest ml-2 ${user.isRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -1063,14 +1109,7 @@ export default function App() {
                     <img src={user.photoUrl} alt="Profile" className="w-4 h-4 rounded-full" />
                     {user.name.split(' ')[0]}
                   </button>
-                  {isAdmin && (
-                    <button 
-                      onClick={() => setView('admin')}
-                      className="text-[10px] border border-red-500/30 px-4 py-2 hover:bg-red-500/10 text-red-500 transition-all uppercase flex items-center gap-2 tracking-widest font-bold"
-                    >
-                      Admin
-                    </button>
-                  )}
+
                   <button 
                     onClick={() => setShowCreateModal(true)}
                     className={`create-room-btn text-[10px] uppercase tracking-widest ${user.isRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}

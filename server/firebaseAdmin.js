@@ -1,38 +1,52 @@
 import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
+import chalk from 'chalk';
 
-let isInitialized = false;
+let adminInstance = null;
 
-// We initialize using default application credentials or env variables
-// In production, Render can use GOOGLE_APPLICATION_CREDENTIALS or we parse a JSON string from the environment.
-export function initFirebaseAdmin() {
-  if (isInitialized) return admin;
-
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-  if (!serviceAccountJson) {
-    console.warn("FIREBASE_SERVICE_ACCOUNT_JSON is not set in environment variables. Firebase Admin will not run.");
-    return null;
-  }
+export const initFirebaseAdmin = () => {
+  if (adminInstance) return adminInstance;
 
   try {
-    const serviceAccount = JSON.parse(serviceAccountJson);
-    admin.initializeApp({
+    let serviceAccount;
+    const serviceAccountPath = path.resolve(process.cwd(), 'firebase-service-account.json');
+
+    if (fs.existsSync(serviceAccountPath)) {
+      console.log(chalk.blue('Found firebase-service-account.json file. Using it for Firebase Admin...'));
+      const fileContent = fs.readFileSync(serviceAccountPath, 'utf-8');
+      serviceAccount = JSON.parse(fileContent);
+    } else {
+      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+      if (!serviceAccountJson) {
+        console.warn(chalk.yellow("⚠ FIREBASE_SERVICE_ACCOUNT_JSON is not set and firebase-service-account.json file not found. Firebase Admin will not run. Using mock data."));
+        return null;
+      }
+      serviceAccount = JSON.parse(serviceAccountJson);
+    }
+
+    adminInstance = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
-    isInitialized = true;
-    console.log("Firebase Admin SDK initialized successfully.");
-    return admin;
+    
+    console.log(chalk.green.bold("✓ Firebase Admin initialized successfully."));
+    return adminInstance;
   } catch (error) {
-    console.error("Failed to initialize Firebase Admin SDK:", error);
+    console.error(chalk.red.bold("✗ Failed to initialize Firebase Admin:"), error.message);
     return null;
   }
-}
+};
 
 export async function verifyToken(req, res, next) {
   const adminInstance = initFirebaseAdmin();
   if (!adminInstance) {
-    // If Admin isn't configured, bypass auth (e.g., Demo mode)
-    // Or we could strict reject. Let's strict reject to enforce Auth gating.
-    return res.status(401).json({ error: 'Server authentication is not configured.' });
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(500).json({ error: 'Internal Server Error: Firebase Admin SDK not initialized in production.' });
+    }
+    // Local dev bypass when no service account is provided
+    console.warn("Bypassing verifyToken - no Firebase Admin SDK");
+    req.user = { uid: 'local-dev-user', email: 'ayushfun01@gmail.com', name: 'Local Admin' };
+    return next();
   }
 
   const authHeader = req.headers.authorization;
@@ -56,7 +70,16 @@ export async function verifyAdmin(req, res, next) {
   verifyToken(req, res, async () => {
     // If verifyToken succeeded, req.user will be populated
     const adminInstance = initFirebaseAdmin();
-    if (!adminInstance || !req.user) {
+    if (!adminInstance) {
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(500).json({ error: 'Internal Server Error: Firebase Admin SDK not initialized in production.' });
+      }
+      console.warn("Bypassing verifyAdmin - no Firebase Admin SDK");
+      req.adminData = { role: 'admin', email: 'ayushfun01@gmail.com', id: 'local-dev-user' };
+      return next();
+    }
+    
+    if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 

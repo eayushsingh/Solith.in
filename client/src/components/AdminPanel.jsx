@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ShieldAlert, Check, X, AlertCircle, Users, LayoutDashboard, Flag, Activity, Trash2, Shield, Search } from 'lucide-react';
+import { ArrowLeft, ShieldAlert, Check, X, AlertCircle, Users, LayoutDashboard, Flag, Activity, Trash2, Shield, Search, Award } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -111,6 +111,18 @@ export default function AdminPanel({ onBack, user }) {
     }
   };
 
+  const handleSubscriptionAction = async (userId, action) => {
+    try {
+      await fetchWithToken(`/api/admin/users/${userId}/subscription`, {
+        method: 'POST',
+        body: JSON.stringify({ action })
+      });
+      loadData('users'); // reload users list to update premium status
+    } catch (e) {
+      alert("Action failed");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-gray-200 font-mono">
       <ConfirmDialog 
@@ -144,6 +156,7 @@ export default function AdminPanel({ onBack, user }) {
             { id: 'users', icon: Users, label: 'Users' },
             { id: 'reports', icon: Flag, label: 'Reports Queue' },
             { id: 'rooms', icon: Activity, label: 'Active Rooms' },
+            { id: 'subscriptions', icon: Award, label: 'Subscriptions' },
             { id: 'logs', icon: Shield, label: 'Activity Log' },
           ].map(tab => (
             <button
@@ -244,6 +257,61 @@ export default function AdminPanel({ onBack, user }) {
                                   className="text-xs px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded transition-colors"
                                 >
                                   Promote
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SUBSCRIPTIONS TAB */}
+              {activeTab === 'subscriptions' && (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-6">Manage Subscriptions</h2>
+                  <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-[#222] text-gray-400 uppercase text-xs">
+                        <tr>
+                          <th className="px-6 py-4">User</th>
+                          <th className="px-6 py-4">Subscription Status</th>
+                          <th className="px-6 py-4">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800">
+                        {usersList.map(u => (
+                          <tr key={u.id} className="hover:bg-[#1a1a1a]">
+                            <td className="px-6 py-4">
+                              <div className="font-bold text-white">{u.name}</div>
+                              <div className="text-gray-500 text-xs">{u.email}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                              {u.isPremium ? (
+                                <span className="inline-flex items-center gap-1 text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded">
+                                  <Award className="w-3 h-3" />
+                                  Premium
+                                </span>
+                              ) : (
+                                <span className="text-gray-500">Free Tier</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              {u.isPremium ? (
+                                <button 
+                                  onClick={() => requestConfirm("Revoke Premium?", `Are you sure you want to remove premium access from ${u.name}?`, () => handleSubscriptionAction(u.id, 'revoke'))}
+                                  className="text-xs px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded transition-colors"
+                                >
+                                  Revoke Premium
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={() => handleSubscriptionAction(u.id, 'grant')}
+                                  className="text-xs px-3 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded transition-colors"
+                                >
+                                  Grant Premium
                                 </button>
                               )}
                             </td>
