@@ -422,6 +422,89 @@ app.delete('/api/rooms/:id', verifyToken, (req, res) => {
   res.json({ success: true });
 });
 
+// --- Follow System Endpoints ---
+
+app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) {
+    return res.status(503).json({ error: 'Firestore Admin not initialized.' });
+  }
+
+  const { targetId } = req.params;
+  const userId = req.user.uid;
+
+  if (userId === targetId) {
+    return res.status(400).json({ error: 'Cannot follow yourself.' });
+  }
+
+  try {
+    const db = adminInstance.firestore();
+    const userRef = db.collection('users').doc(userId);
+    const targetRef = db.collection('users').doc(targetId);
+
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      const targetDoc = await transaction.get(targetRef);
+
+      const userFollowing = userDoc.exists ? (userDoc.data().following || []) : [];
+      const targetFollowers = targetDoc.exists ? (targetDoc.data().followers || []) : [];
+
+      const isFollowing = userFollowing.includes(targetId);
+
+      if (isFollowing) {
+        // Unfollow
+        transaction.set(userRef, { following: adminInstance.firestore.FieldValue.arrayRemove(targetId) }, { merge: true });
+        transaction.set(targetRef, { followers: adminInstance.firestore.FieldValue.arrayRemove(userId) }, { merge: true });
+      } else {
+        // Follow
+        transaction.set(userRef, { following: adminInstance.firestore.FieldValue.arrayUnion(targetId) }, { merge: true });
+        transaction.set(targetRef, { followers: adminInstance.firestore.FieldValue.arrayUnion(userId) }, { merge: true });
+      }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error in toggle-follow:', error);
+    res.status(500).json({ error: 'Failed to toggle follow.' });
+  }
+});
+
+app.get('/api/users/profiles', async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) {
+    return res.status(503).json({ error: 'Firestore Admin not initialized.' });
+  }
+
+  const idsStr = req.query.ids;
+  if (!idsStr) return res.json({ profiles: [] });
+  
+  const ids = idsStr.split(',').slice(0, 100); // Limit to 100 at a time
+  if (ids.length === 0) return res.json({ profiles: [] });
+
+  try {
+    const db = adminInstance.firestore();
+    const refs = ids.map(id => db.collection('users').doc(id));
+    const docs = await db.getAll(...refs);
+    
+    const profiles = docs
+      .filter(doc => doc.exists)
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || 'Unknown',
+          photoUrl: data.photoUrl || '',
+          xp: data.xp || 0
+        };
+      });
+
+    res.json({ profiles });
+  } catch (error) {
+    console.error('Error fetching user profiles:', error);
+    res.status(500).json({ error: 'Failed to fetch profiles' });
+  }
+});
+
 // Serve frontend in production build if needed
 const clientDistPath = path.join(__dirname, '../client/dist');
 if (fs.existsSync(clientDistPath)) {
