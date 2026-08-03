@@ -78,9 +78,9 @@ export default function setupAdminRoutes(app, rooms, saveDB, io) {
   router.post('/users/:id/action', async (req, res) => {
     const adminInstance = initFirebaseAdmin();
     const { id } = req.params;
-    const { action } = req.body; // 'restrict', 'ban', 'reinstate', 'promote'
+    const { action } = req.body; // 'restrict', 'ban', 'reinstate', 'promote', 'make_pro', 'remove_pro'
     
-    if (!['restrict', 'ban', 'reinstate', 'promote'].includes(action)) {
+    if (!['restrict', 'ban', 'reinstate', 'promote', 'make_pro', 'remove_pro'].includes(action)) {
       return res.status(400).json({ error: 'Invalid action' });
     }
 
@@ -97,6 +97,8 @@ export default function setupAdminRoutes(app, rooms, saveDB, io) {
         updates.warningCount = 0;
       }
       if (action === 'promote') updates.role = 'admin';
+      if (action === 'make_pro') updates.isPremium = true;
+      if (action === 'remove_pro') updates.isPremium = false;
 
       await userRef.update(updates);
 

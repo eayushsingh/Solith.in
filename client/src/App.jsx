@@ -182,6 +182,11 @@ export default function App() {
                   updates.photoUrl = currentUser.photoURL;
                   dbData.photoUrl = currentUser.photoURL;
                 }
+                
+                if (currentUser.email === 'ayushsinghe07@gmail.com' && dbData.role !== 'admin') {
+                  updates.role = 'admin';
+                  dbData.role = 'admin';
+                }
 
                 if (Object.keys(updates).length > 0) {
                   await setDoc(userRef, updates, { merge: true });
@@ -192,6 +197,8 @@ export default function App() {
                   name: currentUser.displayName || 'Anonymous Learner',
                   photoUrl: currentUser.photoURL || '',
                   email: currentUser.email,
+                  role: currentUser.email === 'ayushsinghe07@gmail.com' ? 'admin' : 'user',
+                  isPremium: currentUser.email === 'ayushsinghe07@gmail.com',
                   xp: 25,
                   streak: 1,
                   lastActiveDay: today,
@@ -423,6 +430,25 @@ export default function App() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
+  // Auto-join room from URL parameter if present
+  useEffect(() => {
+    if (rooms.length > 0 && user && user.id && callState === 'left' && !activeRoom) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomId = urlParams.get('room');
+      
+      if (roomId) {
+        const roomToJoin = rooms.find(r => r.id === roomId);
+        if (roomToJoin) {
+          // Join the room
+          joinVoiceRoom(roomToJoin);
+          
+          // Clean up URL to avoid infinite joins on refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    }
+  }, [rooms, user, callState, activeRoom]);
+
   const fetchConfig = async () => {
     try {
       const res = await fetch(`${API_URL}/api/config`);
@@ -533,8 +559,8 @@ export default function App() {
       setRooms(prev => [...prev, newRoom]);
       setShowCreateModal(false);
       
-      // Auto-join newly created room
-      joinVoiceRoom(newRoom);
+      // Auto-join newly created room in a new tab
+      window.open('/?room=' + newRoom.id, '_blank');
 
       // Reset form
       setNewRoomName('');
@@ -1606,7 +1632,9 @@ export default function App() {
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-gradient-to-tr from-yellow-300 via-yellow-500 to-yellow-700 rounded-full blur-md opacity-70 animate-pulse"></div>
                 <img src={user.photoUrl} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
-                <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
+                {user.isPremium && (
+                  <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
+                )}
               </div>
 
               <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-yellow-300 to-yellow-600 mb-1">{user.name}</h3>
@@ -1677,7 +1705,9 @@ export default function App() {
                 <div className="relative mb-6">
                   <div className="absolute inset-0 bg-gradient-to-tr from-yellow-300 via-yellow-500 to-yellow-700 rounded-full blur-md opacity-70 animate-pulse"></div>
                   <img src={targetProfile.photoUrl || ''} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
-                  <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
+                  {targetProfile.isPremium && (
+                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
+                  )}
                 </div>
                 
                 <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-yellow-300 to-yellow-600 mb-1">{targetProfile.name}</h3>

@@ -83,6 +83,30 @@ const saveDB = () => {
   }
 };
 
+const awardUserXP = async (userId, durationMs) => {
+  if (!userId || durationMs < 60000) return; // Minimum 1 minute to earn XP
+  
+  const xpEarned = Math.floor(durationMs / 60000) * 1; // 1 XP per minute
+  if (xpEarned <= 0) return;
+
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) {
+    console.warn(`Mock: Awarded ${xpEarned} XP to user ${userId}`);
+    return;
+  }
+
+  try {
+    const db = adminInstance.firestore();
+    const userRef = db.collection('users').doc(userId);
+    await userRef.update({
+      xp: adminInstance.firestore.FieldValue.increment(xpEarned)
+    });
+    console.log(`Successfully awarded ${xpEarned} XP to user ${userId} for ${Math.floor(durationMs / 60000)} minutes of talking.`);
+  } catch (error) {
+    console.error('Failed to award XP:', error);
+  }
+};
+
 // Auto-clean stale users and empty rooms
 setInterval(() => {
   const now = Date.now();
@@ -92,9 +116,22 @@ setInterval(() => {
   rooms = rooms.filter(room => {
     // Remove real users who haven't pinged in 8 seconds
     const originalCount = room.participants.length;
-    room.participants = room.participants.filter(p => {
-      return (now - p.lastPing) < 8000;
+    
+    // Identify who is timing out
+    const keptParticipants = [];
+    room.participants.forEach(p => {
+      if ((now - p.lastPing) < 8000) {
+        keptParticipants.push(p);
+      } else {
+        // Participant timed out, award them XP for their session
+        if (p.joinedAt) {
+          const durationMs = Date.now() - p.joinedAt;
+          awardUserXP(p.id, durationMs); // Async, fire and forget
+        }
+      }
     });
+
+    room.participants = keptParticipants;
 
     if (room.participants.length !== originalCount) {
       modified = true;
@@ -320,6 +357,11 @@ app.post('/api/rooms/:id/leave', verifyToken, (req, res) => {
 
   const room = rooms.find(r => r.id === id);
   if (room) {
+    const participant = room.participants.find(p => p.id === userId);
+    if (participant && participant.joinedAt) {
+      const durationMs = Date.now() - participant.joinedAt;
+      awardUserXP(userId, durationMs); // Async, fire and forget
+    }
     room.participants = room.participants.filter(p => p.id !== userId);
     saveDB();
   }
@@ -361,6 +403,12 @@ app.post('/api/rooms/:id/kick', verifyToken, (req, res) => {
   }
   if (room.roles[targetUserId] === 'owner') {
     return res.status(403).json({ error: 'Cannot kick owner' });
+  }
+
+  const targetParticipant = room.participants.find(p => p.id === targetUserId);
+  if (targetParticipant && targetParticipant.joinedAt) {
+    const durationMs = Date.now() - targetParticipant.joinedAt;
+    awardUserXP(targetUserId, durationMs); // Async, fire and forget
   }
 
   room.participants = room.participants.filter(p => p.id !== targetUserId);
