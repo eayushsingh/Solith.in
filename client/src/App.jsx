@@ -3,6 +3,7 @@ import RoomCard from './components/RoomCard';
 import Guidelines from './components/Guidelines';
 import AdminPanel from './components/AdminPanel';
 import ReportModal from './components/ReportModal';
+import FollowListModal from './components/FollowListModal';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, Shield, UserMinus, Flag
@@ -72,6 +73,7 @@ export default function App() {
   // Modals & Panels
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [followListState, setFollowListState] = useState({ isOpen: false, type: 'followers', ids: [], title: '' });
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDevModal, setShowDevModal] = useState(false);
   
@@ -314,13 +316,13 @@ export default function App() {
     setTargetProfile(prev => ({ ...prev, followers: newTargetFollowers }));
 
     try {
-      if (isFollowing) {
-        await setDoc(doc(db, 'users', user.id), { following: arrayRemove(targetProfile.id) }, { merge: true });
-        await setDoc(doc(db, 'users', targetProfile.id), { followers: arrayRemove(user.id) }, { merge: true });
-      } else {
-        await setDoc(doc(db, 'users', user.id), { following: arrayUnion(targetProfile.id) }, { merge: true });
-        await setDoc(doc(db, 'users', targetProfile.id), { followers: arrayUnion(user.id) }, { merge: true });
-      }
+      const res = await fetch(`${API_URL}/api/users/${targetProfile.id}/toggle-follow`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      if (!res.ok) throw new Error('Failed to toggle follow on server');
     } catch (e) {
       console.error("Failed to toggle follow", e);
       setUser(prev => ({ ...prev, following: isFollowing ? [...(prev.following||[]), targetProfile.id] : prev.following.filter(id => id !== targetProfile.id) }));
@@ -1676,11 +1678,17 @@ export default function App() {
                 </div>
               </div>
               <div className="w-full flex justify-around border-t border-b border-[var(--line)] py-3 mb-6">
-                <div className="text-center">
+                <div 
+                  className="text-center cursor-pointer hover:bg-[var(--bg-secondary)] px-4 py-1 rounded-xl transition-colors"
+                  onClick={() => setFollowListState({ isOpen: true, type: 'followers', ids: user.followers || [], title: 'Followers' })}
+                >
                   <div className="font-bold text-[var(--ink)]">{user.followers?.length || 0}</div>
                   <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Followers</div>
                 </div>
-                <div className="text-center">
+                <div 
+                  className="text-center cursor-pointer hover:bg-[var(--bg-secondary)] px-4 py-1 rounded-xl transition-colors"
+                  onClick={() => setFollowListState({ isOpen: true, type: 'following', ids: user.following || [], title: 'Following' })}
+                >
                   <div className="font-bold text-[var(--ink)]">{user.following?.length || 0}</div>
                   <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Following</div>
                 </div>
@@ -1733,11 +1741,17 @@ export default function App() {
                 </div>
 
                 <div className="w-full flex justify-around border-t border-b border-[var(--line)] py-3 mb-6">
-                  <div className="text-center">
+                  <div 
+                    className="text-center cursor-pointer hover:bg-[var(--bg-secondary)] px-4 py-1 rounded-xl transition-colors"
+                    onClick={() => setFollowListState({ isOpen: true, type: 'followers', ids: targetProfile.followers || [], title: `${targetProfile.name.split(' ')[0]}'s Followers` })}
+                  >
                     <div className="font-bold text-[var(--ink)]">{targetProfile.followers?.length || 0}</div>
                     <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Followers</div>
                   </div>
-                  <div className="text-center">
+                  <div 
+                    className="text-center cursor-pointer hover:bg-[var(--bg-secondary)] px-4 py-1 rounded-xl transition-colors"
+                    onClick={() => setFollowListState({ isOpen: true, type: 'following', ids: targetProfile.following || [], title: `${targetProfile.name.split(' ')[0]} is Following` })}
+                  >
                     <div className="font-bold text-[var(--ink)]">{targetProfile.following?.length || 0}</div>
                     <div className="text-[10px] text-[var(--ink-secondary)] uppercase">Following</div>
                   </div>
@@ -1784,6 +1798,14 @@ export default function App() {
         targetUser={reportTarget} 
         currentUser={user}
         roomId={activeRoom ? activeRoom.name : null}
+      />
+
+      {/* FOLLOW LIST MODAL */}
+      <FollowListModal
+        isOpen={followListState.isOpen}
+        onClose={() => setFollowListState({ ...followListState, isOpen: false })}
+        title={followListState.title}
+        ids={followListState.ids}
       />
     </div>
     </>
