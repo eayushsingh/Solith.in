@@ -874,31 +874,56 @@ export default function App() {
           )}
         </svg>
 
-        <div id="char-wrap" className="flex flex-col items-center gap-6" style={{ zIndex: 10, textAlign: 'center' }}>
-          <img 
-            src="/logo.png" 
-            alt="Solith" 
+        <div id="char-wrap">
+          {/* Eyeglass character SVG */}
+          <svg 
+            id="char-svg" 
+            ref={charSvgRef}
+            viewBox="0 0 200 220" 
+            width="200"
+            height="220"
             style={{ 
-              width: '160px', 
-              height: '160px', 
-              filter: 'drop-shadow(0 0 40px rgba(255,255,255,0.1))',
-              transition: 'transform 0.2s ease-out'
+              maxWidth: '200px', 
+              maxHeight: '220px',
+              filter: 'drop-shadow(0 0 30px rgba(255,255,255,0.1))',
+              transition: 'transform 0.1s ease-out'
             }}
-          />
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <clipPath id="faceClip"><ellipse cx="100" cy="105" rx="62" ry="72"/></clipPath>
+            </defs>
+            <ellipse cx="100" cy="105" rx="62" ry="72" fill="#fff" stroke="#fff" strokeWidth="0"/>
+            <path d="M38,105 Q38,140 60,160 Q80,178 100,180 Q120,178 140,160 Q162,140 162,105" fill="#f0f0f0"/>
+            <ellipse cx="100" cy="185" rx="16" ry="4" fill="#e0e0e0"/>
+            <path d="M84,185 Q100,200 116,185" fill="none" stroke="#ccc" strokeWidth="6" strokeLinecap="round"/>
+            <path d="M62,80 Q80,65 100,70 Q120,65 138,80" fill="none" stroke="#111" strokeWidth="14" strokeLinecap="round"/>
+            <path d="M55,68 Q70,40 100,35 Q130,40 145,68" fill="#111" stroke="#111" strokeWidth="2"/>
+            <path d="M50,72 Q65,42 100,37 Q135,42 150,72 Q145,85 100,82 Q55,85 50,72Z" fill="#111"/>
+            <circle id="leye" cx="78" cy="108" r="18" fill="#fff" stroke="#111" strokeWidth="3"/>
+            <circle id="reye" cx="122" cy="108" r="18" fill="#fff" stroke="#111" strokeWidth="3"/>
+            <circle id="lpupil" cx={78 + pupilOffset.x} cy={108 + pupilOffset.y} r="7" fill="#111"/>
+            <circle id="rpupil" cx={122 + pupilOffset.x} cy={108 + pupilOffset.y} r="7" fill="#111"/>
+            <circle cx="80" cy="105" r="2.5" fill="#fff"/>
+            <circle cx="124" cy="105" r="2.5" fill="#fff"/>
+            <rect x="56" y="95" width="44" height="26" rx="14" fill="none" stroke="#111" strokeWidth="3"/>
+            <rect x="100" y="95" width="44" height="26" rx="14" fill="none" stroke="#111" strokeWidth="3"/>
+            <path d="M100,95 L100,121" stroke="#111" stroke-width="2"/>
+            <path d="M56,108 L44,108" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M144,108 L156,108" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M88,135 Q100,145 112,135" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
+            <path d="M100,180 L94,205 M100,180 L106,205" stroke="#ccc" strokeWidth="6" strokeLinecap="round"/>
+            <rect x="60" y="200" width="80" height="20" rx="10" fill="#ddd"/>
+          </svg>
 
-          <div style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif', fontWeight: '700', fontSize: '3.5rem', letterSpacing: '-0.04em', color: '#fff', margin: '10px 0 0 0', lineHeight: 1.1 }}>
-            Speak freely.
-          </div>
-          <div style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif', fontSize: '1.25rem', color: '#86868b', margin: '0', fontWeight: '500', letterSpacing: '-0.01em', maxWidth: '380px' }}>
-            Profound conversations. Zero barriers.
-          </div>
+          <div className="headline font-serif text-[#fff]">talk to anyone.</div>
+          <div className="sub tracking-[3px] text-xs font-mono opacity-50">free · live · voice</div>
           
           <button 
-            className="cta mt-8" 
+            className="cta" 
             onClick={() => setView('lobby')}
-            style={{ fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: '600', padding: '14px 32px', borderRadius: '30px', fontSize: '1rem', letterSpacing: '0' }}
           >
-            Enter a room
+            enter a room ↗
           </button>
         </div>
       </div>
@@ -924,12 +949,11 @@ export default function App() {
             {/* Logo */}
             <div 
               onClick={() => setView('landing')}
-              className="cursor-pointer group flex items-center gap-3"
+              className="cursor-pointer group"
               title="Return to home page"
             >
-              <img src="/logo.png" alt="Solith" className="w-8 h-8 rounded-full border border-[var(--line-bright)]" />
-              <h1 className="text-xl font-bold tracking-tight text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}>
-                Solith
+              <h1 className="text-xl font-mono tracking-tighter text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors uppercase">
+                Solith_
               </h1>
             </div>
 
