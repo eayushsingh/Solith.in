@@ -5,7 +5,7 @@ import {
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, Shield, UserMinus, Flag
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
-import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence } from './firebase';
+import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence } from './firebase';
 import { io } from 'socket.io-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -95,6 +95,12 @@ export default function App() {
       setAuthLoading(false);
       return;
     }
+
+    // Catch any errors that happen when returning from a signInWithRedirect
+    getRedirectResult(auth).catch((error) => {
+      console.error("Redirect login error:", error);
+      alert("Redirect login failed: " + error.message);
+    });
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       try {
@@ -208,6 +214,18 @@ export default function App() {
     } catch (error) {
       console.error("signInWithPopup ERROR:", error.code, error.message);
       
+      if (error.code === 'auth/popup-blocked') {
+        console.warn("Popup blocked by browser. Falling back to signInWithRedirect...");
+        // Close the modal to show something is happening before the page redirects
+        setShowAuthModal(false);
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectErr) {
+          alert("Redirect login failed: " + redirectErr.message);
+        }
+        return;
+      }
+
       if (error.message.includes("Database is closing") || error.message.includes("hidden") || error.code.includes("internal-error")) {
         console.warn("IndexedDB issue detected. Falling back to in-memory persistence...");
         try {
@@ -219,6 +237,14 @@ export default function App() {
           return;
         } catch (fallbackError) {
           console.error("Fallback login failed:", fallbackError);
+          
+          if (fallbackError.code === 'auth/popup-blocked') {
+            console.warn("Popup blocked by browser on fallback. Falling back to signInWithRedirect...");
+            setShowAuthModal(false);
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          }
+
           if (auth.currentUser) {
             console.log("signInWithPopup SUCCESS (Despite Persistence Failure):", auth.currentUser.email);
             alert("Sign-in succeeded but couldn't save your session — you may need to sign in again next visit.");
