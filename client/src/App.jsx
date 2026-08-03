@@ -184,7 +184,13 @@ export default function App() {
           return;
         } catch (fallbackError) {
           console.error("Fallback login failed:", fallbackError);
-          alert("Login completely failed: " + fallbackError.message);
+          if (auth.currentUser) {
+            console.log("signInWithPopup SUCCESS (Despite Persistence Failure):", auth.currentUser.email);
+            alert("Sign-in succeeded but couldn't save your session — you may need to sign in again next visit.");
+            setShowAuthModal(false);
+          } else {
+            alert("Login completely failed: " + fallbackError.message);
+          }
         }
       } else {
         alert("Login failed: " + error.message);
