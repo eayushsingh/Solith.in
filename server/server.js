@@ -314,6 +314,7 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
       const at = new AccessToken(runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret, {
         identity: userId,
         name: name,
+        ttl: 24 * 60 * 60, // 24 hours
       });
       at.addGrant({ roomJoin: true, room: room.id, canPublish: true, canSubscribe: true });
       token = await at.toJwt();
