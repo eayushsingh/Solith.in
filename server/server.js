@@ -9,6 +9,9 @@ import { AccessToken } from 'livekit-server-sdk';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { initFirebaseAdmin, verifyToken, verifyAdmin } from './firebaseAdmin.js';
+import chalk from 'chalk';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
@@ -18,12 +21,32 @@ const DB_PATH = path.join(__dirname, 'db.json');
 
 const app = express();
 const server = createServer(app);
-const io = new Server(server, {
-  cors: { origin: process.env.ALLOWED_ORIGIN || '*' } // Strictly allow frontend URL in prod
-});
 
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
+// CORS configuration - Fail safely in production if no ALLOWED_ORIGIN is set
+let corsOptions;
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.ALLOWED_ORIGIN) {
+    console.warn(chalk.yellow("⚠ WARNING: ALLOWED_ORIGIN is not set in production. Falling back to strict same-origin to prevent leaks."));
+  }
+  corsOptions = { origin: process.env.ALLOWED_ORIGIN || false };
+} else {
+  corsOptions = { origin: '*' };
+}
+
+const io = new Server(server, { cors: corsOptions });
+
+app.use(helmet()); // Set basic HTTP security headers
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Apply global rate limiting (100 reqs / 15 mins per IP)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(globalLimiter);
 
 // In-Memory Configuration (fallback/runtime update)
 let runtimeConfig = {
@@ -199,8 +222,15 @@ function isJunkText(text) {
   return false;
 }
 
+// Strict rate limiting for Room Creation (15 reqs / 15 mins)
+const roomCreationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: 'Too many rooms created from this IP, please try again after 15 minutes.' }
+});
+
 // API Endpoint: Create Room
-app.post('/api/rooms', verifyToken, async (req, res) => {
+app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
   const { name, language, topic, tags } = req.body;
 
   if (!SUPPORTED_LANGUAGES.includes(language)) {
@@ -315,9 +345,9 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
 });
 
 // API Endpoint: Keep-Alive Ping
-app.post('/api/rooms/:id/ping', (req, res) => {
+app.post('/api/rooms/:id/ping', verifyToken, (req, res) => {
   const { id } = req.params;
-  const { userId } = req.body;
+  const userId = req.user.uid;
 
   const room = rooms.find(r => r.id === id);
   if (!room) {
@@ -335,9 +365,9 @@ app.post('/api/rooms/:id/ping', (req, res) => {
 });
 
 // API Endpoint: Leave Room
-app.post('/api/rooms/:id/leave', (req, res) => {
+app.post('/api/rooms/:id/leave', verifyToken, (req, res) => {
   const { id } = req.params;
-  const { userId } = req.body;
+  const userId = req.user.uid;
 
   const room = rooms.find(r => r.id === id);
   if (room) {
@@ -521,7 +551,7 @@ if (fs.existsSync(clientDistPath)) {
 
 // Socket.IO Logic
 io.on('connection', (socket) => {
-  console.log('Socket connected:', socket.id);
+  console.log(chalk.green(`✓ Socket connected: ${socket.id}`));
 
   socket.on('join-room', (roomId) => {
     socket.join(roomId);
@@ -558,7 +588,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('Socket disconnected:', socket.id);
+    console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
   });
 });
 
@@ -566,5 +596,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 loadDB();
 server.listen(PORT, () => {
-  console.log(`Solith Backend running on port ${PORT}`);
+  console.log(chalk.cyan.bold(`🚀 Solith Backend running on port ${PORT}`));
 });
