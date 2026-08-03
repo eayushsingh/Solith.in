@@ -97,70 +97,78 @@ export default function App() {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser && !currentUser.isAnonymous) {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        let userData;
-        const today = new Date().toDateString();
-        const yesterday = new Date(Date.now() - 86400000).toDateString();
+      try {
+        if (currentUser && !currentUser.isAnonymous) {
+          console.log("onAuthStateChanged: Authenticated as", currentUser.email);
+          const userRef = doc(db, 'users', currentUser.uid);
+          const userSnap = await getDoc(userRef);
+          let userData;
+          const today = new Date().toDateString();
+          const yesterday = new Date(Date.now() - 86400000).toDateString();
 
-        if (userSnap.exists()) {
-          userData = userSnap.data();
-          let updates = {};
+          if (userSnap.exists()) {
+            userData = userSnap.data();
+            let updates = {};
 
-          if (userData.lastActiveDay === yesterday) {
-            updates.streak = (userData.streak || 0) + 1;
-            updates.lastActiveDay = today;
-            userData.streak = updates.streak;
-            userData.lastActiveDay = updates.lastActiveDay;
-          } else if (userData.lastActiveDay !== today) {
-            updates.streak = 1;
-            updates.lastActiveDay = today;
-            userData.streak = 1;
-            userData.lastActiveDay = today;
-          }
+            if (userData.lastActiveDay === yesterday) {
+              updates.streak = (userData.streak || 0) + 1;
+              updates.lastActiveDay = today;
+              userData.streak = updates.streak;
+              userData.lastActiveDay = updates.lastActiveDay;
+            } else if (userData.lastActiveDay !== today) {
+              updates.streak = 1;
+              updates.lastActiveDay = today;
+              userData.streak = 1;
+              userData.lastActiveDay = today;
+            }
 
-          // Sync Google profile info to replace any old anonymous 'learner_' data
-          if (currentUser.displayName && (!userData.name || userData.name.startsWith('learner_') || userData.name !== currentUser.displayName)) {
-            updates.name = currentUser.displayName;
-            userData.name = currentUser.displayName;
+            // Sync Google profile info to replace any old anonymous 'learner_' data
+            if (currentUser.displayName && (!userData.name || userData.name.startsWith('learner_') || userData.name !== currentUser.displayName)) {
+              updates.name = currentUser.displayName;
+              userData.name = currentUser.displayName;
+            }
+            
+            if (currentUser.photoURL && userData.photoUrl !== currentUser.photoURL) {
+              updates.photoUrl = currentUser.photoURL;
+              userData.photoUrl = currentUser.photoURL;
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await setDoc(userRef, updates, { merge: true });
+            }
+          } else {
+            userData = {
+              id: currentUser.uid,
+              name: currentUser.displayName,
+              photoUrl: currentUser.photoURL,
+              email: currentUser.email,
+              xp: 25,
+              streak: 1,
+              lastActiveDay: today,
+              createdAt: serverTimestamp()
+            };
+            await setDoc(userRef, userData);
           }
           
-          if (currentUser.photoURL && userData.photoUrl !== currentUser.photoURL) {
-            updates.photoUrl = currentUser.photoURL;
-            userData.photoUrl = currentUser.photoURL;
-          }
-
-          if (Object.keys(updates).length > 0) {
-            await setDoc(userRef, updates, { merge: true });
-          }
+          const token = await currentUser.getIdToken();
+          setUser({
+            ...userData,
+            token
+          });
         } else {
-          userData = {
-            id: currentUser.uid,
-            name: currentUser.displayName,
-            photoUrl: currentUser.photoURL,
-            email: currentUser.email,
-            xp: 25,
-            streak: 1,
-            lastActiveDay: today,
-            createdAt: serverTimestamp()
-          };
-          await setDoc(userRef, userData);
+          if (currentUser && currentUser.isAnonymous) {
+            console.warn("Detected old anonymous session. Clearing it out.");
+            signOut(auth).catch(e => console.error("Error clearing anonymous session:", e));
+          }
+          setUser(null);
         }
-        
-        const token = await currentUser.getIdToken();
-        setUser({
-          ...userData,
-          token
-        });
-      } else {
-        if (currentUser && currentUser.isAnonymous) {
-          console.warn("Detected old anonymous session. Clearing it out.");
-          signOut(auth).catch(e => console.error("Error clearing anonymous session:", e));
-        }
+      } catch (err) {
+        console.error("Error in onAuthStateChanged:", err);
+        alert("Failed to load user profile: " + err.message);
         setUser(null);
+      } finally {
+        setAuthLoading(false);
       }
-      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
