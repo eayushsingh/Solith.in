@@ -171,6 +171,7 @@ export default function App() {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("signInWithPopup SUCCESS: Logged in as", result.user.email);
       setShowAuthModal(false);
+      setShowProfileModal(true);
     } catch (error) {
       console.error("signInWithPopup ERROR:", error.code, error.message);
       
@@ -181,6 +182,7 @@ export default function App() {
           const fallbackResult = await signInWithPopup(auth, googleProvider);
           console.log("signInWithPopup (Fallback) SUCCESS:", fallbackResult.user.email);
           setShowAuthModal(false);
+          setShowProfileModal(true);
           return;
         } catch (fallbackError) {
           console.error("Fallback login failed:", fallbackError);
@@ -188,6 +190,7 @@ export default function App() {
             console.log("signInWithPopup SUCCESS (Despite Persistence Failure):", auth.currentUser.email);
             alert("Sign-in succeeded but couldn't save your session — you may need to sign in again next visit.");
             setShowAuthModal(false);
+            setShowProfileModal(true);
           } else {
             alert("Login completely failed: " + fallbackError.message);
           }
