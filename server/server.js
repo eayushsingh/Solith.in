@@ -8,6 +8,7 @@ import axios from 'axios';
 import { AccessToken } from 'livekit-server-sdk';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { initFirebaseAdmin, verifyToken } from './firebaseAdmin.js';
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ const loadDB = () => {
           { id: 'mock-user-1', name: 'Sophia', color: '#ff4d4d', emoji: '👩‍🦰', joinedAt: Date.now(), lastPing: Date.now() },
           { id: 'mock-user-2', name: 'Hiro', color: '#4da6ff', emoji: '👦', joinedAt: Date.now(), lastPing: Date.now() }
         ],
+        roles: { 'mock-user-1': 'owner', 'mock-user-2': 'co-host' },
         messages: [],
         createdAt: Date.now()
       },
@@ -73,6 +75,7 @@ const loadDB = () => {
         participants: [
           { id: 'mock-user-3', name: 'Elena', color: '#33cc33', emoji: '👩', joinedAt: Date.now(), lastPing: Date.now() }
         ],
+        roles: { 'mock-user-3': 'owner' },
         messages: [],
         createdAt: Date.now()
       },
@@ -83,6 +86,7 @@ const loadDB = () => {
         topic: 'Pratique des questions typiques d\'entretien d\'embauche. Formel.',
         tags: ['Interview Prep', 'Advanced'],
         participants: [],
+        roles: {},
         messages: [],
         createdAt: Date.now()
       }
@@ -99,12 +103,13 @@ const saveDB = () => {
   }
 };
 
-// Auto-clean stale users (who closed their tab without leaving)
+// Auto-clean stale users and empty rooms
 setInterval(() => {
   const now = Date.now();
   let modified = false;
+  const initialRoomCount = rooms.length;
 
-  rooms.forEach(room => {
+  rooms = rooms.filter(room => {
     // Filter out mock users from stale cleaning so the rooms feel alive during first look!
     // But remove real users who haven't pinged in 8 seconds
     const originalCount = room.participants.length;
@@ -116,7 +121,30 @@ setInterval(() => {
     if (room.participants.length !== originalCount) {
       modified = true;
     }
+
+    // Phase 3: Auto-delete empty rooms
+    if (room.participants.length === 0) {
+      if (!room.emptySince) {
+        room.emptySince = now;
+        modified = true;
+      } else if (now - room.emptySince > 5 * 60 * 1000) {
+        // Room empty for > 5 mins
+        if (io) io.to(room.id).emit('room-deleted');
+        return false;
+      }
+    } else {
+      if (room.emptySince) {
+        delete room.emptySince;
+        modified = true;
+      }
+    }
+    
+    return true;
   });
+
+  if (rooms.length !== initialRoomCount) {
+    modified = true;
+  }
 
   if (modified) {
     saveDB();
@@ -155,15 +183,36 @@ app.get('/api/rooms', (req, res) => {
   res.json(rooms);
 });
 
+const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean'];
+
+function isJunkText(text) {
+  if (!text) return true;
+  const trimmed = text.trim();
+  if (trimmed.length < 4) return true; // Too short (e.g. "hi")
+  
+  // Rule 2: Check for 4+ identical consecutive characters (e.g. "hiiii99")
+  if (/(.)\1{3,}/.test(trimmed)) return true;
+  
+  // Rule 3: Check for 5+ consecutive consonants (catches keyboard smashes like "hjhhj")
+  if (/[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ]{5,}/.test(trimmed)) return true;
+
+  return false;
+}
+
 // API Endpoint: Create Room
-app.post('/api/rooms', async (req, res) => {
+app.post('/api/rooms', verifyToken, async (req, res) => {
   const { name, language, topic, tags } = req.body;
 
-  if (!name || name.trim().length < 3) {
-    return res.status(400).json({ error: 'Room name must be at least 3 characters long' });
+  if (!SUPPORTED_LANGUAGES.includes(language)) {
+    return res.status(400).json({ error: 'Invalid language selection' });
   }
-  if (!language || language.trim().length < 2) {
-    return res.status(400).json({ error: 'Language is required' });
+
+  if (isJunkText(name)) {
+    return res.status(400).json({ error: 'Room name must be a valid, descriptive phrase.' });
+  }
+
+  if (topic && topic.trim().length > 0 && isJunkText(topic)) {
+    return res.status(400).json({ error: 'Room topic must be a valid, descriptive phrase.' });
   }
 
   // Filter out any garbage tags (must be strings, at least 3 chars)
@@ -191,7 +240,9 @@ app.post('/api/rooms', async (req, res) => {
     topic: topic ? topic.trim() : '',
     tags: validTags,
     participants: [],
+    roles: req.user ? { [req.user.uid]: 'owner' } : {},
     messages: [],
+    emptySince: Date.now(),
     livekitUrl,
     createdAt: Date.now()
   };
@@ -203,12 +254,17 @@ app.post('/api/rooms', async (req, res) => {
 });
 
 // API Endpoint: Join Room
-app.post('/api/rooms/:id/join', async (req, res) => {
+app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
   const { id } = req.params;
   const { userId, name, color, emoji } = req.body;
 
   if (!userId || !name) {
     return res.status(400).json({ error: 'userId and name are required' });
+  }
+
+  // Ensure the authenticated user matches the requested userId
+  if (req.user && req.user.uid !== userId) {
+    return res.status(403).json({ error: 'Forbidden: User ID mismatch' });
   }
 
   const room = rooms.find(r => r.id === id);
@@ -289,6 +345,80 @@ app.post('/api/rooms/:id/leave', (req, res) => {
     saveDB();
   }
 
+  res.json({ success: true });
+});
+
+// Moderation Endpoints
+app.post('/api/rooms/:id/promote', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { targetUserId } = req.body;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  
+  if (!room.roles) room.roles = {};
+  if (room.roles[req.user.uid] !== 'owner') {
+    return res.status(403).json({ error: 'Only the owner can promote' });
+  }
+  if (room.roles[targetUserId] === 'owner') {
+    return res.status(400).json({ error: 'Cannot promote owner' });
+  }
+
+  room.roles[targetUserId] = 'co-host';
+  saveDB();
+  io.to(id).emit('role-changed', { userId: targetUserId, role: 'co-host' });
+  res.json({ success: true, roles: room.roles });
+});
+
+app.post('/api/rooms/:id/kick', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { targetUserId } = req.body;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  if (!room.roles) room.roles = {};
+
+  const requesterRole = room.roles[req.user.uid] || 'guest';
+  if (requesterRole !== 'owner' && requesterRole !== 'co-host') {
+    return res.status(403).json({ error: 'Not authorized to kick' });
+  }
+  if (room.roles[targetUserId] === 'owner') {
+    return res.status(403).json({ error: 'Cannot kick owner' });
+  }
+
+  room.participants = room.participants.filter(p => p.id !== targetUserId);
+  saveDB();
+  io.to(id).emit('participant-kicked', { userId: targetUserId });
+  res.json({ success: true });
+});
+
+app.post('/api/rooms/:id/mute', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { targetUserId } = req.body;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  if (!room.roles) room.roles = {};
+
+  const requesterRole = room.roles[req.user.uid] || 'guest';
+  if (requesterRole !== 'owner' && requesterRole !== 'co-host') {
+    return res.status(403).json({ error: 'Not authorized to mute' });
+  }
+
+  io.to(id).emit('participant-muted', { userId: targetUserId });
+  res.json({ success: true });
+});
+
+app.delete('/api/rooms/:id', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const roomIndex = rooms.findIndex(r => r.id === id);
+  if (roomIndex === -1) return res.status(404).json({ error: 'Room not found' });
+  if (!rooms[roomIndex].roles) rooms[roomIndex].roles = {};
+
+  if (rooms[roomIndex].roles[req.user.uid] !== 'owner') {
+    return res.status(403).json({ error: 'Only the owner can delete the room' });
+  }
+
+  io.to(id).emit('room-deleted');
+  rooms.splice(roomIndex, 1);
+  saveDB();
   res.json({ success: true });
 });
 
