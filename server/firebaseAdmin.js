@@ -30,9 +30,18 @@ export function initFirebaseAdmin() {
 export async function verifyToken(req, res, next) {
   const adminInstance = initFirebaseAdmin();
   if (!adminInstance) {
-    // If Admin isn't configured, bypass auth (e.g., Demo mode)
-    // Or we could strict reject. Let's strict reject to enforce Auth gating.
-    return res.status(401).json({ error: 'Server authentication is not configured.' });
+    // Demo Mode Fallback: Allow requests to proceed without strict Firebase Admin verification.
+    console.warn("⚠️ Demo Mode: Server authentication is not configured. Bypassing strict token verification.");
+    
+    // Attempt to parse userId from the request body so room logic (like owner roles) doesn't crash
+    const mockUid = req.body?.userId || req.body?.targetUserId || 'demo-user-id';
+    
+    req.user = { 
+      uid: mockUid,
+      email: 'demo@example.com'
+    };
+    
+    return next();
   }
 
   const authHeader = req.headers.authorization;
