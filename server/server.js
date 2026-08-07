@@ -272,7 +272,7 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
 // API Endpoint: Join Room
 app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
   const { id } = req.params;
-  const { userId, name, color, emoji } = req.body;
+  const { userId, name, color, emoji, photoUrl } = req.body;
 
   if (!userId || !name) {
     return res.status(400).json({ error: 'userId and name are required' });
@@ -299,6 +299,7 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
     name,
     color: color || '#ff4d4d',
     emoji: emoji || '😊',
+    photoUrl: photoUrl || '',
     joinedAt: Date.now(),
     lastPing: Date.now()
   };

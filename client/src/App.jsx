@@ -387,7 +387,10 @@ export default function App() {
     const pingInterval = setInterval(() => {
       fetch(`${API_URL}/api/rooms/${activeRoom.id}/ping`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
         body: JSON.stringify({ userId: user.id })
       }).catch(err => console.warn('Ping error:', err));
     }, 4000);
@@ -605,7 +608,8 @@ export default function App() {
           userId: user.id,
           name: user.name,
           color: user.color,
-          emoji: user.emoji
+          emoji: user.emoji,
+          photoUrl: user.photoUrl
         })
       });
 
@@ -1281,7 +1285,11 @@ export default function App() {
                     <div key={p.id} className="flex flex-col items-center gap-2 cursor-pointer relative" onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)}>
                       <div className="grid-avatar-container">
                          <div className={`grid-avatar ${isSpeaking ? 'speaking' : ''}`} style={{ backgroundColor: p.isLocal ? (user?.color || '#0d94a8') : (p.color || '#ff4d4d') }}>
-                           {p.isLocal ? (user?.emoji || '👤') : (p.emoji || '👤')}
+                           {p.isLocal ? (
+                             user?.photoUrl ? <img src={user.photoUrl} className="w-full h-full object-cover rounded-full" alt="" /> : (user?.emoji || '👤')
+                           ) : (
+                             p.photoUrl ? <img src={p.photoUrl} className="w-full h-full object-cover rounded-full" alt="" /> : (p.emoji || '👤')
+                           )}
                          </div>
                          {p.muted && (
                            <div className="mic-badge"><MicOff className="w-3 h-3 text-white opacity-80" /></div>

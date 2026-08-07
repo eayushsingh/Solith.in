@@ -260,10 +260,15 @@ export default function RoomCard({ room, inThisRoom, onJoin, userFollowing = [] 
                       className="avatar"
                       style={{ 
                         backgroundColor: p.color || '#ff6b4a',
-                        boxShadow: isActiveSpeaker ? '0 0 8px var(--accent-glow)' : 'none'
+                        boxShadow: isActiveSpeaker ? '0 0 8px var(--accent-glow)' : 'none',
+                        overflow: 'hidden'
                       }}
                     >
-                      {p.name ? p.name.charAt(0).toUpperCase() : '?'}
+                      {p.photoUrl ? (
+                        <img src={p.photoUrl} className="w-full h-full object-cover" alt={p.name} />
+                      ) : (
+                        p.name ? p.name.charAt(0).toUpperCase() : '?'
+                      )}
                     </div>
 
                     {/* Muted Indicator */}
