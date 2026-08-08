@@ -183,8 +183,8 @@ setInterval(() => {
       if (!room.emptySince) {
         room.emptySince = now;
         modified = true;
-      } else if (now - room.emptySince > 5 * 60 * 1000) {
-        // Room empty for > 5 mins
+      } else if (now - room.emptySince > 30 * 60 * 1000) {
+        // Room empty for > 30 mins
         if (io) io.to(room.id).emit('room-deleted');
         return false;
       }
@@ -222,7 +222,7 @@ app.get('/api/config', (req, res) => {
 });
 
 // API Endpoint: Update Config dynamically
-app.post('/api/config', (req, res) => {
+app.post('/api/config', verifyToken, verifyAdmin, (req, res) => {
   const { apiKey, apiSecret, url } = req.body;
   if (apiKey !== undefined) runtimeConfig.livekitApiKey = apiKey.trim();
   if (apiSecret !== undefined) runtimeConfig.livekitApiSecret = apiSecret.trim();

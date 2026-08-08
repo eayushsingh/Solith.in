@@ -114,8 +114,8 @@ export default function GlobalChatView({ user, onSignIn }) {
     try {
       await addDoc(collection(db, 'global_chat'), {
         text: messageToSend,
-        uid: user.uid,
-        displayName: user.displayName,
+        uid: user.id,
+        displayName: user.name,
         photoUrl: user.photoUrl,
         createdAt: serverTimestamp(),
       });
