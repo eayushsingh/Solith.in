@@ -633,6 +633,10 @@ export default function App() {
       }
 
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to join room.");
+      }
+
       setActiveRoom(room);
       setIsRealCall(data.isRealConnection);
 
@@ -662,7 +666,8 @@ export default function App() {
       fetchRooms(); // refresh listing UI
     } catch (err) {
       console.error('Error joining call room:', err);
-      alert('Could not join voice session.');
+      alert(err.message || 'Could not join voice session.');
+      setIsMuted(true);
       setActiveRoom(null);
       setCallState('left');
     }
