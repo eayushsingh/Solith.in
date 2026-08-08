@@ -291,7 +291,8 @@ export default function App() {
 
           if (auth.currentUser) {
             console.log("signInWithPopup SUCCESS (Despite Persistence Failure):", auth.currentUser.email);
-            alert("Sign-in succeeded but couldn't save your session — you may need to sign in again next visit.");
+            // Session saving failed (likely due to strict browser privacy settings), but login succeeded in-memory.
+            // Silently proceed without alarming the user.
             setShowAuthModal(false);
             setShowProfileModal(true);
           } else {
