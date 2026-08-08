@@ -703,19 +703,6 @@ export default function App() {
 
   // Local Microphone Mute controller
   const toggleMute = () => {
-    const currentRoomData = rooms.find(r => r.id === activeRoom?.id);
-    if (currentRoomData && user) {
-      const role = getRole(user.id);
-      const isHostOrCoHost = role === 'owner' || role === 'co-host';
-      const isAllowedSpeaker = currentRoomData.allowedSpeakers?.includes(user.id);
-      const isOpenMic = currentRoomData.isOpenMic;
-      
-      if (!isHostOrCoHost && !isAllowedSpeaker && !isOpenMic) {
-         alert("You must raise your hand and be allowed to speak by the host.");
-         return;
-      }
-    }
-
     const nextMute = !isMuted;
     const resolved = LiveKitService.setLocalAudio(nextMute, isRealCall);
     setIsMuted(resolved);
@@ -1884,21 +1871,15 @@ export default function App() {
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                 12:47
              </div>
-             {isListener ? (
-                hasRaisedHand ? (
-                  <button onClick={lowerHand} className="p-2 hover:bg-white/10 rounded-xl flex items-center gap-2 text-xs font-bold text-white/70 transition-colors">
-                    <Hand className="w-4 h-4 text-[var(--accent)]"/> Lower
-                  </button>
-                ) : (
-                  <button onClick={raiseHand} className="p-2 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 rounded-xl flex items-center gap-2 text-xs font-bold text-[var(--accent)] transition-colors">
-                    <Hand className="w-4 h-4"/> Raise
-                  </button>
-                )
-             ) : (
-               <button onClick={toggleMute} className={`p-2 rounded-xl transition-colors ${isMuted ? 'bg-red-500 text-white' : 'bg-[#2a2d36] text-white hover:bg-white/20'}`}>
+             {/* Left - Raise Hand Button (Optional for everyone) */}
+             <button onClick={hasRaisedHand ? lowerHand : raiseHand} className="p-2 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 rounded-xl flex items-center gap-2 text-xs font-bold text-[var(--accent)] transition-colors">
+               <Hand className="w-4 h-4"/> {hasRaisedHand ? 'Lower' : 'Raise'}
+             </button>
+
+             {/* Center - Mute Button (Always available in Free4Talk) */}
+             <button onClick={toggleMute} className={`p-2 rounded-xl transition-colors ${isMuted ? 'bg-red-500 text-white' : 'bg-[#2a2d36] text-white hover:bg-white/20'}`}>
                  {isMuted ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
-               </button>
-             )}
+             </button>
              <button onClick={() => setShowSettingsModal(true)} className="p-2 rounded-xl bg-[#2a2d36] text-white hover:bg-white/20 transition-colors"><Settings className="w-4 h-4"/></button>
              <button onClick={leaveVoiceRoom} className="p-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors ml-2"><LogOut className="w-4 h-4"/></button>
           </div>
