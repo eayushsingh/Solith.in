@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "id": "room-3s2khug",
+    "name": "hacker",
+    "language": "English",
+    "topic": "",
+    "tags": [
+      "Casual"
+    ],
+    "accessType": "public",
+    "isOpenMic": false,
+    "speakingQueue": [],
+    "allowedSpeakers": [],
+    "participants": [],
+    "roles": {
+      "zUlIG14JL8aQe6iLRgkvNnoRvGy2": "owner"
+    },
+    "messages": [],
+    "livekitUrl": "wss://freetalk-ygqnbh28.livekit.cloud",
+    "createdAt": 1786204874734,
+    "emptySince": 1786204898237
+  }
+]

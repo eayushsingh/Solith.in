@@ -334,7 +334,12 @@ export default function AdminPanel({ onBack, user }) {
               {/* REPORTS TAB */}
               {activeTab === 'reports' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-6">Reports Queue</h2>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-white">Reports Queue</h2>
+                    <a href="#guidelines" onClick={(e) => { e.preventDefault(); window.location.hash = 'guidelines'; window.location.reload(); }} className="text-sm text-[var(--accent)] hover:underline flex items-center gap-1">
+                      View Guidelines
+                    </a>
+                  </div>
                   <div className="space-y-4">
                     {reports.length === 0 ? (
                       <div className="text-gray-500">No reports found.</div>

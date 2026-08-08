@@ -105,9 +105,43 @@ const awardUserXP = async (userId, durationMs) => {
   try {
     const db = adminInstance.firestore();
     const userRef = db.collection('users').doc(userId);
-    await userRef.update({
-      xp: adminInstance.firestore.FieldValue.increment(xpEarned)
+    
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(userRef);
+      if (!doc.exists) return;
+
+      const data = doc.data();
+      const now = new Date();
+      
+      // Get current week and month strings (e.g. "2023-W41", "2023-10")
+      // Simple ISO week calculation
+      const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+      const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+      const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+
+      let newWeeklyXp = xpEarned;
+      if (data.weeklyXpId === currentWeekId && typeof data.weeklyXp === 'number') {
+        newWeeklyXp = data.weeklyXp + xpEarned;
+      }
+
+      let newMonthlyXp = xpEarned;
+      if (data.monthlyXpId === currentMonthId && typeof data.monthlyXp === 'number') {
+        newMonthlyXp = data.monthlyXp + xpEarned;
+      }
+
+      transaction.update(userRef, {
+        xp: adminInstance.firestore.FieldValue.increment(xpEarned),
+        weeklyXp: newWeeklyXp,
+        weeklyXpId: currentWeekId,
+        monthlyXp: newMonthlyXp,
+        monthlyXpId: currentMonthId
+      });
     });
+
     console.log(`Successfully awarded ${xpEarned} XP to user ${userId} for ${Math.floor(durationMs / 60000)} minutes of talking.`);
   } catch (error) {
     console.error('Failed to award XP:', error);
@@ -202,7 +236,8 @@ app.post('/api/config', (req, res) => {
 
 // API Endpoint: List Rooms
 app.get('/api/rooms', (req, res) => {
-  res.json(rooms);
+  const publicAndFriendsRooms = rooms.filter(r => r.accessType !== 'invite');
+  res.json(publicAndFriendsRooms);
 });
 
 const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean'];
@@ -227,7 +262,7 @@ const roomCreationLimiter = rateLimit({
 
 // API Endpoint: Create Room
 app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
-  const { name, language, topic, tags } = req.body;
+  const { name, language, topic, tags, accessType = 'public', isOpenMic = false } = req.body;
 
   if (!SUPPORTED_LANGUAGES.includes(language)) {
     return res.status(400).json({ error: 'Invalid language selection' });
@@ -262,6 +297,10 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     language,
     topic: topic ? topic.trim() : '',
     tags: validTags,
+    accessType,
+    isOpenMic: !!isOpenMic,
+    speakingQueue: [],
+    allowedSpeakers: [],
     participants: [],
     roles: req.user ? { [req.user.uid]: 'owner' } : {},
     messages: [],
@@ -293,6 +332,30 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
   const room = rooms.find(r => r.id === id);
   if (!room) {
     return res.status(404).json({ error: 'Room not found' });
+  }
+
+  // Enforce Room Privacy
+  if (room.accessType === 'friends') {
+    const ownerId = Object.keys(room.roles || {}).find(uid => room.roles[uid] === 'owner');
+    if (ownerId && ownerId !== userId) {
+      const adminInstance = initFirebaseAdmin();
+      if (!adminInstance) return res.status(503).json({ error: 'Firestore Admin not initialized.' });
+      
+      try {
+        const db = adminInstance.firestore();
+        const followsSnapshot = await db.collection('follows')
+          .where('followerId', '==', userId)
+          .where('followingId', '==', ownerId)
+          .get();
+          
+        if (followsSnapshot.empty) {
+          return res.status(403).json({ error: 'This is a friends-only room. You must follow the host to join.' });
+        }
+      } catch (err) {
+        console.error('Error checking friends access:', err);
+        return res.status(500).json({ error: 'Failed to verify room access' });
+      }
+    }
   }
 
   // Remove user from any other rooms they might be in
@@ -376,6 +439,59 @@ app.post('/api/rooms/:id/leave', verifyToken, (req, res) => {
     saveDB();
   }
 
+  res.json({ success: true });
+});
+
+// Speaking Queue Endpoints
+app.post('/api/rooms/:id/raise-hand', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  
+  if (!room.speakingQueue) room.speakingQueue = [];
+  if (!room.speakingQueue.includes(req.user.uid)) {
+    room.speakingQueue.push(req.user.uid);
+    saveDB();
+    io.to(id).emit('queue-updated', room.speakingQueue);
+  }
+  res.json({ success: true, speakingQueue: room.speakingQueue });
+});
+
+app.post('/api/rooms/:id/lower-hand', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  
+  if (room.speakingQueue) {
+    room.speakingQueue = room.speakingQueue.filter(uid => uid !== req.user.uid);
+    saveDB();
+    io.to(id).emit('queue-updated', room.speakingQueue);
+  }
+  res.json({ success: true, speakingQueue: room.speakingQueue });
+});
+
+app.post('/api/rooms/:id/allow-speak', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { targetUserId } = req.body;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  
+  const requesterRole = room.roles ? room.roles[req.user.uid] : 'guest';
+  if (requesterRole !== 'owner' && requesterRole !== 'co-host') {
+    return res.status(403).json({ error: 'Not authorized to allow speaking' });
+  }
+
+  if (room.speakingQueue) {
+    room.speakingQueue = room.speakingQueue.filter(uid => uid !== targetUserId);
+  }
+  if (!room.allowedSpeakers) room.allowedSpeakers = [];
+  if (!room.allowedSpeakers.includes(targetUserId)) {
+    room.allowedSpeakers.push(targetUserId);
+  }
+  
+  saveDB();
+  io.to(id).emit('queue-updated', room.speakingQueue || []);
+  io.to(id).emit('speaker-allowed', { userId: targetUserId });
   res.json({ success: true });
 });
 

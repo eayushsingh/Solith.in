@@ -26,57 +26,73 @@ export default function Guidelines({ onBack }) {
         <div className="space-y-8 text-[var(--ink-secondary)] leading-relaxed">
           <section>
             <h2 className="text-xl font-semibold text-[var(--ink)] mb-3 flex items-center gap-2">
-              <span className="text-[var(--accent)]">1.</span> Be Respectful
+              <span className="text-[var(--accent)]">1.</span> Be respectful
             </h2>
             <p>
-              We have zero tolerance for harassment, hate speech, discrimination, bullying, or threats of any kind. 
-              Treat everyone with dignity. Engage in debate, but never attack the person.
+              No harassment, hate speech, threats, or bullying. Treat everyone with dignity and respect.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-[var(--ink)] mb-3 flex items-center gap-2">
-              <span className="text-[var(--accent)]">2.</span> No Personal Information
+              <span className="text-[var(--accent)]">2.</span> No sexual content or unwanted advances
             </h2>
             <p>
-              Do not share personal contact info, phone numbers, or social media handles for the purpose of moving people off-platform in ways that enable stalking or harassment. Keep the conversation here.
+              Explicit sexual content, inappropriate advances, and solicitation are strictly prohibited.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-[var(--ink)] mb-3 flex items-center gap-2">
-              <span className="text-[var(--accent)]">3.</span> No Sexual Content
+              <span className="text-[var(--accent)]">3.</span> No spam or scams
             </h2>
             <p>
-              Solith is not a dating app. Explicit sexual content, inappropriate advances, and solicitation are strictly prohibited.
+              Do not use this platform to promote scams, spam others, or distribute malicious links.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-[var(--ink)] mb-3 flex items-center gap-2">
-              <span className="text-[var(--accent)]">4.</span> Respect Room Topics
+              <span className="text-[var(--accent)]">4.</span> No fake identities or impersonation
             </h2>
             <p>
-              Don't derail or spam unrelated rooms. If a room is focused on practicing Spanish, don't spam English. 
-              If a room is a serious debate, don't troll. Find the right room for your vibe, or create your own.
+              Do not pretend to be someone else or misrepresent your identity to deceive others.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-[var(--ink)] mb-3 flex items-center gap-2">
-              <span className="text-[var(--accent)]">5.</span> Respect the Hosts
+              <span className="text-[var(--accent)]">5.</span> Don't share others' private information
             </h2>
             <p>
-              Room owners and co-hosts have the final say in their rooms. They have the right to mute, kick, or end sessions. 
-              Please respect their decisions to keep the peace in their spaces.
+              Respect privacy. Doxxing or sharing personal information without explicit consent is strictly forbidden.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-[var(--ink)] mb-3 flex items-center gap-2">
+              <span className="text-[var(--accent)]">6.</span> Keep your mic muted when not speaking
+            </h2>
+            <p>
+              Don't dominate the conversation. Allow others to speak and maintain a healthy dialogue.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-[var(--ink)] mb-3 flex items-center gap-2">
+              <span className="text-[var(--accent)]">7.</span> Follow room-owner and host instructions
+            </h2>
+            <p>
+              Room owners and co-hosts manage their spaces. Please respect their rules and moderation decisions.
             </p>
           </section>
 
           <div className="mt-12 p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--line-subtle)]">
-            <h3 className="font-semibold text-[var(--ink)] mb-2">Enforcement</h3>
+            <h3 className="font-semibold text-[var(--ink)] mb-2 flex items-center gap-2">
+              Enforcement
+            </h3>
             <p className="text-sm">
-              Violations of these rules will result in immediate action. We actively monitor reports from our community. 
-              Depending on the severity, violations can lead to warnings, temporary room-creation bans, or permanent account termination.
+              Violations can lead to warnings, restrictions, or bans depending on the severity of the offense. We actively review reports to keep the community safe.
             </p>
           </div>
         </div>
