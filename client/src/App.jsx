@@ -1066,7 +1066,7 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={isCreatingRoom}
-                  className={`px-6 py-3 rounded-xl text-sm font-bold bg-[#00d859] text-black hover:bg-[#33e07a] transition-all flex items-center justify-center min-w-[150px] ${isCreatingRoom ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`px-6 py-3 rounded-xl text-sm font-bold bg-[#ef4444] text-black hover:bg-[#f87171] transition-all flex items-center justify-center min-w-[150px] ${isCreatingRoom ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   {isCreatingRoom ? 'Launching...' : 'Create & Launch'}
                 </button>
@@ -1309,7 +1309,7 @@ export default function App() {
                 </div>
                 <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
                   <div className="flex justify-center mb-2"><Award className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
-                  <div className="text-3xl font-black text-[#00d859]">{user.xp || 0}</div>
+                  <div className="text-3xl font-black text-[#ef4444]">{user.xp || 0}</div>
                   <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Total XP</div>
                 </div>
               </div>
@@ -1382,7 +1382,7 @@ export default function App() {
                   </div>
                   <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
                     <div className="flex justify-center mb-2"><Award className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
-                    <div className="text-3xl font-black text-[#00d859]">{targetProfile.xp || 0}</div>
+                    <div className="text-3xl font-black text-[#ef4444]">{targetProfile.xp || 0}</div>
                     <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Total XP</div>
                   </div>
                 </div>
@@ -1411,7 +1411,7 @@ export default function App() {
                     className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
                       user.following?.includes(targetProfile.id) 
                         ? 'bg-[#121212] border border-yellow-500/20 text-yellow-500/80 hover:text-yellow-500 hover:bg-yellow-500/10' 
-                        : 'bg-[#00d859] text-black hover:scale-[1.02] hover:shadow-green-500/30'
+                        : 'bg-[#ef4444] text-black hover:scale-[1.02] hover:shadow-red-500/30'
                     }`}
                   >
                     {user.following?.includes(targetProfile.id) ? (
@@ -1442,7 +1442,7 @@ export default function App() {
                 {!user && (
                   <button 
                     onClick={() => { setShowTargetProfileModal(false); setShowAuthModal(true); }}
-                    className="w-full py-3.5 rounded-xl text-sm font-bold bg-[#00d859] text-black shadow-lg hover:scale-[1.02]"
+                    className="w-full py-3.5 rounded-xl text-sm font-bold bg-[#ef4444] text-black shadow-lg hover:scale-[1.02]"
                   >
                     Sign in to follow
                   </button>
@@ -1680,7 +1680,7 @@ export default function App() {
               <>
                 {/* Level / XP */}
                 <div className="flex items-center gap-2 text-[15px] font-mono text-gray-400">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#00d859]"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></div>
                   <span className="text-white font-bold">{levelInfo ? levelInfo.level : 11}</span>
                   <span>/</span>
                   <span>{user.xp ? user.xp.toLocaleString() : '6,470'}</span>
@@ -1702,14 +1702,14 @@ export default function App() {
                 <img 
                   src={user.photoUrl || "https://ui-avatars.com/api/?name=User"} 
                   alt="Profile" 
-                  className="w-10 h-10 rounded-full cursor-pointer border-2 border-[#00d859] hover:opacity-80 transition-opacity ml-4" 
+                  className="w-10 h-10 rounded-full cursor-pointer border-2 border-[#ef4444] hover:opacity-80 transition-opacity ml-4" 
                   onClick={() => setShowProfileModal(true)} 
                 />
               </>
             ) : (
               <button 
                 onClick={() => setShowAuthModal(true)}
-                className="px-6 py-2.5 text-xs font-bold bg-[#00d859] text-[#0b0d10] rounded-full hover:bg-[#33e07a] transition-colors shadow-[0_0_15px_rgba(0,216,89,0.3)]"
+                className="px-6 py-2.5 text-xs font-bold bg-[#ef4444] text-[#0b0d10] rounded-full hover:bg-[#f87171] transition-colors shadow-[0_0_15px_rgba(239,68,68,0.3)]"
               >
                 Sign in with Google
               </button>
@@ -1786,7 +1786,7 @@ export default function App() {
             </button>
             <div className="hidden lg:flex items-center gap-2 border-l border-[#32363e] pl-4 text-[#86868b] text-xs font-semibold px-2">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#00d859]"></span> 
+                <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span> 
                 {Math.floor(Date.now() / 10000) % 50 + 1200} Users Online
               </span>
             </div>
@@ -1902,12 +1902,12 @@ export default function App() {
                     const canPromote = myRole === 'owner';
 
                     return (
-                        <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-[#1c1f26] border-4 transition-all duration-300 ${isSpeaking ? 'border-[#00d859] shadow-[0_0_25px_rgba(0,216,89,0.3)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
+                        <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-[#1c1f26] border-4 transition-all duration-300 ${isSpeaking ? 'border-[#ef4444] shadow-[0_0_25px_rgba(239,68,68,0.3)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
                            {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-6xl">{pEmoji}</span>}
                            
                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-2 px-3 text-center">
                               <span className="text-white text-xs font-bold drop-shadow-md truncate block">{pName}</span>
-                              {targetRole === 'owner' && <span className="text-[9px] text-[#00d859] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
+                              {targetRole === 'owner' && <span className="text-[9px] text-[#ef4444] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
                            </div>
 
                            {p.muted && (
@@ -1952,7 +1952,7 @@ export default function App() {
                            {msg.senderEmoji || '👤'}
                          </div>
                       )}
-                      <div className={msg.senderId === user?.id ? 'chat-bubble-right bg-[#00d859]/20 text-white rounded-2xl rounded-br-sm px-3 py-2 text-sm max-w-[80%]' : 'chat-bubble-left bg-white/10 text-white rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[80%]'}>
+                      <div className={msg.senderId === user?.id ? 'chat-bubble-right bg-[#ef4444]/20 text-white rounded-2xl rounded-br-sm px-3 py-2 text-sm max-w-[80%]' : 'chat-bubble-left bg-white/10 text-white rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[80%]'}>
                         <span className="font-bold block text-[10px] opacity-50 mb-0.5">{msg.senderName}</span>
                         {msg.text}
                       </div>

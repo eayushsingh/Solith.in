@@ -23,7 +23,7 @@ export default function StaticModals({ activeModal, closeModal }) {
       break;
     case 'contact':
       title = 'Contact Us';
-      icon = <MessageSquare className="w-5 h-5 text-green-400" />;
+      icon = <MessageSquare className="w-5 h-5 text-red-400" />;
       content = (
         <div className="space-y-4 text-sm text-gray-300">
           <p>Need help, found a bug, or just want to say hi?</p>

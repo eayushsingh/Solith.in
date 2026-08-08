@@ -19,9 +19,9 @@
   --line: #24272e;
   --line-bright: #323640;
 
-  /* Talk4Now Green */
-  --accent: #00d859;
-  --accent-light: #33e07a;
+  /* Talk4Now Red */
+  --accent: #ef4444;
+  --accent-light: #f87171;
   --accent-bg: rgba(0, 216, 89, 0.15);
   --accent-glow: rgba(0, 216, 89, 0.35);
 
