@@ -11,18 +11,18 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
   ];
 
   return (
-    <aside className="w-[72px] h-screen bg-[#121418] border-r border-[#24272e] flex flex-col items-center py-6 flex-shrink-0 z-50 fixed left-0 top-0">
+    <aside className="fixed bottom-0 left-0 w-full h-16 md:h-screen md:w-[72px] md:top-0 bg-[#121418]/95 backdrop-blur-md md:bg-[#121418] border-t md:border-t-0 md:border-r border-[#24272e] flex flex-row md:flex-col items-center justify-around md:justify-start px-4 md:px-0 py-0 md:py-6 z-50">
       {/* Logo Area */}
       <div 
         onClick={() => setView('lobby')}
-        className="w-10 h-10 rounded bg-[#00d859] flex items-center justify-center cursor-pointer mb-8 shadow-[0_0_15px_rgba(0,216,89,0.3)] transition-transform hover:scale-105"
+        className="hidden md:flex w-10 h-10 rounded bg-[#00d859] items-center justify-center cursor-pointer mb-8 shadow-[0_0_15px_rgba(0,216,89,0.3)] transition-transform hover:scale-105"
         title="TalkFree Home"
       >
         <span className="text-[#0b0d10] font-black text-xl tracking-tighter">T</span>
       </div>
 
       {/* Main Navigation */}
-      <div className="flex flex-col gap-6 w-full items-center flex-1">
+      <div className="flex flex-row md:flex-col gap-1 md:gap-6 w-full items-center justify-center flex-1">
         {navItems.map(item => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -45,7 +45,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
       </div>
 
       {/* Bottom Actions */}
-      <div className="flex flex-col gap-4 w-full items-center mt-auto">
+      <div className="hidden md:flex flex-col gap-4 w-full items-center mt-auto">
         
         {/* WhatsApp Icon */}
         <button 

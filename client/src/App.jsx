@@ -1757,44 +1757,44 @@ export default function App() {
           </div>
 
           {/* Action Buttons Row */}
-          <div className="flex flex-wrap justify-center items-center gap-3">
+          <div className="flex overflow-x-auto hide-scrollbar w-full max-w-full justify-start md:justify-center items-center gap-3 pb-2 px-1">
             <button 
               onClick={() => { if(user) setShowCreateModal(true); else setShowAuthModal(true); }}
-              className={`px-5 py-2.5 bg-blue-500 text-white font-semibold rounded text-[13px] flex items-center gap-1.5 hover:bg-blue-600 transition-colors ${user?.isRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-blue-500 text-white font-semibold rounded text-[13px] flex items-center gap-1.5 hover:bg-blue-600 transition-colors ${user?.isRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Plus className="w-4 h-4" /> Create a new group
             </button>
-            <button className="px-5 py-2.5 bg-yellow-400 text-black font-bold rounded text-[13px] flex items-center gap-1.5 hover:bg-yellow-500 transition-colors" onClick={() => window.open('https://buymeacoffee.com', '_blank')}>
+            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-yellow-400 text-black font-bold rounded text-[13px] flex items-center gap-1.5 hover:bg-yellow-500 transition-colors" onClick={() => window.open('https://buymeacoffee.com', '_blank')}>
               <Coffee className="w-4 h-4" /> Buy me a coffee
             </button>
-            <button className="px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('privacy')}>
+            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('privacy')}>
               <Shield className="w-4 h-4" /> Privacy Policy
             </button>
-            <button className="px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('contact')}>
+            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('contact')}>
               <MessageSquare className="w-4 h-4" /> Contact Us
             </button>
-            <button className="px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('about')}>
+            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('about')}>
               <Info className="w-4 h-4" /> About Us
             </button>
-            <button className="px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => window.open('https://facebook.com', '_blank')}>
+            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => window.open('https://facebook.com', '_blank')}>
               <Facebook className="w-4 h-4" /> Facebook Group
             </button>
           </div>
 
           {/* Full Width Search Row */}
-          <div className="w-full flex flex-col md:flex-row items-center gap-4 bg-[#121418] p-2 rounded-xl border border-[#24272e] animate-slide-up-delayed">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#86868b]" />
+          <div className="w-full flex flex-row items-center gap-2 md:gap-4 bg-[#121418] p-2 rounded-xl border border-[#24272e] animate-slide-up-delayed overflow-hidden">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#86868b]" />
               <input 
                 type="text" 
-                placeholder="Search by Topic & User" 
+                placeholder="Search..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-3 pl-12 pr-4 text-sm bg-transparent focus:outline-none text-white placeholder-[#5c5c60]"
+                className="w-full py-2.5 md:py-3 pl-9 pr-2 md:pr-4 text-[13px] md:text-sm bg-transparent focus:outline-none text-white placeholder-[#5c5c60] border-none shadow-none"
               />
             </div>
-            <button className="px-6 py-3 bg-[#24272e] text-white text-sm font-semibold rounded-lg hover:bg-[#32363e] transition-colors flex items-center gap-2">
-              <Search className="w-4 h-4" /> Search
+            <button className="px-3 md:px-6 py-2.5 md:py-3 bg-[#24272e] text-white text-[13px] md:text-sm font-semibold rounded-lg hover:bg-[#32363e] transition-colors flex items-center gap-2 flex-shrink-0">
+              <Search className="hidden md:block w-4 h-4" /> <span className="hidden md:inline">Search</span><Search className="block md:hidden w-4 h-4" />
             </button>
             <div className="hidden lg:flex items-center gap-2 border-l border-[#32363e] pl-4 text-[#86868b] text-xs font-semibold px-2">
               <span className="flex items-center gap-1.5">
