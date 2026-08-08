@@ -828,12 +828,12 @@ export default function App() {
   };
 
   // Moderation API Calls
-  const promoteUser = async (targetId) => {
+  const promoteUser = async (targetId, role) => {
     try {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/promote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
-        body: JSON.stringify({ targetUserId: targetId })
+        body: JSON.stringify({ targetUserId: targetId, role })
       });
     } catch (e) { console.error('Promote failed', e); }
   };
@@ -1936,7 +1936,14 @@ export default function App() {
                    {participants.map(p => {
                        const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                        const myRole = getRole(user?.id);
-                       const isLocalUserMod = myRole === 'owner' || myRole === 'co-host';
+                       const targetRole = getRole(p.id);
+                       
+                       // Kick/Mute logic
+                       let canModTarget = false;
+                       if (myRole === 'owner' && targetRole !== 'owner') canModTarget = true;
+                       if (myRole === 'co-owner' && (targetRole === 'elder' || targetRole === 'member' || targetRole === 'guest')) canModTarget = true;
+                       
+                       const canPromote = myRole === 'owner';
 
                        return (
                           <div key={p.id} className="relative group cursor-pointer flex-shrink-0 transition-transform hover:scale-105" onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)}>
@@ -1949,8 +1956,11 @@ export default function App() {
                                  )}
                               </div>
                             </div>
-                            <div className="absolute bottom-1 left-1 right-1 bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 text-[10px] font-medium text-white truncate text-center border border-white/10 shadow-sm">
-                               {p.isLocal ? 'You' : p.name}
+                            <div className="absolute bottom-1 left-1 right-1 bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 text-[10px] font-medium text-white truncate text-center border border-white/10 shadow-sm flex flex-col items-center gap-0.5">
+                               <span>{p.isLocal ? 'You' : p.name}</span>
+                               {targetRole === 'owner' && <span className="text-[8px] bg-red-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Owner</span>}
+                               {targetRole === 'co-owner' && <span className="text-[8px] bg-purple-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Co-Owner</span>}
+                               {targetRole === 'elder' && <span className="text-[8px] bg-blue-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Elder</span>}
                             </div>
                             {p.muted && (
                               <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 shadow-sm">
@@ -1960,12 +1970,23 @@ export default function App() {
                             
                             {/* Moderation Dropdown */}
                             {selectedParticipant === p.id && !p.isLocal && (
-                                <div className="absolute bottom-[90px] left-1/2 -translate-x-1/2 w-40 bg-[var(--bg-elevated)] border border-[var(--line-bright)] rounded-xl shadow-2xl z-50 overflow-hidden text-xs text-left animate-fade-in">
+                                <div className="absolute bottom-[90px] left-1/2 -translate-x-1/2 w-48 bg-[var(--bg-elevated)] border border-[var(--line-bright)] rounded-xl shadow-2xl z-50 overflow-hidden text-xs text-left animate-fade-in">
                                   <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-white transition-colors flex items-center gap-2"><Users className="w-4 h-4 text-white/70"/> Profile</button>
-                                  {isLocalUserMod && (
+                                  
+                                  {canPromote && targetRole !== 'owner' && targetRole !== 'co-owner' && (
+                                    <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-purple-400 transition-colors flex items-center gap-2">Make Co-Owner</button>
+                                  )}
+                                  {canPromote && targetRole !== 'owner' && targetRole !== 'elder' && (
+                                    <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'elder'); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-blue-400 transition-colors flex items-center gap-2">Make Elder</button>
+                                  )}
+                                  {canPromote && targetRole !== 'owner' && targetRole !== 'member' && targetRole !== 'guest' && (
+                                    <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'member'); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-gray-400 transition-colors flex items-center gap-2">Make Member</button>
+                                  )}
+                                  
+                                  {canModTarget && (
                                     <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-white transition-colors flex items-center gap-2"><MicOff className="w-4 h-4 text-white/70"/> Mute</button>
                                   )}
-                                  {isLocalUserMod && (
+                                  {canModTarget && (
                                     <button onClick={(e) => { e.stopPropagation(); kickUser(p.id); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--danger-bg)] text-[var(--danger)] transition-colors flex items-center gap-2"><UserMinus className="w-4 h-4 text-[var(--danger)]"/> Kick</button>
                                   )}
                                   <button onClick={(e) => { e.stopPropagation(); setReportTarget(p); setShowReportModal(true); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-white/50 transition-colors flex items-center gap-2"><Flag className="w-4 h-4 text-white/50"/> Report</button>
