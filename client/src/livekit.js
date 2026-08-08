@@ -173,11 +173,16 @@ function updateParticipantsList() {
   // Add local participant
   if (roomObject.localParticipant) {
     const isMuted = !roomObject.localParticipant.isMicrophoneEnabled;
+    let meta = {};
+    try { if (roomObject.localParticipant.metadata) meta = JSON.parse(roomObject.localParticipant.metadata); } catch(e){}
     list.push({
       id: roomObject.localParticipant.identity,
       name: roomObject.localParticipant.name || 'Local User',
       isLocal: true,
-      muted: isMuted
+      muted: isMuted,
+      photoUrl: meta.photoUrl || '',
+      color: meta.color || '#ff4d4d',
+      emoji: meta.emoji || '👤'
     });
   }
 
@@ -185,11 +190,16 @@ function updateParticipantsList() {
   if (roomObject.participants) {
     roomObject.participants.forEach(p => {
       const isMuted = !p.isMicrophoneEnabled;
+      let meta = {};
+      try { if (p.metadata) meta = JSON.parse(p.metadata); } catch(e){}
       list.push({
         id: p.identity,
         name: p.name || 'Guest Practicer',
         isLocal: false,
-        muted: isMuted
+        muted: isMuted,
+        photoUrl: meta.photoUrl || '',
+        color: meta.color || '#ff4d4d',
+        emoji: meta.emoji || '👤'
       });
     });
   }

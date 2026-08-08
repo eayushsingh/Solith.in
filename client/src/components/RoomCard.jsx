@@ -1,301 +1,89 @@
-import React, { useRef } from 'react';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
+import React from 'react';
+import { Settings, Heart, Phone } from 'lucide-react';
 
-gsap.registerPlugin(useGSAP);
-
-export default function RoomCard({ room, inThisRoom, onJoin, userFollowing = [] }) {
-  const cardRef = useRef();
-  const bgRef = useRef();
-  const titleRef = useRef();
-  const descRef = useRef();
-  const avatarsContainerRef = useRef();
-  const arrowRef = useRef();
-  const buttonRef = useRef();
-
-  const { contextSafe } = useGSAP({ scope: cardRef });
-
-  const onMouseEnter = contextSafe(() => {
-    // Border slowly brightens
-    gsap.to(cardRef.current, { 
-      borderColor: 'var(--accent)', 
-      y: -4,
-      boxShadow: '0 12px 40px -8px var(--accent-glow)',
-      duration: 0.4, 
-      ease: 'power2.out' 
-    });
-    
-    // Background shifts slightly
-    gsap.to(bgRef.current, {
-      y: 2,
-      x: 1,
-      backgroundColor: 'var(--bg-hover)',
-      duration: 0.6,
-      ease: 'power3.out'
-    });
-
-    // Title lifts
-    gsap.to(titleRef.current, { 
-      y: -3, 
-      duration: 0.5, 
-      ease: 'power3.out' 
-    });
-    
-    // Description opacity shifts slightly (high contrast transition: 0.8 to 1)
-    gsap.to(descRef.current, { 
-      opacity: 1, 
-      duration: 0.5, 
-      ease: 'power2.out' 
-    });
-    
-    // Avatars animate (staggered spread)
-    if (avatarsContainerRef.current) {
-      const avatars = avatarsContainerRef.current.children;
-      gsap.to(avatars, { 
-        x: (i) => i * 6, 
-        scale: 1.05,
-        duration: 0.5, 
-        ease: 'power3.out',
-        stagger: 0.02
-      });
-    }
-
-    // Arrow slides
-    gsap.to(arrowRef.current, { 
-      x: 4, 
-      y: -2,
-      duration: 0.5, 
-      ease: 'power3.out' 
-    });
-
-    // Button highlight text
-    gsap.to(buttonRef.current, { 
-      color: 'var(--accent)', 
-      duration: 0.4 
-    });
-
-  });
-
-  const onMouseLeave = contextSafe(() => {
-    // Border dims back
-    gsap.to(cardRef.current, { 
-      borderColor: 'var(--line)', 
-      y: 0,
-      boxShadow: 'none',
-      duration: 0.4, 
-      ease: 'power2.inOut' 
-    });
-
-    // Background shifts back
-    gsap.to(bgRef.current, {
-      y: 0,
-      x: 0,
-      backgroundColor: 'transparent',
-      duration: 0.6,
-      ease: 'power3.inOut'
-    });
-
-    // Title back
-    gsap.to(titleRef.current, { 
-      y: 0, 
-      duration: 0.5, 
-      ease: 'power3.inOut' 
-    });
-
-    // Description back (0.8 opacity for reading comfort)
-    gsap.to(descRef.current, { 
-      opacity: 0.8, 
-      duration: 0.5, 
-      ease: 'power2.inOut' 
-    });
-    
-    // Avatars spread back
-    if (avatarsContainerRef.current) {
-      const avatars = avatarsContainerRef.current.children;
-      gsap.to(avatars, { 
-        x: 0, 
-        scale: 1,
-        duration: 0.5, 
-        ease: 'power3.inOut' 
-      });
-    }
-    
-    // Arrow back
-    gsap.to(arrowRef.current, { 
-      x: 0, 
-      y: 0,
-      duration: 0.5, 
-      ease: 'power3.inOut' 
-    });
-
-    // Button back
-    gsap.to(buttonRef.current, { 
-      color: 'var(--ink-tertiary)', 
-      duration: 0.4 
-    });
-
-  });
-
-  // Small organic magnetic mouse-tracking follow for card content
-  const contentRef = useRef();
-  const xTo = useRef();
-  const yTo = useRef();
-
-  useGSAP(() => {
-    xTo.current = gsap.quickTo(contentRef.current, 'x', { duration: 0.6, ease: 'power3' });
-    yTo.current = gsap.quickTo(contentRef.current, 'y', { duration: 0.6, ease: 'power3' });
-  }, { scope: cardRef });
-
-  const onMouseMove = contextSafe((e) => {
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - (rect.left + rect.width / 2);
-    const y = e.clientY - (rect.top + rect.height / 2);
-    
-    // Extremely subtle pull (max 3px) for craftsmanship feel
-    xTo.current(x * 0.015);
-    yTo.current(y * 0.015);
-  });
-
-  const onMouseLeaveMagnetic = contextSafe(() => {
-    xTo.current(0);
-    yTo.current(0);
-  });
-
-  const hasParticipants = room.participants && room.participants.length > 0;
-  const hasFriends = room.participants && userFollowing.length > 0 && room.participants.some(p => userFollowing.includes(p.id));
-
+export default function RoomCard({ room, onJoin }) {
+  // Free4Talk style Room Card
+  
   return (
-    <div 
-      ref={cardRef}
-      onClick={() => {
-        onJoin(room);
-      }}
-      onMouseEnter={onMouseEnter}
-      onMouseMove={onMouseMove}
-      onMouseLeave={() => {
-        onMouseLeave();
-        onMouseLeaveMagnetic();
-      }}
-      className={`room-card relative h-[220px] select-none overflow-hidden flex flex-col justify-between ${
-        hasParticipants ? 'active' : 'empty'
-      } ${
-        inThisRoom ? 'bg-[var(--bg-hover)]' : ''
-      }`}
-    >
-      {/* Background Shift Panel */}
-      <div 
-        ref={bgRef}
-        className="absolute inset-0 pointer-events-none z-0"
-      />
-
-      {/* Content Container (Subtle Magnetic Pull) */}
-      <div ref={contentRef} className="relative z-10 flex flex-col h-full justify-between pointer-events-none">
-        <div>
-          {/* Metadata Row */}
-          <div className="meta-label flex items-start justify-between mb-4 font-mono uppercase tracking-[0.2em]">
-            <div className="flex items-center gap-2">
-              <span>{room.language}</span>
-              {room.tags && room.tags.length > 0 && (
-                <>
-                  <span className="text-[var(--ink-dim)]">•</span>
-                  <span>{room.tags[0]}</span>
-                </>
-              )}
-              {room.participants.length >= 5 && (
-                <span className="ml-1.5 px-1 py-0.5 text-[8px] tracking-normal bg-[var(--accent-bg)] text-[var(--accent)] font-bold rounded-sm">HOT</span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 font-bold text-[10px] text-[var(--ink-tertiary)]">
-              {hasParticipants ? (
-                <span className="live-dot" />
-              ) : (
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--ink-dim)]" />
-              )}
-              <span>{room.participants.length}/8</span>
-            </div>
+    <div className="relative w-full rounded-2xl overflow-hidden flex flex-col p-5 bg-gradient-to-br from-[#1c1f26] to-[#14151a] border border-[#3b82f6]/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all duration-300 hover:scale-[1.02] hover:border-[#3b82f6]/50 hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] group">
+      
+      {/* Top Header Row */}
+      <div className="flex items-center justify-between w-full mb-3">
+        <div className="flex items-center gap-2">
+          {/* Faux logo circle */}
+          <div className="w-5 h-5 rounded-full border-2 border-[#3b82f6] flex items-center justify-center">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#3b82f6]"></div>
           </div>
-
-          {hasFriends && (
-            <div className="absolute -top-3 -right-3 flex items-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[9px] font-bold px-2 py-1 rounded-full z-20 shadow-[0_0_10px_rgba(59,130,246,0.5)]">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-              Friends Inside
-            </div>
-          )}
-
-          {/* Editorial Title */}
-          <h3 
-            ref={titleRef}
-            className="font-serif font-normal mb-2 leading-snug tracking-tight text-[var(--ink)]"
-          >
-            {room.name}
-          </h3>
-          
-          {/* Description */}
-          <p 
-            ref={descRef}
-            className="desc line-clamp-2 leading-relaxed font-mono"
-            style={{ opacity: 0.8 }}
-          >
-            {room.topic || 'No topic details specified.'}
-          </p>
+          <span className="text-white font-semibold text-sm">
+            {room.language || 'English'}
+          </span>
+          <span className="text-white/50 text-xs italic ml-1">
+            {room.tags && room.tags.length > 0 ? room.tags[0] : 'Any Level'}
+          </span>
         </div>
-
-        <div className="flex items-end justify-between">
-          {/* Avatar Cluster */}
-          <div className="flex -space-x-2.5 overflow-visible py-1" ref={avatarsContainerRef}>
-            {room.participants.length === 0 ? (
-              <span className="text-[9px] text-[var(--ink-tertiary)] uppercase tracking-widest font-mono">Empty Lounge</span>
-            ) : (
-              room.participants.map((p, idx) => {
-                const isActiveSpeaker = idx === 0;
-
-                return (
-                  <div 
-                    key={p.id}
-                    className="relative"
-                    style={{ zIndex: 10 - idx }}
-                  >
-                    {/* Avatar Base */}
-                    <div 
-                      className="avatar"
-                      style={{ 
-                        backgroundColor: p.color || '#ff6b4a',
-                        boxShadow: isActiveSpeaker ? '0 0 8px var(--accent-glow)' : 'none',
-                        overflow: 'hidden'
-                      }}
-                    >
-                      {p.photoUrl ? (
-                        <img src={p.photoUrl} className="w-full h-full object-cover" alt={p.name} />
-                      ) : (
-                        p.name ? p.name.charAt(0).toUpperCase() : '?'
-                      )}
-                    </div>
-
-                    {/* Muted Indicator */}
-                    {p.muted && (
-                      <div className="absolute -bottom-0.5 -right-0.5 border border-[var(--line-bright)] p-0.5 rounded-full" style={{ backgroundColor: 'var(--bg-elevated)' }}>
-                        <svg className="w-2 h-2 text-[var(--ink-tertiary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3l18 18" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Enter Button */}
-          <div 
-            ref={buttonRef}
-            className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-[var(--ink-tertiary)] px-1 py-1 flex items-center gap-1.5"
-          >
-            <span>enter</span>
-            <span ref={arrowRef} className="inline-block transition-transform duration-300">↗</span>
-          </div>
-        </div>
+        <button className="text-[#3b82f6] hover:text-[#60a5fa] transition-colors">
+          <Settings className="w-4 h-4" />
+        </button>
       </div>
+
+      {/* Topic Title */}
+      <h3 className="text-[#3b82f6] text-[13px] font-bold uppercase tracking-wide mb-6 line-clamp-1">
+        {room.name || 'PRACTICE ENGLISH HERE'}
+      </h3>
+
+      {/* Central Avatars with Likes */}
+      <div className="flex items-center justify-center gap-6 mb-8 flex-1">
+        {/* We'll show exactly two large avatar slots to mimic the reference exactly */}
+        {[0, 1].map((slotIdx) => {
+          const participant = room.participants ? room.participants[slotIdx] : null;
+          
+          if (participant) {
+            return (
+              <div key={participant.id || slotIdx} className="flex flex-col items-center">
+                <div className="w-20 h-20 rounded-full border-[3px] border-[#3b82f6]/30 overflow-hidden mb-2 relative">
+                  {participant.photoUrl ? (
+                    <img src={participant.photoUrl} alt={participant.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-[#2a2d36] flex items-center justify-center text-xl font-bold text-white">
+                      {participant.name ? participant.name.charAt(0).toUpperCase() : '?'}
+                    </div>
+                  )}
+                  {/* Fake online status indicator */}
+                  <div className="absolute bottom-1 right-1 w-4 h-4 bg-[#00d859] border-2 border-[#1c1f26] rounded-full"></div>
+                </div>
+                <div className="flex items-center gap-1 text-[#3b82f6] text-xs font-bold">
+                  <Heart className="w-3 h-3 fill-current" />
+                  <span>{Math.floor(Math.random() * 200) + 10}</span>
+                </div>
+              </div>
+            );
+          } else {
+            // Empty placeholder slot
+            return (
+              <div key={`empty-${slotIdx}`} className="flex flex-col items-center">
+                <div className="w-20 h-20 rounded-full border-[2px] border-dashed border-[#2a2d36] mb-2 relative group-hover:border-[#3b82f6]/50 transition-colors duration-300"></div>
+              </div>
+            );
+          }
+        })}
+      </div>
+
+      {/* Join Button */}
+      <div className="w-full mt-auto">
+        {room.participants && room.participants.length >= 25 ? (
+          <button disabled className="w-full py-2.5 rounded-lg border border-white/20 text-white/50 text-xs font-semibold flex items-center justify-center gap-2 cursor-not-allowed">
+            This group is full.
+          </button>
+        ) : (
+          <button 
+            onClick={() => onJoin(room)}
+            className="relative overflow-hidden w-full py-2.5 rounded-lg border border-[#00d859] text-[#00d859] text-xs font-semibold flex items-center justify-center gap-2 hover:bg-[#00d859] hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(0,216,89,0.4)] group/btn"
+          >
+            <Phone className="w-4 h-4 transition-transform group-hover/btn:rotate-12 group-hover/btn:scale-110" /> Join and talk now!
+          </button>
+        )}
+      </div>
+      
     </div>
   );
 }

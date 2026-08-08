@@ -2,13 +2,13 @@
 /* Cache buster */
 
 :root {
-  /* ── Core Palette — Elevated Dark Mode ── */
-  --bg: #0d0d0f;
-  --bg-trans-85: rgba(13, 13, 15, 0.85);
-  --bg-trans-60: rgba(13, 13, 15, 0.6);
-  --bg-secondary: #121215;
-  --bg-elevated: #17171b;
-  --bg-elevated-2: #202024;
+  /* ── Core Palette — Elevated Dark Mode (Talk4Now Aesthetic) ── */
+  --bg: #0b0d10;
+  --bg-trans-85: rgba(11, 13, 16, 0.85);
+  --bg-trans-60: rgba(11, 13, 16, 0.6);
+  --bg-secondary: #121418;
+  --bg-elevated: #16191e;
+  --bg-elevated-2: #1c1f26;
   --bg-hover: rgba(255, 255, 255, 0.05);
 
   --ink: #ffffff;
@@ -16,13 +16,14 @@
   --ink-tertiary: #86868b;
   --ink-dim: #5c5c60;
 
-  --line: #2c2c30;
-  --line-bright: #3a3a3f;
+  --line: #24272e;
+  --line-bright: #323640;
 
-  --accent: #00e5ff;
-  --accent-light: #80f2ff;
-  --accent-bg: rgba(0, 229, 255, 0.15);
-  --accent-glow: rgba(0, 229, 255, 0.35);
+  /* Talk4Now Green */
+  --accent: #00d859;
+  --accent-light: #33e07a;
+  --accent-bg: rgba(0, 216, 89, 0.15);
+  --accent-glow: rgba(0, 216, 89, 0.35);
 
   --success: #22c55e;
   --success-bg: rgba(34, 197, 94, 0.15);
@@ -76,6 +77,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+
 /* Subtle background texture layers (light mode) */
 .vignette-overlay {
   display: none; /* not needed in light mode */
@@ -112,28 +114,45 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-@keyframes slide-up {
-  from {
-    transform: translateY(20px);
+@keyframes meteor {
+  0% { transform: rotate(45deg) translateX(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% {
+    transform: rotate(45deg) translateX(-1000px);
     opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
   }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+.animate-meteor {
+  animation: meteor 5s linear infinite;
+}
+
 .animate-fade-in {
-  animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fade-in 0.3s ease-out forwards;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up-delayed {
+  animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-slide-up-delayed-2 {
+  animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  opacity: 0;
 }
 
 /* Speaking glow effect */
@@ -464,13 +483,12 @@ button {
 
 /* Loud "+ ROOM" Button Main CTA */
 .create-room-btn {
-  background: var(--accent);
-  color: #FFFFFF;
-  font-weight: 700;
+  background: #00C853;
+  color: #000000;
+  font-weight: 600;
   padding: 10px 22px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: none;
-  box-shadow: 0 4px 16px var(--accent-glow);
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
@@ -479,9 +497,7 @@ button {
 }
 
 .create-room-btn:hover {
-  transform: translateY(-2px);
-  background: var(--accent-light);
-  box-shadow: 0 8px 24px var(--accent-glow);
+  background: #00E676;
 }
 
 /* Particles background — hidden in light mode */
@@ -636,7 +652,146 @@ button {
   background: rgba(0,0,0,0.6);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255,255,255,0.2);
+  justify-content: center;
+}
+
+.active-speaker-avatar {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 64px;
+  font-weight: bold;
+  border: 4px solid transparent;
+  transition: all 0.3s ease;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.active-speaker-avatar.speaking {
+  border-color: #0d94a8;
+  box-shadow: 0 0 30px rgba(13, 148, 168, 0.6), inset 0 0 15px rgba(13, 148, 168, 0.4);
+  animation: pulse-speaking-cyan-large 1.5s infinite alternate;
+}
+
+@keyframes pulse-speaking-cyan-large {
+  from { box-shadow: 0 0 20px rgba(13, 148, 168, 0.5); }
+  to { box-shadow: 0 0 50px rgba(13, 148, 168, 0.9), 0 0 20px rgba(13, 148, 168, 0.6) inset; }
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ── Custom Talk4Now Styles ── */
+.layout-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+.sidebar {
+  width: 72px;
+  background: var(--bg-elevated);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  z-index: 50;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  margin-left: 72px;
+}
+
+/* Room Card Gradients */
+.card-gradient-1 {
+  background: linear-gradient(135deg, rgba(255, 42, 133, 0.2) 0%, rgba(20, 20, 24, 0.95) 100%), #16191e;
+}
+.card-gradient-2 {
+  background: linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(20, 20, 24, 0.95) 100%), #16191e;
+}
+.card-gradient-3 {
+  background: linear-gradient(135deg, rgba(43, 226, 171, 0.2) 0%, rgba(20, 20, 24, 0.95) 100%), #16191e;
+}
+.card-gradient-4 {
+  background: linear-gradient(135deg, rgba(226, 156, 43, 0.2) 0%, rgba(20, 20, 24, 0.95) 100%), #16191e;
+}
+
+/* Overlapping Avatars inside the card */
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+.avatar-stack .avatar-overlap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2.5px solid var(--bg-elevated);
+  margin-left: -12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  position: relative;
+  transition: transform 0.2s;
+  background-color: var(--bg-secondary);
+}
+.avatar-stack .avatar-overlap:hover {
+  transform: translateY(-4px);
+  z-index: 10 !important;
+}
+.avatar-stack .avatar-overlap:first-child {
+  margin-left: 0;
+}
+
+/* Mini indicator (flag/score) on avatar */
+.avatar-badge-mini {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: var(--bg-elevated);
+  border-radius: 100px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--accent);
+  border: 1.5px solid var(--line);
+}
+
+/* The outline Join Clan button */
+.join-clan-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid rgba(0, 216, 89, 0.4);
+  color: var(--accent);
+  background: rgba(0, 216, 89, 0.05);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 13px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.join-clan-btn:hover {
+  background: rgba(0, 216, 89, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
