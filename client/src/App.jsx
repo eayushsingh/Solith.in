@@ -38,6 +38,74 @@ const getLevelInfo = (xp) => {
 
 const ADMIN_EMAILS = ['ayushfun01@gmail.com', 'hacksejeet@gmail.com', 'ayush.singh.something@klh.edu.in'];
 
+// Animated Logo Component
+const AnimatedLogo = () => {
+  useEffect(() => {
+    const video = document.getElementById('logo-video');
+    const dot = document.getElementById('logo-dot');
+    
+    if (video && dot) {
+      setTimeout(() => {
+        const videoRect = video.getBoundingClientRect();
+        const dotRect = dot.getBoundingClientRect();
+        
+        const videoCenterX = videoRect.left + videoRect.width / 2;
+        const videoCenterY = videoRect.top + videoRect.height / 2;
+        
+        const dotCenterX = dotRect.left + dotRect.width / 2;
+        const dotCenterY = dotRect.top + dotRect.height / 2;
+        
+        const deltaX = videoCenterX - dotCenterX;
+        const deltaY = videoCenterY - dotCenterY;
+        
+        dot.style.setProperty('--start-x', `${deltaX}px`);
+        dot.style.setProperty('--start-y', `${deltaY}px`);
+        
+        dot.classList.add('animate-fly-to-i');
+      }, 500);
+    }
+  }, []);
+
+  return (
+    <div className="flex items-center justify-center gap-4 mt-4 animate-slide-up relative">
+      <video 
+        id="logo-video"
+        src="/freevideo2.mp4" 
+        autoPlay 
+        loop 
+        muted 
+        playsInline
+        className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/20 relative z-10"
+      />
+      <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-center relative z-10">
+        <span className="text-[#4285F4]">S</span>
+        <span className="text-[#EA4335]">o</span>
+        <span className="text-[#FBBC05]">l</span>
+        <span className="text-[#4285F4]">i</span>
+        <span className="text-[#34A853]">t</span>
+        <span className="text-[#EA4335]">h</span>
+        <span className="text-white">.</span>
+        <span className="text-[#4285F4] relative inline-block">
+          ı
+          <span 
+            id="logo-dot" 
+            className="absolute bg-[#4285F4] rounded-full"
+            style={{
+              width: '0.15em',
+              height: '0.15em',
+              top: '0.12em',
+              left: '50%',
+              marginLeft: '-0.075em',
+              opacity: 0,
+            }}
+          ></span>
+        </span>
+        <span className="text-[#34A853]">n</span>
+      </h1>
+    </div>
+  );
+};
+
 export default function App() {
   // Navigation / Layout state
   const [activeModal, setActiveModal] = useState(null);
@@ -1721,28 +1789,8 @@ export default function App() {
         {/* Main Content Area */}
         <div className="w-full max-w-[1400px] px-8 py-10 flex flex-col items-center gap-8">
           
-          {/* Centered Title */}
-          <div className="flex items-center justify-center gap-4 mt-4 animate-slide-up">
-            <video 
-              src="/freevideo2.mp4" 
-              autoPlay 
-              loop 
-              muted 
-              playsInline
-              className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/20"
-            />
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-center">
-              <span className="text-[#4285F4]">S</span>
-              <span className="text-[#EA4335]">o</span>
-              <span className="text-[#FBBC05]">l</span>
-              <span className="text-[#4285F4]">i</span>
-              <span className="text-[#34A853]">t</span>
-              <span className="text-[#EA4335]">h</span>
-              <span className="text-white">.</span>
-              <span className="text-[#4285F4]">i</span>
-              <span className="text-[#34A853]">n</span>
-            </h1>
-          </div>
+          {/* Centered Animated Logo */}
+          <AnimatedLogo />
 
           {/* Action Buttons Row */}
           <div className="flex overflow-x-auto hide-scrollbar w-full max-w-full justify-start md:justify-center items-center gap-3 pb-2 px-1">

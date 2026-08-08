@@ -793,3 +793,31 @@ button {
   border-color: var(--accent);
   box-shadow: 0 4px 16px var(--accent-glow);
 }
+
+@keyframes flyToI {
+  0% { 
+    transform: translate(var(--start-x, -200px), var(--start-y, 20px)) scale(1.5); 
+    box-shadow: 0 0 20px 5px rgba(66, 133, 244, 1);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(var(--start-x, -200px), var(--start-y, 20px)) scale(1.5); 
+    box-shadow: 0 0 20px 5px rgba(66, 133, 244, 1);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(0, 0) scale(1);
+    box-shadow: 0 0 5px 2px rgba(66, 133, 244, 0.5);
+    opacity: 1;
+  }
+  100% { 
+    transform: translate(0, 0) scale(1); 
+    box-shadow: none;
+    opacity: 1;
+  }
+}
+
+.animate-fly-to-i {
+  animation: flyToI 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: 0.5s;
+}
