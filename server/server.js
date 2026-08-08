@@ -25,10 +25,17 @@ const server = createServer(app);
 // CORS configuration - Fail safely in production if no ALLOWED_ORIGIN is set
 let corsOptions;
 if (process.env.NODE_ENV === 'production') {
-  if (!process.env.ALLOWED_ORIGIN) {
-    console.warn(chalk.yellow("⚠ WARNING: ALLOWED_ORIGIN is not set in production. Falling back to strict same-origin to prevent leaks."));
+  const allowedOrigins = process.env.ALLOWED_ORIGIN 
+    ? process.env.ALLOWED_ORIGIN.split(',').map(o => o.trim()) 
+    : [];
+  
+  // Allow the specific Vercel preview deployment mentioned in the error
+  allowedOrigins.push('https://talk2me-sigma.vercel.app');
+  
+  if (allowedOrigins.length === 0) {
+    console.warn("⚠ WARNING: ALLOWED_ORIGIN is not set in production. Falling back to strict same-origin to prevent leaks.");
   }
-  corsOptions = { origin: process.env.ALLOWED_ORIGIN || false };
+  corsOptions = { origin: allowedOrigins.length > 0 ? allowedOrigins : false };
 } else {
   corsOptions = { origin: '*' };
 }
@@ -315,6 +322,7 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
       const at = new AccessToken(runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret, {
         identity: userId,
         name: name,
+        metadata: JSON.stringify({ photoUrl: photoUrl || '', color: color || '#ff4d4d', emoji: emoji || '😊' }),
         ttl: 24 * 60 * 60, // 24 hours
       });
       at.addGrant({ roomJoin: true, room: room.id, canPublish: true, canSubscribe: true });
@@ -479,15 +487,22 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
       const targetFollowers = targetDoc.exists ? (targetDoc.data().followers || []) : [];
 
       const isFollowing = userFollowing.includes(targetId);
+      const followDocRef = db.collection('follows').doc(`${userId}_${targetId}`);
 
       if (isFollowing) {
         // Unfollow
         transaction.set(userRef, { following: adminInstance.firestore.FieldValue.arrayRemove(targetId) }, { merge: true });
         transaction.set(targetRef, { followers: adminInstance.firestore.FieldValue.arrayRemove(userId) }, { merge: true });
+        transaction.delete(followDocRef);
       } else {
         // Follow
         transaction.set(userRef, { following: adminInstance.firestore.FieldValue.arrayUnion(targetId) }, { merge: true });
         transaction.set(targetRef, { followers: adminInstance.firestore.FieldValue.arrayUnion(userId) }, { merge: true });
+        transaction.set(followDocRef, {
+          followerId: userId,
+          followingId: targetId,
+          createdAt: adminInstance.firestore.FieldValue.serverTimestamp()
+        });
       }
     });
 
@@ -531,6 +546,105 @@ app.get('/api/users/profiles', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user profiles:', error);
     res.status(500).json({ error: 'Failed to fetch profiles' });
+  }
+});
+
+// --- Direct Messages & Blocking ---
+
+app.post('/api/users/:targetId/block', verifyToken, async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) return res.status(503).json({ error: 'Firestore Admin not initialized.' });
+
+  const { targetId } = req.params;
+  const userId = req.user.uid;
+
+  if (userId === targetId) return res.status(400).json({ error: 'Cannot block yourself.' });
+
+  try {
+    const db = adminInstance.firestore();
+    const userRef = db.collection('users').doc(userId);
+    
+    // Add to blockedUsers array
+    await userRef.set({
+      blockedUsers: adminInstance.firestore.FieldValue.arrayUnion(targetId)
+    }, { merge: true });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    res.status(500).json({ error: 'Failed to block user.' });
+  }
+});
+
+app.post('/api/messages/send', verifyToken, async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) return res.status(503).json({ error: 'Firestore Admin not initialized.' });
+
+  const userId = req.user.uid;
+  const { conversationId, receiverId, text } = req.body;
+
+  if (!text || typeof text !== 'string' || text.trim().length === 0 || text.trim().length > 2000) {
+    return res.status(400).json({ error: 'Message must be between 1 and 2000 characters.' });
+  }
+
+  if (!receiverId) {
+    return res.status(400).json({ error: 'Receiver ID is required.' });
+  }
+
+  try {
+    const db = adminInstance.firestore();
+    
+    // Check blocks
+    const receiverDoc = await db.collection('users').doc(receiverId).get();
+    if (receiverDoc.exists) {
+      const blocked = receiverDoc.data().blockedUsers || [];
+      if (blocked.includes(userId)) {
+        return res.status(403).json({ error: 'You have been blocked by this user.' });
+      }
+    }
+
+    const senderDoc = await db.collection('users').doc(userId).get();
+    if (senderDoc.exists) {
+      const blocked = senderDoc.data().blockedUsers || [];
+      if (blocked.includes(receiverId)) {
+        return res.status(403).json({ error: 'You have blocked this user. Unblock to send messages.' });
+      }
+    }
+
+    const convoId = conversationId || (userId < receiverId ? `${userId}_${receiverId}` : `${receiverId}_${userId}`);
+    const convoRef = db.collection('conversations').doc(convoId);
+
+    await db.runTransaction(async (transaction) => {
+      const convoDoc = await transaction.get(convoRef);
+      
+      if (!convoDoc.exists) {
+        transaction.set(convoRef, {
+          participants: [userId, receiverId],
+          lastMessageAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+          lastMessageText: text.trim(),
+          lastMessageSenderId: userId
+        });
+      } else {
+        transaction.update(convoRef, {
+          lastMessageAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+          lastMessageText: text.trim(),
+          lastMessageSenderId: userId
+        });
+      }
+
+      const messageRef = convoRef.collection('messages').doc();
+      transaction.set(messageRef, {
+        senderId: userId,
+        text: text.trim(),
+        sentAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+        readAt: null
+      });
+    });
+
+    res.json({ success: true, conversationId: convoId });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Failed to send message.' });
   }
 });
 
