@@ -392,12 +392,13 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
       token = await at.toJwt();
     } catch (err) {
       console.error('Failed to create LiveKit meeting token:', err.message);
+      return res.status(500).json({ error: 'Failed to generate LiveKit token. Please check backend configuration.' });
     }
   }
 
   res.json({
     room,
-    livekitUrl: room.livekitUrl,
+    livekitUrl: isRealConnection ? runtimeConfig.livekitUrl : room.livekitUrl,
     token,
     isRealConnection
   });
