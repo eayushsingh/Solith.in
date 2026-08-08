@@ -5,12 +5,12 @@ import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDo
 // Your web app's Firebase configuration
 // Replace these with your actual Firebase project config in .env
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDDqQv4-gczAYqNghyIxq14XKlaHFFM0bs",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "solith-df915.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "solith-df915",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "solith-df915.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "476235922953",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:476235922953:web:7888a2ba62ac6cb72982d8"
 };
 
 // Initialize Firebase only if config is present (prevents crash on first load without env vars)
