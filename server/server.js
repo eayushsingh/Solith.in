@@ -498,21 +498,31 @@ app.post('/api/rooms/:id/allow-speak', verifyToken, (req, res) => {
 // Moderation Endpoints
 app.post('/api/rooms/:id/promote', verifyToken, (req, res) => {
   const { id } = req.params;
-  const { targetUserId } = req.body;
+  const { targetUserId, role } = req.body;
   const room = rooms.find(r => r.id === id);
   if (!room) return res.status(404).json({ error: 'Room not found' });
   
   if (!room.roles) room.roles = {};
   if (room.roles[req.user.uid] !== 'owner') {
-    return res.status(403).json({ error: 'Only the owner can promote' });
+    return res.status(403).json({ error: 'Only the owner can promote or demote' });
   }
   if (room.roles[targetUserId] === 'owner') {
-    return res.status(400).json({ error: 'Cannot promote owner' });
+    return res.status(400).json({ error: 'Cannot change owner role' });
   }
 
-  room.roles[targetUserId] = 'co-host';
+  const validRoles = ['co-owner', 'elder', 'member'];
+  if (!validRoles.includes(role)) {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+
+  if (role === 'member') {
+    delete room.roles[targetUserId];
+  } else {
+    room.roles[targetUserId] = role;
+  }
+  
   saveDB();
-  io.to(id).emit('role-changed', { userId: targetUserId, role: 'co-host' });
+  io.to(id).emit('role-changed', { userId: targetUserId, role: role === 'member' ? 'guest' : role });
   res.json({ success: true, roles: room.roles });
 });
 
@@ -523,12 +533,17 @@ app.post('/api/rooms/:id/kick', verifyToken, (req, res) => {
   if (!room) return res.status(404).json({ error: 'Room not found' });
   if (!room.roles) room.roles = {};
 
-  const requesterRole = room.roles[req.user.uid] || 'guest';
-  if (requesterRole !== 'owner' && requesterRole !== 'co-host') {
+  const requesterRole = room.roles[req.user.uid] || 'member';
+  const targetRole = room.roles[targetUserId] || 'member';
+
+  if (requesterRole === 'member' || requesterRole === 'elder' || requesterRole === 'guest') {
     return res.status(403).json({ error: 'Not authorized to kick' });
   }
-  if (room.roles[targetUserId] === 'owner') {
+  if (targetRole === 'owner') {
     return res.status(403).json({ error: 'Cannot kick owner' });
+  }
+  if (requesterRole === 'co-owner' && targetRole === 'co-owner') {
+    return res.status(403).json({ error: 'Co-owners cannot kick other co-owners' });
   }
 
   const targetParticipant = room.participants.find(p => p.id === targetUserId);
@@ -550,9 +565,17 @@ app.post('/api/rooms/:id/mute', verifyToken, (req, res) => {
   if (!room) return res.status(404).json({ error: 'Room not found' });
   if (!room.roles) room.roles = {};
 
-  const requesterRole = room.roles[req.user.uid] || 'guest';
-  if (requesterRole !== 'owner' && requesterRole !== 'co-host') {
+  const requesterRole = room.roles[req.user.uid] || 'member';
+  const targetRole = room.roles[targetUserId] || 'member';
+
+  if (requesterRole === 'member' || requesterRole === 'elder' || requesterRole === 'guest') {
     return res.status(403).json({ error: 'Not authorized to mute' });
+  }
+  if (targetRole === 'owner') {
+    return res.status(403).json({ error: 'Cannot mute owner' });
+  }
+  if (requesterRole === 'co-owner' && targetRole === 'co-owner') {
+    return res.status(403).json({ error: 'Co-owners cannot mute other co-owners' });
   }
 
   io.to(id).emit('participant-muted', { userId: targetUserId });
