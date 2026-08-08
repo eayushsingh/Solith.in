@@ -966,7 +966,7 @@ export default function App() {
     const renderAppLayout = (children) => (
     <div className="layout-container relative">
       <Meteors number={4} />
-      <Sidebar {...layoutProps} />
+      {!activeRoom && <Sidebar {...layoutProps} />}
       <div className="main-content hide-scrollbar z-10 relative">
         {children}
       </div>
@@ -1901,7 +1901,7 @@ export default function App() {
           </div>
 
           {/* Main Layout Grid */}
-          <div className="flex-1 overflow-hidden flex flex-col md:flex-row w-full h-full pb-[90px] pt-4 px-4 gap-4">
+          <div className="flex-1 overflow-hidden flex flex-col md:flex-row w-full h-full pb-[90px] pt-2 md:pt-4 px-2 md:px-4 gap-2 md:gap-4">
             {/* Center Main Stage (Active Speaker) */}
             <div className="flex-1 flex flex-col items-center justify-between bg-black/20 rounded-2xl relative overflow-hidden border border-white/5 shadow-2xl">
                 {/* Active Speaker */}
@@ -1918,19 +1918,21 @@ export default function App() {
                    const activeSpeaker = participants.find(p => p.id === activeSpeakerId);
 
                    if (!activeSpeaker) return null;
+                   const activeBackendP = currentRoomData.participants?.find(bp => bp.id === activeSpeaker.id);
+                   const speakerPhotoUrl = activeSpeaker.isLocal ? user?.photoUrl : (activeBackendP?.photoUrl || activeSpeaker.photoUrl);
+                   const speakerEmoji = activeSpeaker.isLocal ? (user?.emoji || '👤') : (activeBackendP?.emoji || activeSpeaker.emoji || '👤');
+                   const speakerColor = activeSpeaker.isLocal ? (user?.color || '#0d94a8') : (activeBackendP?.color || activeSpeaker.color || '#ff4d4d');
+                   const speakerName = activeSpeaker.isLocal ? 'You' : (activeBackendP?.name || activeSpeaker.name);
+
                    const isSpeaking = (audioLevels[activeSpeaker.id] || 0) > 0.05;
 
                    return (
                      <div className="flex flex-col items-center justify-center w-full h-full p-8 animate-fade-in">
-                       <div className={`active-speaker-avatar ${isSpeaking ? 'speaking' : ''}`} style={{ backgroundColor: activeSpeaker.isLocal ? (user?.color || '#0d94a8') : (activeSpeaker.color || '#ff4d4d') }}>
-                           {activeSpeaker.isLocal ? (
-                             user?.photoUrl ? <img src={user.photoUrl} className="w-full h-full object-cover rounded-full" alt="" /> : (user?.emoji || '👤')
-                           ) : (
-                             activeSpeaker.photoUrl ? <img src={activeSpeaker.photoUrl} className="w-full h-full object-cover rounded-full" alt="" /> : (activeSpeaker.emoji || '👤')
-                           )}
+                       <div className={`active-speaker-avatar ${isSpeaking ? 'speaking' : ''}`} style={{ backgroundColor: speakerColor }}>
+                           {speakerPhotoUrl ? <img src={speakerPhotoUrl} className="w-full h-full object-cover rounded-full" alt="" /> : speakerEmoji}
                        </div>
                        <span className="mt-8 text-lg font-bold text-white bg-black/50 px-6 py-2 rounded-full backdrop-blur-md shadow-lg border border-white/10 tracking-wide">
-                         {activeSpeaker.isLocal ? 'You' : activeSpeaker.name}
+                         {speakerName}
                        </span>
                      </div>
                    );
@@ -1951,19 +1953,21 @@ export default function App() {
                        
                        const canPromote = myRole === 'owner';
 
+                       const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                       const pPhotoUrl = p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl);
+                       const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
+                       const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
+                       const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
+
                        return (
                           <div key={p.id} className="relative group cursor-pointer flex-shrink-0 transition-transform hover:scale-105" onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)}>
                             <div className={`w-[84px] h-[84px] rounded-2xl overflow-hidden border-2 ${isSpeaking ? 'border-[#0d94a8] shadow-[0_0_15px_rgba(13,148,168,0.5)]' : 'border-transparent'} bg-black/50 transition-all`}>
-                              <div className="w-full h-full flex items-center justify-center text-2xl" style={{ backgroundColor: p.isLocal ? (user?.color || '#0d94a8') : (p.color || '#ff4d4d') }}>
-                                 {p.isLocal ? (
-                                   user?.photoUrl ? <img src={user.photoUrl} className="w-full h-full object-cover" alt="" /> : (user?.emoji || '👤')
-                                 ) : (
-                                   p.photoUrl ? <img src={p.photoUrl} className="w-full h-full object-cover" alt="" /> : (p.emoji || '👤')
-                                 )}
+                              <div className="w-full h-full flex items-center justify-center text-2xl" style={{ backgroundColor: pColor }}>
+                                 {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : pEmoji}
                               </div>
                             </div>
                             <div className="absolute bottom-1 left-1 right-1 bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 text-[10px] font-medium text-white truncate text-center border border-white/10 shadow-sm flex flex-col items-center gap-0.5">
-                               <span>{p.isLocal ? 'You' : p.name}</span>
+                               <span>{pName}</span>
                                {targetRole === 'owner' && <span className="text-[8px] bg-red-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Owner</span>}
                                {targetRole === 'co-owner' && <span className="text-[8px] bg-purple-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Co-Owner</span>}
                                {targetRole === 'elder' && <span className="text-[8px] bg-blue-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Elder</span>}
@@ -2005,7 +2009,7 @@ export default function App() {
             </div>
             
             {/* Right Sidebar (Chat & Queue) */}
-            <div className="w-full md:w-[360px] flex flex-col bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden h-full shadow-2xl shrink-0">
+            <div className="w-full md:w-[360px] h-[35vh] min-h-[200px] md:h-full flex flex-col bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl shrink-0">
               {isHostOrCoHost && speakingQueue.length > 0 && (
                 <div className="flex-shrink-0 flex flex-col border-b border-white/10 bg-black/30">
                   <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
