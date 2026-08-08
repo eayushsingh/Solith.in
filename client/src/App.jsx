@@ -1904,10 +1904,8 @@ export default function App() {
           </div>
 
           {/* Full-Screen Participant Grid */}
-          <div className="flex-1 w-full h-full p-4 md:p-8 pt-24 pb-24 overflow-y-auto overflow-x-hidden hide-scrollbar">
-             <div className="grid gap-4 md:gap-6 w-full max-w-6xl mx-auto items-center justify-center" style={{
-                gridTemplateColumns: `repeat(auto-fit, minmax(${participants.length > 4 ? '120px' : '200px'}, 1fr))`
-             }}>
+          <div className="flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 overflow-y-auto overflow-x-hidden hide-scrollbar flex items-center justify-center">
+             <div className="flex flex-wrap gap-4 md:gap-6 w-full max-w-6xl mx-auto items-center justify-center">
                 {participants.map(p => {
                     const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                     const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
@@ -1923,7 +1921,7 @@ export default function App() {
                     const canPromote = myRole === 'owner';
 
                     return (
-                        <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square rounded-3xl overflow-hidden bg-[#1c1f26] border-4 transition-all duration-300 ${isSpeaking ? 'border-[#00d859] shadow-[0_0_25px_rgba(0,216,89,0.3)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02]`} style={{ backgroundColor: pColor }}>
+                        <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-[#1c1f26] border-4 transition-all duration-300 ${isSpeaking ? 'border-[#00d859] shadow-[0_0_25px_rgba(0,216,89,0.3)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
                            {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-6xl">{pEmoji}</span>}
                            
                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-2 px-3 text-center">
@@ -1985,7 +1983,7 @@ export default function App() {
           )}
 
           {/* Bottom Floating App Bar */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#1c1f26]/90 backdrop-blur-md rounded-full px-2 py-2 border border-white/5 shadow-2xl flex items-center gap-2 z-50 w-[95%] md:w-auto md:min-w-[400px] justify-between md:justify-center">
+          <div className="absolute bottom-8 md:bottom-6 left-1/2 -translate-x-1/2 bg-[#1c1f26]/90 backdrop-blur-md rounded-full px-2 py-2 border border-white/5 shadow-2xl flex items-center gap-2 z-50 w-[92%] md:w-auto md:min-w-[400px] justify-between md:justify-center">
              
              {/* Left - Room Info */}
              <div className="flex items-center gap-2 px-3 flex-shrink-0">
