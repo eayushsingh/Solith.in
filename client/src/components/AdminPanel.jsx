@@ -236,7 +236,7 @@ export default function AdminPanel({ onBack, user }) {
                               ) : u.isRestricted ? (
                                 <span className="text-orange-500 font-bold">Restricted</span>
                               ) : (
-                                <span className="text-green-500">Active</span>
+                                <span className="text-red-500">Active</span>
                               )}
                             </td>
                             <td className="px-6 py-4 text-gray-400">{u.warningCount || 0}</td>

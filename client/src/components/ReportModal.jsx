@@ -50,8 +50,8 @@ export default function ReportModal({ isOpen, onClose, targetUser, currentUser, 
 
         {submitted ? (
           <div className="text-center py-6">
-            <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-              <ShieldCheck className="w-6 h-6 text-green-500" />
+            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="w-6 h-6 text-red-500" />
             </div>
             <h3 className="text-lg font-semibold text-[var(--ink)] mb-2">Report Submitted</h3>
             <p className="text-sm text-[var(--ink-secondary)]">Thank you for helping keep our community safe.</p>

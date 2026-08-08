@@ -149,7 +149,7 @@ export default function GlobalChatView({ user, onSignIn }) {
                   className="w-8 h-8 rounded-full object-cover" 
                 />
                 {title === 'ONLINE' && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#00d859] border-2 border-[#121418] rounded-full"></div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#ef4444] border-2 border-[#121418] rounded-full"></div>
                 )}
               </div>
               <span className={`text-sm font-medium truncate ${title === 'ONLINE' ? 'text-gray-200' : 'text-[#86868b]'} group-hover:text-white transition-colors`}>
@@ -175,7 +175,7 @@ export default function GlobalChatView({ user, onSignIn }) {
         <div className="flex items-center gap-6">
           {/* Level / XP */}
           <div className="flex items-center gap-2 text-[15px] font-mono text-gray-400">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#00d859]"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></div>
             <span className="text-white font-bold">11</span>
             <span>/</span>
             <span>6,470</span>
@@ -197,7 +197,7 @@ export default function GlobalChatView({ user, onSignIn }) {
           <img 
             src={user?.photoUrl || "https://ui-avatars.com/api/?name=User"} 
             alt="Profile" 
-            className="w-10 h-10 rounded-full cursor-pointer border-2 border-[#00d859] hover:opacity-80 transition-opacity ml-4 object-cover" 
+            className="w-10 h-10 rounded-full cursor-pointer border-2 border-[#ef4444] hover:opacity-80 transition-opacity ml-4 object-cover" 
           />
         </div>
       </header>
@@ -215,13 +215,13 @@ export default function GlobalChatView({ user, onSignIn }) {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#00d859]"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></div>
               <span className="text-xs font-bold text-[#86868b]">{onlineMembers.length} ONLINE</span>
             </div>
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(0,216,89,0.1)] text-[#00d859] rounded border border-[rgba(0,216,89,0.2)] text-xs font-bold">
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(239,68,68,0.1)] text-[#ef4444] rounded border border-[rgba(239,68,68,0.2)] text-xs font-bold">
               <Volume2 className="w-3.5 h-3.5" />
               SOUND
-              <div className="w-6 h-3.5 bg-[#00d859] rounded-full relative ml-1">
+              <div className="w-6 h-3.5 bg-[#ef4444] rounded-full relative ml-1">
                 <div className="absolute right-0.5 top-0.5 w-2.5 h-2.5 bg-white rounded-full"></div>
               </div>
             </button>
@@ -289,7 +289,7 @@ export default function GlobalChatView({ user, onSignIn }) {
 
         {/* Chat Input */}
         <div className="p-6 pt-2">
-          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto w-full relative flex items-end bg-[#1c1f26] border border-[#32363e] rounded-lg shadow-inner overflow-hidden focus-within:border-[#00d859] transition-colors">
+          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto w-full relative flex items-end bg-[#1c1f26] border border-[#32363e] rounded-lg shadow-inner overflow-hidden focus-within:border-[#ef4444] transition-colors">
             
             <input
               type="text"
@@ -309,7 +309,7 @@ export default function GlobalChatView({ user, onSignIn }) {
               </button>
               <button 
                 type="submit" 
-                className="p-1.5 text-[#86868b] hover:text-[#00d859] transition-colors disabled:opacity-30"
+                className="p-1.5 text-[#86868b] hover:text-[#ef4444] transition-colors disabled:opacity-30"
                 disabled={!inputText.trim()}
               >
                 <Send className="w-5 h-5" />
@@ -340,7 +340,7 @@ export default function GlobalChatView({ user, onSignIn }) {
               placeholder="Search members..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#1c1f26] border border-[#32363e] rounded py-1.5 pl-8 pr-3 text-xs text-white focus:outline-none focus:border-[#00d859]"
+              className="w-full bg-[#1c1f26] border border-[#32363e] rounded py-1.5 pl-8 pr-3 text-xs text-white focus:outline-none focus:border-[#ef4444]"
             />
           </div>
         </div>
