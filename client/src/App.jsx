@@ -110,6 +110,7 @@ export default function App() {
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isRealCall, setIsRealCall] = useState(false);
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
 
@@ -1875,229 +1876,149 @@ export default function App() {
         const hasRaisedHand = speakingQueue.includes(user?.id);
 
         return (
-        <div className="call-room-bg font-sans animate-fade-in relative z-40 fixed inset-0">
+        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-[#121418] flex flex-col z-50">
           
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 w-full max-w-6xl mx-auto">
-            <button onClick={leaveVoiceRoom} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div className="flex flex-col items-center">
-              <h2 className="text-sm font-bold text-white tracking-wide">{activeRoom.name}</h2>
-              <span className="text-[10px] text-[var(--success)] flex items-center gap-1.5 mt-0.5">
-                <span className="live-dot" style={{width: 6, height: 6, opacity: 1}}></span> Online
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2 bg-white/10 rounded-full text-white"><Flame className="w-4 h-4"/></button>
-              <button onClick={() => setShowSettingsModal(true)} className="p-2 bg-white/10 rounded-full text-white"><Settings className="w-4 h-4"/></button>
-            </div>
-          </div>
-
-          <div className="flex justify-center -mt-2 mb-6">
-             <div className="call-timer">
-               12:47
+          {/* Top Floating Control Bar */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2 bg-[#1c1f26]/90 backdrop-blur-md rounded-2xl p-2 border border-white/5 shadow-2xl">
+             <div className="px-3 border-r border-white/10 flex items-center gap-2 text-white/50 text-xs font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                12:47
              </div>
+             {isListener ? (
+                hasRaisedHand ? (
+                  <button onClick={lowerHand} className="p-2 hover:bg-white/10 rounded-xl flex items-center gap-2 text-xs font-bold text-white/70 transition-colors">
+                    <Hand className="w-4 h-4 text-[var(--accent)]"/> Lower
+                  </button>
+                ) : (
+                  <button onClick={raiseHand} className="p-2 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 rounded-xl flex items-center gap-2 text-xs font-bold text-[var(--accent)] transition-colors">
+                    <Hand className="w-4 h-4"/> Raise
+                  </button>
+                )
+             ) : (
+               <button onClick={toggleMute} className={`p-2 rounded-xl transition-colors ${isMuted ? 'bg-red-500 text-white' : 'bg-[#2a2d36] text-white hover:bg-white/20'}`}>
+                 {isMuted ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
+               </button>
+             )}
+             <button onClick={() => setShowSettingsModal(true)} className="p-2 rounded-xl bg-[#2a2d36] text-white hover:bg-white/20 transition-colors"><Settings className="w-4 h-4"/></button>
+             <button onClick={leaveVoiceRoom} className="p-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors ml-2"><LogOut className="w-4 h-4"/></button>
           </div>
 
-          {/* Main Layout Grid */}
-          <div className="flex-1 overflow-hidden flex flex-col md:flex-row w-full h-full pb-[90px] pt-2 md:pt-4 px-2 md:px-4 gap-2 md:gap-4">
-            {/* Center Main Stage (Active Speaker) */}
-            <div className="flex-1 flex flex-col items-center justify-between bg-black/20 rounded-2xl relative overflow-hidden border border-white/5 shadow-2xl">
-                {/* Active Speaker */}
-                <div className="flex-1 flex flex-col items-center justify-center w-full">
-                {(() => {
-                   let activeSpeakerId = null;
-                   const speakers = participants.filter(p => (audioLevels[p.id] || 0) > 0.05);
-                   if (speakers.length > 0) activeSpeakerId = speakers[0].id;
-                   
-                   if (!activeSpeakerId) {
-                       const localUser = participants.find(p => p.isLocal);
-                       activeSpeakerId = localUser ? localUser.id : participants[0]?.id;
-                   }
-                   const activeSpeaker = participants.find(p => p.id === activeSpeakerId);
+          {/* Full-Screen Participant Grid */}
+          <div className="flex-1 w-full h-full p-4 md:p-8 pt-24 pb-24 overflow-y-auto overflow-x-hidden hide-scrollbar">
+             <div className="grid gap-4 md:gap-6 w-full max-w-6xl mx-auto items-center justify-center" style={{
+                gridTemplateColumns: `repeat(auto-fit, minmax(${participants.length > 4 ? '120px' : '200px'}, 1fr))`
+             }}>
+                {participants.map(p => {
+                    const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
+                    const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                    const pPhotoUrl = p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl);
+                    const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
+                    const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
+                    const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
+                    const targetRole = getRole(p.id);
+                    
+                    let canModTarget = false;
+                    if (myRole === 'owner' && targetRole !== 'owner') canModTarget = true;
+                    if (myRole === 'co-owner' && (targetRole === 'elder' || targetRole === 'member' || targetRole === 'guest')) canModTarget = true;
+                    const canPromote = myRole === 'owner';
 
-                   if (!activeSpeaker) return null;
-                   const activeBackendP = currentRoomData.participants?.find(bp => bp.id === activeSpeaker.id);
-                   const speakerPhotoUrl = activeSpeaker.isLocal ? user?.photoUrl : (activeBackendP?.photoUrl || activeSpeaker.photoUrl);
-                   const speakerEmoji = activeSpeaker.isLocal ? (user?.emoji || '👤') : (activeBackendP?.emoji || activeSpeaker.emoji || '👤');
-                   const speakerColor = activeSpeaker.isLocal ? (user?.color || '#0d94a8') : (activeBackendP?.color || activeSpeaker.color || '#ff4d4d');
-                   const speakerName = activeSpeaker.isLocal ? 'You' : (activeBackendP?.name || activeSpeaker.name);
+                    return (
+                        <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square rounded-3xl overflow-hidden bg-[#1c1f26] border-4 transition-all duration-300 ${isSpeaking ? 'border-[#00d859] shadow-[0_0_25px_rgba(0,216,89,0.3)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02]`} style={{ backgroundColor: pColor }}>
+                           {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-6xl">{pEmoji}</span>}
+                           
+                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-2 px-3 text-center">
+                              <span className="text-white text-xs font-bold drop-shadow-md truncate block">{pName}</span>
+                              {targetRole === 'owner' && <span className="text-[9px] text-[#00d859] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
+                           </div>
 
-                   const isSpeaking = (audioLevels[activeSpeaker.id] || 0) > 0.05;
-
-                   return (
-                     <div className="flex flex-col items-center justify-center w-full h-full p-8 animate-fade-in">
-                       <div className={`active-speaker-avatar ${isSpeaking ? 'speaking' : ''}`} style={{ backgroundColor: speakerColor }}>
-                           {speakerPhotoUrl ? <img src={speakerPhotoUrl} className="w-full h-full object-cover rounded-full" alt="" /> : speakerEmoji}
-                       </div>
-                       <span className="mt-8 text-lg font-bold text-white bg-black/50 px-6 py-2 rounded-full backdrop-blur-md shadow-lg border border-white/10 tracking-wide">
-                         {speakerName}
-                       </span>
-                     </div>
-                   );
-                })()}
-                </div>
-
-                {/* Participant Strip */}
-                <div className="w-full bg-black/40 backdrop-blur-md p-4 flex items-center justify-center gap-4 overflow-x-auto hide-scrollbar border-t border-white/5">
-                   {participants.map(p => {
-                       const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                       const myRole = getRole(user?.id);
-                       const targetRole = getRole(p.id);
-                       
-                       // Kick/Mute logic
-                       let canModTarget = false;
-                       if (myRole === 'owner' && targetRole !== 'owner') canModTarget = true;
-                       if (myRole === 'co-owner' && (targetRole === 'elder' || targetRole === 'member' || targetRole === 'guest')) canModTarget = true;
-                       
-                       const canPromote = myRole === 'owner';
-
-                       const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
-                       const pPhotoUrl = p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl);
-                       const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
-                       const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
-                       const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
-
-                       return (
-                          <div key={p.id} className="relative group cursor-pointer flex-shrink-0 transition-transform hover:scale-105" onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)}>
-                            <div className={`w-[84px] h-[84px] rounded-2xl overflow-hidden border-2 ${isSpeaking ? 'border-[#0d94a8] shadow-[0_0_15px_rgba(13,148,168,0.5)]' : 'border-transparent'} bg-black/50 transition-all`}>
-                              <div className="w-full h-full flex items-center justify-center text-2xl" style={{ backgroundColor: pColor }}>
-                                 {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : pEmoji}
-                              </div>
-                            </div>
-                            <div className="absolute bottom-1 left-1 right-1 bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 text-[10px] font-medium text-white truncate text-center border border-white/10 shadow-sm flex flex-col items-center gap-0.5">
-                               <span>{pName}</span>
-                               {targetRole === 'owner' && <span className="text-[8px] bg-red-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Owner</span>}
-                               {targetRole === 'co-owner' && <span className="text-[8px] bg-purple-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Co-Owner</span>}
-                               {targetRole === 'elder' && <span className="text-[8px] bg-blue-500/80 px-1 rounded-sm text-white uppercase tracking-wider">Elder</span>}
-                            </div>
-                            {p.muted && (
-                              <div className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 shadow-sm">
+                           {p.muted && (
+                              <div className="absolute top-3 right-3 w-7 h-7 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center">
                                 <MicOff className="w-3.5 h-3.5 text-red-400" />
                               </div>
-                            )}
-                            
-                            {/* Moderation Dropdown */}
-                            {selectedParticipant === p.id && !p.isLocal && (
-                                <div className="absolute bottom-[90px] left-1/2 -translate-x-1/2 w-48 bg-[var(--bg-elevated)] border border-[var(--line-bright)] rounded-xl shadow-2xl z-50 overflow-hidden text-xs text-left animate-fade-in">
-                                  <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-white transition-colors flex items-center gap-2"><Users className="w-4 h-4 text-white/70"/> Profile</button>
-                                  
-                                  {canPromote && targetRole !== 'owner' && targetRole !== 'co-owner' && (
-                                    <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-purple-400 transition-colors flex items-center gap-2">Make Co-Owner</button>
-                                  )}
-                                  {canPromote && targetRole !== 'owner' && targetRole !== 'elder' && (
-                                    <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'elder'); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-blue-400 transition-colors flex items-center gap-2">Make Elder</button>
-                                  )}
-                                  {canPromote && targetRole !== 'owner' && targetRole !== 'member' && targetRole !== 'guest' && (
-                                    <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'member'); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-gray-400 transition-colors flex items-center gap-2">Make Member</button>
-                                  )}
-                                  
-                                  {canModTarget && (
-                                    <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-white transition-colors flex items-center gap-2"><MicOff className="w-4 h-4 text-white/70"/> Mute</button>
+                           )}
+
+                           {/* Moderation Dropdown */}
+                           {selectedParticipant === p.id && !p.isLocal && (
+                                <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 text-xs animate-fade-in gap-2">
+                                  <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors">Profile</button>
+                                  {canPromote && targetRole !== 'owner' && (
+                                    <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 rounded-xl transition-colors">Make Co-Owner</button>
                                   )}
                                   {canModTarget && (
-                                    <button onClick={(e) => { e.stopPropagation(); kickUser(p.id); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--danger-bg)] text-[var(--danger)] transition-colors flex items-center gap-2"><UserMinus className="w-4 h-4 text-[var(--danger)]"/> Kick</button>
+                                    <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-xl transition-colors">Mute</button>
                                   )}
-                                  <button onClick={(e) => { e.stopPropagation(); setReportTarget(p); setShowReportModal(true); setSelectedParticipant(null); }} className="w-full text-left px-4 py-2.5 hover:bg-[var(--bg-hover)] text-white/50 transition-colors flex items-center gap-2"><Flag className="w-4 h-4 text-white/50"/> Report</button>
                                 </div>
-                            )}
-                          </div>
-                       )
-                   })}
-                </div>
-            </div>
-            
-            {/* Right Sidebar (Chat & Queue) */}
-            <div className="w-full md:w-[360px] h-[35vh] min-h-[200px] md:h-full flex flex-col bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl shrink-0">
-              {isHostOrCoHost && speakingQueue.length > 0 && (
-                <div className="flex-shrink-0 flex flex-col border-b border-white/10 bg-black/30">
-                  <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
-                    <span className="font-bold text-xs tracking-widest text-[var(--accent)] uppercase flex items-center gap-2">
-                      <Hand className="w-3 h-3" /> Raised Hands ({speakingQueue.length})
-                    </span>
-                  </div>
-                  <div className="max-h-[150px] overflow-y-auto p-2">
-                    {speakingQueue.map(qId => {
-                      const qUser = participants.find(p => p.id === qId) || { name: 'Unknown User', id: qId };
-                      return (
-                        <div key={qId} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg transition-colors">
-                          <span className="text-xs text-white truncate max-w-[150px]">{qUser.name}</span>
-                          <button onClick={() => allowToSpeak(qId)} className="text-[10px] bg-[var(--accent)]/20 text-[var(--accent)] px-3 py-1.5 rounded-full hover:bg-[var(--accent)] hover:text-white transition-colors">Allow to Speak</button>
+                           )}
                         </div>
-                      );
-                    })}
-                  </div>
+                    )
+                })}
+             </div>
+          </div>
+
+          {/* Chat Overlay (Hidden by Default) */}
+          {isChatOpen && (
+             <div className="absolute bottom-[90px] left-4 right-4 md:left-auto md:right-8 md:w-[380px] h-[400px] max-h-[50vh] bg-[#121418]/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-40 flex flex-col animate-fade-in">
+                <div className="px-5 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+                  <span className="font-bold text-sm tracking-widest text-white uppercase">Room Chat</span>
+                  <button onClick={() => setIsChatOpen(false)} className="text-white/50 hover:text-white p-1 rounded-full"><X className="w-4 h-4"/></button>
                 </div>
-              )}
-              
-              <div className="px-5 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
-                <span className="font-bold text-sm tracking-widest text-white uppercase">In-call messages</span>
-              </div>
-              <div className="flex-1 flex flex-col justify-end gap-3 p-5 overflow-y-auto" id="chat-container">
-                {chatMessages.length === 0 && (
-                  <div className="text-center text-white/40 text-xs italic mb-4">Messages can only be seen by people in the call and are deleted when the call ends.</div>
-                )}
-                {chatMessages.map(msg => (
-                  <div key={msg.id} className={`flex gap-3 w-full items-end ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
-                    {msg.senderId !== user?.id && (
-                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-md flex-shrink-0 z-10" style={{ backgroundColor: msg.senderColor }}>
-                         {msg.senderEmoji || '👤'}
-                       </div>
-                    )}
-                    <div className={msg.senderId === user?.id ? 'chat-bubble-right' : 'chat-bubble-left'}>
-                      <span className="font-bold block text-[10px] opacity-70 mb-1 tracking-wide">{msg.senderName}</span>
-                      {msg.text}
+                <div className="flex-1 flex flex-col gap-3 p-4 overflow-y-auto" id="chat-container">
+                  {chatMessages.length === 0 && (
+                    <div className="text-center text-white/30 text-xs italic mb-4">Messages are ephemeral and disappear when you leave.</div>
+                  )}
+                  {chatMessages.map(msg => (
+                    <div key={msg.id} className={`flex gap-3 w-full items-end ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
+                      {msg.senderId !== user?.id && (
+                         <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-md flex-shrink-0" style={{ backgroundColor: msg.senderColor }}>
+                           {msg.senderEmoji || '👤'}
+                         </div>
+                      )}
+                      <div className={msg.senderId === user?.id ? 'chat-bubble-right bg-[#00d859]/20 text-white rounded-2xl rounded-br-sm px-3 py-2 text-sm max-w-[80%]' : 'chat-bubble-left bg-white/10 text-white rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[80%]'}>
+                        <span className="font-bold block text-[10px] opacity-50 mb-0.5">{msg.senderName}</span>
+                        {msg.text}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Floating Control Bar */}
-          <div className="fixed bottom-0 left-0 right-0 h-[80px] bg-[#0d0d0f]/90 backdrop-blur-2xl border-t border-white/10 z-50 flex items-center justify-between px-6 md:px-8">
-             <div className="hidden md:flex items-center gap-3 text-white/80 text-sm font-semibold w-[300px]">
-               <div className="bg-white/10 px-3 py-1.5 rounded-lg border border-white/5 flex items-center gap-2">
-                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                 12:47
-               </div>
-               <span className="truncate max-w-[180px]">{activeRoom.name}</span>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
              </div>
+          )}
+
+          {/* Bottom Floating App Bar */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[#1c1f26]/90 backdrop-blur-md rounded-full px-2 py-2 border border-white/5 shadow-2xl flex items-center gap-2 z-50 w-[95%] md:w-auto md:min-w-[400px] justify-between md:justify-center">
              
-             {/* Center Controls */}
-             <div className="flex items-center gap-4 justify-center flex-1">
-                {isListener ? (
-                   hasRaisedHand ? (
-                     <button onClick={lowerHand} className="call-action-btn hover:bg-white/20 px-4 rounded-2xl flex items-center gap-2 text-xs font-bold text-white/70">
-                       <Hand className="w-4 h-4 text-[var(--accent)]"/> Lower Hand
-                     </button>
-                   ) : (
-                     <button onClick={raiseHand} className="call-action-btn bg-[var(--accent)]/20 border-[var(--accent)]/50 hover:bg-[var(--accent)]/40 px-4 rounded-2xl flex items-center gap-2 text-xs font-bold text-white transition-all">
-                       <Hand className="w-4 h-4 text-[var(--accent)]"/> Raise Hand
-                     </button>
-                   )
-                ) : (
-                  <button onClick={toggleMute} className={`call-action-btn ${isMuted ? 'muted' : ''}`} style={isMuted ? {background: '#ef4444', borderColor: '#ef4444'} : {}}>
-                    {isMuted ? <MicOff className="w-5 h-5 text-white"/> : <Mic className="w-5 h-5"/>}
-                  </button>
-                )}
-                <button onClick={() => setShowSettingsModal(true)} className="call-action-btn hover:bg-white/20 hover:scale-105"><Settings className="w-5 h-5"/></button>
-                <button onClick={leaveVoiceRoom} className="call-action-btn end-call w-16 rounded-2xl hover:scale-105"><LogOut className="w-5 h-5"/></button>
+             {/* Left - Room Info */}
+             <div className="flex items-center gap-2 px-3 flex-shrink-0">
+               <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)]">
+                 <Users className="w-4 h-4"/>
+               </div>
+               <div className="flex flex-col hidden md:flex">
+                 <span className="text-xs font-bold text-white tracking-wide truncate max-w-[120px]">{activeRoom.name}</span>
+                 <span className="text-[9px] text-[var(--accent)] font-mono uppercase">{participants.length} connected</span>
+               </div>
              </div>
 
-             {/* Right side: Chat input */}
-             <div className="flex items-center justify-end w-full md:w-[340px]">
-                 <form onSubmit={sendChatMessage} className="flex-1 flex bg-white/10 rounded-xl p-1.5 items-center border border-white/10 focus-within:border-[var(--accent)] focus-within:bg-white/15 transition-all shadow-inner">
-                    <input type="text" placeholder="Send a message..." value={chatInput} onChange={e => setChatInput(e.target.value)} className="flex-1 bg-transparent border-none text-white text-sm outline-none shadow-none px-3 placeholder:text-white/40" />
-                    <button type="submit" className="w-8 h-8 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors flex items-center justify-center text-white shadow-md"><Send className="w-4 h-4 ml-0.5"/></button>
-                 </form>
+             <div className="w-px h-8 bg-white/10 mx-1 hidden md:block"></div>
+
+             {/* Center - Action Buttons */}
+             <div className="flex items-center gap-2 flex-shrink-0">
+                <button onClick={() => setIsChatOpen(!isChatOpen)} className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isChatOpen ? 'bg-white/20 text-white' : 'bg-transparent text-white/50 hover:bg-white/10 hover:text-white'}`}>
+                  <MessageSquare className="w-5 h-5"/>
+                  {chatMessages.length > 0 && !isChatOpen && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border border-[#1c1f26]"></span>}
+                </button>
              </div>
+
+             <div className="w-px h-8 bg-white/10 mx-1"></div>
+
+             {/* Right - Chat Input */}
+             <form onSubmit={(e) => { e.preventDefault(); setIsChatOpen(true); sendChatMessage(e); }} className="flex-1 min-w-[120px] max-w-[200px] flex bg-white/5 rounded-full p-1 items-center border border-white/5 focus-within:border-[var(--accent)] transition-colors">
+                <input type="text" placeholder="Send message..." value={chatInput} onChange={e => setChatInput(e.target.value)} onClick={() => setIsChatOpen(true)} className="flex-1 bg-transparent border-none text-white text-xs outline-none shadow-none px-3 w-full placeholder:text-white/30" />
+                <button type="submit" className="w-8 h-8 rounded-full bg-[var(--accent)]/80 hover:bg-[var(--accent)] transition-colors flex items-center justify-center text-black shadow-md flex-shrink-0"><Send className="w-3.5 h-3.5 ml-0.5"/></button>
+             </form>
           </div>
+
         </div>
-        );
-      })()}
+        );      })()}
       </>
 )
   );
