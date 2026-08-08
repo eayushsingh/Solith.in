@@ -15,7 +15,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
       {/* Logo Area */}
       <div 
         onClick={() => setView('lobby')}
-        className="hidden md:flex w-10 h-10 rounded bg-[#ef4444] items-center justify-center cursor-pointer mb-8 shadow-[0_0_15px_rgba(239,68,68,0.3)] transition-transform hover:scale-105"
+        className="hidden md:flex w-10 h-10 rounded bg-[#cd1c18] items-center justify-center cursor-pointer mb-8 shadow-[0_0_15px_rgba(205,28,24,0.3)] transition-transform hover:scale-105"
         title="TalkFree Home"
       >
         <span className="text-[#0b0d10] font-black text-xl tracking-tighter">T</span>
@@ -33,7 +33,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
               onClick={() => { setView(item.id); window.location.hash = item.id; }}
               className={`relative p-3 rounded-full transition-all duration-200 group flex items-center justify-center ${
                 isActive 
-                  ? 'text-[#ef4444] border border-[#ef4444]' 
+                  ? 'text-[#cd1c18] border border-[#cd1c18]' 
                   : 'text-[#86868b] hover:text-white hover:bg-[rgba(255,255,255,0.05)] border border-transparent'
               }`}
               title={item.title}
@@ -68,7 +68,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
         {user ? (
           <div className="relative group mt-2">
             <button 
-              className="w-10 h-10 rounded-full bg-[#2a2d36] border border-[#32363e] flex items-center justify-center text-white hover:border-[#ef4444] transition-all"
+              className="w-10 h-10 rounded-full bg-[#2a2d36] border border-[#32363e] flex items-center justify-center text-white hover:border-[#cd1c18] transition-all"
               onClick={onSettingsClick}
               title={user.displayName || "Profile"}
             >
