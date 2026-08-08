@@ -19,11 +19,11 @@ export const Meteors = ({ number = 2 }) => {
         <span
           key={idx}
           // Note: rotate(215deg) is handled entirely by the @keyframes, so we don't need a tailwind rotate class
-          className="pointer-events-none absolute h-[2px] w-[2px] animate-meteor rounded-full bg-[#cd1c18] shadow-[0_0_0_1px_#cd1c18]"
+          className="pointer-events-none absolute h-[2px] w-[2px] animate-meteor rounded-full bg-white/50 shadow-[0_0_0_1px_#ffffff20]"
           style={style}
         >
-          {/* Meteor Tail: moving positive X means the front is on the right. So gradient from transparent on the left to red on the right */}
-          <div className="pointer-events-none absolute top-1/2 -z-10 h-[1px] w-[100px] -translate-y-1/2 bg-gradient-to-r from-transparent to-[#cd1c18] right-[100%]" />
+          {/* Meteor Tail: moving positive X means the front is on the right. So gradient from transparent on the left to white on the right */}
+          <div className="pointer-events-none absolute top-1/2 -z-10 h-[1px] w-[100px] -translate-y-1/2 bg-gradient-to-r from-transparent to-white/50 right-[100%]" />
         </span>
       ))}
     </div>
