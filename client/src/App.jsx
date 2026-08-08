@@ -1309,9 +1309,9 @@ export default function App() {
               
               <div className="w-full grid grid-cols-2 gap-4 mb-8">
                 <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
-                  <div className="flex justify-center mb-2"><Flame className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
-                  <div className="text-3xl font-black text-[#00d859]">{user.streak || 0}</div>
-                  <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Day Streak</div>
+                  <div className="flex justify-center mb-2"><Flame className="w-6 h-6 text-orange-500 fill-orange-500 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] animate-pulse" /></div>
+                  <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">{user.streak || 0}</div>
+                  <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-orange-500/90 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]">Day Streak</div>
                 </div>
                 <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
                   <div className="flex justify-center mb-2"><Award className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
@@ -1382,9 +1382,9 @@ export default function App() {
                 
                 <div className="w-full grid grid-cols-2 gap-4 mb-8">
                   <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
-                    <div className="flex justify-center mb-2"><Flame className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
-                    <div className="text-3xl font-black text-[#00d859]">{targetProfile.streak || 0}</div>
-                    <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Day Streak</div>
+                    <div className="flex justify-center mb-2"><Flame className="w-6 h-6 text-orange-500 fill-orange-500 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] animate-pulse" /></div>
+                    <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">{targetProfile.streak || 0}</div>
+                    <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-orange-500/90 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]">Day Streak</div>
                   </div>
                   <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
                     <div className="flex justify-center mb-2"><Award className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>

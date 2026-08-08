@@ -3,3 +3,4 @@ server/firebase-service-account.json
 test-results/
 server/test-results/
 client/test-results/
+.env
