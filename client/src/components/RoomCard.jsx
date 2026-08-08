@@ -49,7 +49,7 @@ export default function RoomCard({ room, onJoin }) {
                     </div>
                   )}
                   {/* Fake online status indicator */}
-                  <div className="absolute bottom-1 right-1 w-4 h-4 bg-[#ef4444] border-2 border-[#1c1f26] rounded-full"></div>
+                  <div className="absolute bottom-1 right-1 w-4 h-4 bg-[#cd1c18] border-2 border-[#1c1f26] rounded-full"></div>
                 </div>
                 <div className="flex items-center gap-1 text-[#3b82f6] text-xs font-bold">
                   <Heart className="w-3 h-3 fill-current" />
@@ -77,7 +77,7 @@ export default function RoomCard({ room, onJoin }) {
         ) : (
           <button 
             onClick={() => onJoin(room)}
-            className="relative overflow-hidden w-full py-2.5 rounded-lg border border-[#ef4444] text-[#ef4444] text-xs font-semibold flex items-center justify-center gap-2 hover:bg-[#ef4444] hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] group/btn"
+            className="relative overflow-hidden w-full py-2.5 rounded-lg border border-[#cd1c18] text-[#cd1c18] text-xs font-semibold flex items-center justify-center gap-2 hover:bg-[#cd1c18] hover:text-black transition-all duration-300 hover:shadow-[0_0_20px_rgba(205,28,24,0.4)] group/btn"
           >
             <Phone className="w-4 h-4 transition-transform group-hover/btn:rotate-12 group-hover/btn:scale-110" /> Join and talk now!
           </button>
