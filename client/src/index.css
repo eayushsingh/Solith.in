@@ -2,51 +2,38 @@
 /* Cache buster */
 
 :root {
-  /* ── Core Palette — Elevated Dark Mode (Talk4Now Aesthetic) ── */
-  --bg: #0b0d10;
-  --bg-trans-85: rgba(11, 13, 16, 0.85);
-  --bg-trans-60: rgba(11, 13, 16, 0.6);
-  --bg-secondary: #121418;
-  --bg-elevated: #16191e;
-  --bg-elevated-2: #1c1f26;
-  --bg-hover: rgba(255, 255, 255, 0.05);
+  /* ── Apple-Grade Minimal Dark Palette ── */
+  --bg-base: #0A0B0E;
+  --bg-surface: #14161C;
+  --bg-surface-elevated: #1E2028;
 
-  --ink: #ffffff;
-  --ink-secondary: #c7c7cc;
-  --ink-tertiary: #86868b;
-  --ink-dim: #5c5c60;
+  --accent-primary: #3B82F6;
+  --accent-primary-hover: #2563EB;
+  --accent-primary-bg: rgba(59, 130, 246, 0.1);
+  --accent-primary-glow: rgba(59, 130, 246, 0.2);
 
-  --line: #24272e;
-  --line-bright: #323640;
+  --accent-secondary: #3B82F6;
+  --accent-secondary-hover: #2563EB;
+  --accent-secondary-glow: rgba(59, 130, 246, 0.2);
+  --accent-secondary-bg: rgba(59, 130, 246, 0.1);
 
-  /* Warm coral red for a more premium, eye-friendly UI */
-  --accent: #ff4d4f;
-  --accent-light: #ff756d;
-  --accent-bg: rgba(255, 77, 79, 0.16);
-  --accent-glow: rgba(255, 77, 79, 0.34);
+  --success: #10B981;
+  --success-bg: rgba(16, 185, 129, 0.12);
+  
+  --danger: #EF4444;
+  --danger-bg: rgba(239, 68, 68, 0.12);
 
-  --success: #22c55e;
-  --success-bg: rgba(34, 197, 94, 0.15);
-  --danger: #ff4d4f;
-  --danger-bg: rgba(255, 77, 79, 0.15);
+  --text-primary: #F5F5F7;
+  --text-secondary: #86868B;
 
-  --bg-dark: var(--bg);
-  --bg-card: var(--bg-elevated);
-  --bg-card-hover: var(--bg-hover);
-  --border-glass: var(--line);
-  --border-glass-active: var(--accent);
+  --border-color: #242731;
 
-  --primary: var(--accent);
-  --text-primary: var(--ink);
-  --text-muted: var(--ink-tertiary);
-  --text-sub: var(--ink-secondary);
-
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
   color: var(--text-primary);
-  background-color: var(--bg);
+  background-color: var(--bg-base);
 }
 
 *, *::before, *::after {
@@ -54,8 +41,8 @@
 }
 
 html {
-  background: var(--bg);
-  color: var(--ink);
+  background: var(--bg-base);
+  color: var(--text-primary);
   scroll-behavior: smooth;
 }
 
@@ -67,21 +54,21 @@ html {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: var(--bg-surface);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--line-bright);
+  background: var(--border-color);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--ink-dim);
+  background: var(--text-secondary);
 }
 
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-color: var(--bg);
+  background-color: var(--bg-base);
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -134,10 +121,10 @@ h1, h2, h3, h4, h5, h6 {
 /* Animations */
 @keyframes pulse-speaking {
   0%, 100% {
-    box-shadow: 0 0 0 2px rgba(88, 86, 214, 0.2), 0 0 12px rgba(88, 86, 214, 0.1);
+    box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2), 0 0 12px rgba(24, 119, 242, 0.1);
   }
   50% {
-    box-shadow: 0 0 0 3px rgba(88, 86, 214, 0.4), 0 0 20px rgba(88, 86, 214, 0.2);
+    box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.4), 0 0 20px rgba(24, 119, 242, 0.2);
   }
 }
 
@@ -172,6 +159,16 @@ h1, h2, h3, h4, h5, h6 {
 .animate-slide-up-delayed {
   animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
   opacity: 0;
+}
+
+@keyframes eye-look {
+  0%, 100% { transform: translateX(0) scale(1.25); }
+  25%, 45% { transform: translateX(-1.5px) scale(1.25); }
+  55%, 75% { transform: translateX(1.5px) scale(1.25); }
+}
+
+.animate-eye-look {
+  animation: eye-look 4s ease-in-out infinite;
 }
 
 .animate-slide-up-delayed-2 {
@@ -272,48 +269,48 @@ textarea:focus-visible {
 .filter-pill {
   padding: 0.625rem 0.875rem;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  color: var(--ink-secondary);
-  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
 }
 
 .filter-pill.active {
-  color: var(--ink);
-  border-color: var(--accent);
-  background: rgba(205, 28, 24, 0.15);
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
+  background: var(--accent-primary-bg);
 }
 
 .create-room-btn {
   padding: 0.875rem 1.25rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--ink);
+  border-radius: 12px;
+  background: var(--accent-primary);
+  color: #ffffff;
   font-weight: 700;
   border: none;
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: #ffffff;
+  background: var(--accent-primary);
+  color: var(--text-primary);
   border: none;
   font-weight: 600;
 }
 
 .btn-primary:hover {
-  background: var(--accent-light);
+  background: var(--accent-primary-light);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--accent-glow);
+  box-shadow: 0 4px 12px var(--accent-primary-glow);
 }
 
 .btn-secondary {
-  background: var(--bg-secondary);
-  border: 1px solid var(--line);
-  color: var(--ink);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  background: var(--bg-hover);
-  border-color: var(--line-bright);
+  background: var(--bg-surface-hover);
+  border-color: var(--border-color);
 }
 
 .btn-danger {
@@ -346,14 +343,14 @@ textarea:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 600;
-  color: var(--ink-tertiary);
+  color: var(--text-secondary);
 }
 
 /* Landing Hero & Eyeglass Character Sizing Constraints */
 .landing-hero {
   width: 100%;
   min-height: 100vh;
-  background: var(--bg);
+  background: var(--bg-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -438,7 +435,7 @@ textarea:focus-visible {
   padding: 14px 32px;
   border: none;
   border-radius: 100px;
-  color: var(--accent);
+  color: var(--accent-primary);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -495,8 +492,8 @@ textarea:focus-visible {
 
 /* ── Room Cards — clean, elevated, Instagram-style ── */
 .room-card {
-  background: var(--bg-elevated);
-  border: 1px solid var(--line);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 24px;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -504,28 +501,28 @@ textarea:focus-visible {
 }
 
 .room-card:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-primary);
   transform: translateY(-4px);
-  box-shadow: 0 12px 40px -8px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.06);
+  box-shadow: 0 12px 40px -8px var(--accent-primary-glow), 0 4px 12px rgba(0,0,0,0.06);
   cursor: pointer;
 }
 
 .room-card .meta-label {
-  color: var(--ink-tertiary);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
 }
 
 .room-card h3 {
-  color: var(--ink);
+  color: var(--text-primary);
   font-weight: 700;
   font-size: 20px;
   letter-spacing: -0.01em;
 }
 
 .room-card .desc {
-  color: var(--ink-secondary);
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -573,7 +570,7 @@ textarea:focus-visible {
   font-weight: 700;
   font-size: 12px;
   color: #FFFFFF;
-  border: 2.5px solid var(--bg-elevated);
+  border: 2.5px solid var(--bg-surface-elevated);
   margin-left: -8px;
   transition: transform 0.2s ease;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
@@ -581,28 +578,28 @@ textarea:focus-visible {
 
 /* Filter pills (Active/Inactive states) */
 .filter-pill {
-  border: 1.5px solid var(--line);
-  color: var(--ink-tertiary);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-secondary);
   padding: 8px 20px;
   border-radius: 100px;
   transition: all 0.2s ease;
-  background: var(--bg);
+  background: var(--bg-base);
   cursor: pointer;
   font-weight: 600;
 }
 
 .filter-pill.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
   color: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 4px 15px var(--accent-glow);
+  box-shadow: 0 4px 15px var(--accent-primary-glow);
 }
 
 .filter-pill:hover:not(.active) {
-  border-color: var(--ink-dim);
-  color: var(--ink);
-  background: var(--bg-secondary);
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+  background: var(--bg-surface);
 }
 
 /* Loud "+ ROOM" Button Main CTA */
@@ -725,9 +722,10 @@ textarea:focus-visible {
 }
 
 .call-action-btn.end-call {
-  background: #ff3b30;
-  border-color: #ff3b30;
-  box-shadow: 0 4px 16px rgba(255, 59, 48, 0.4);
+  color: var(--text-primary);
+  background: var(--bg-surface-elevated);
+  border-color: var(--accent-primary);
+  box-shadow: 0 4px 12px var(--accent-primary-glow);
 }
 .call-action-btn.end-call:hover {
   background: #ff4d4d;
@@ -817,7 +815,7 @@ textarea:focus-visible {
   scrollbar-width: none;
 }
 
-/* ── Custom Talk4Now Styles ── */
+/* ── Custom Talk34 Styles ── */
 .layout-container {
   display: flex;
   height: 100vh;

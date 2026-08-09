@@ -8,14 +8,14 @@ import MessagesView from './components/MessagesView';
 import DirectMessage from './components/DirectMessage';
 import Leaderboard from './components/Leaderboard';
 import Sidebar from './components/Sidebar';
-import { Meteors } from './components/Meteors';
+
 import StaticModals from './components/StaticModals';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
-  Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox
+  Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
-import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence } from './firebase';
+import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence, getCountFromServer } from './firebase';
 import socket from './socket';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -37,52 +37,7 @@ const getLevelInfo = (xp) => {
 
 const ADMIN_EMAILS = ['ayushfun01@gmail.com', 'hacksejeet@gmail.com', 'ayush.singh.something@klh.edu.in'];
 
-// Animated Logo Component
-const AnimatedLogo = () => {
-  useEffect(() => {
-    const video = document.getElementById('logo-video');
-    const dot = document.getElementById('logo-dot');
-    
-    if (video && dot) {
-      setTimeout(() => {
-        const videoRect = video.getBoundingClientRect();
-        const dotRect = dot.getBoundingClientRect();
-        
-        const videoCenterX = videoRect.left + videoRect.width / 2;
-        const videoCenterY = videoRect.top + videoRect.height / 2;
-        
-        const dotCenterX = dotRect.left + dotRect.width / 2;
-        const dotCenterY = dotRect.top + dotRect.height / 2;
-        
-        const deltaX = videoCenterX - dotCenterX;
-        const deltaY = videoCenterY - dotCenterY;
-        
-        dot.style.setProperty('--start-x', `${deltaX}px`);
-        dot.style.setProperty('--start-y', `${deltaY}px`);
-        
-        dot.classList.add('animate-fly-to-i');
-      }, 500);
-    }
-  }, []);
 
-  return (
-    <div className="flex items-center justify-center gap-4 mt-4 animate-slide-up relative">
-      <video 
-        id="logo-video"
-        src="/freevideo2.mp4" 
-        autoPlay 
-        loop 
-        muted 
-        playsInline
-        className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/20 relative z-10"
-      />
-      <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-center relative z-10">
-        <span className="text-white">Talk</span>
-        <span className="text-[var(--accent)] ml-1">34</span>
-      </h1>
-    </div>
-  );
-};
 
 export default function App() {
   // Navigation / Layout state
@@ -1014,7 +969,7 @@ export default function App() {
 
     const renderAppLayout = (children) => (
     <div className="layout-container relative min-h-[100dvh] overflow-x-hidden">
-      <Meteors number={20} />
+
       {!activeRoom && <Sidebar {...layoutProps} />}
       <div className="main-content hide-scrollbar z-10 relative">
         {children}
@@ -1023,18 +978,18 @@ export default function App() {
       {/* MODALS MOVED HERE FOR GLOBAL ACCESS */}
       {/* CREATE ROOM MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="w-full max-w-md rounded-3xl p-8 animate-fade-in relative bg-[#121418] border border-[#24272e] shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-md rounded-3xl p-8 animate-fade-in relative bg-bg-base border border-border-color shadow-xl">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl md:text-2xl font-bold text-white flex items-center gap-3">
-                <div className="p-2 bg-[var(--accent-bg)] rounded-xl border border-[var(--accent-glow)]">
-                  <Plus className="w-5 h-5 text-[var(--accent)]" /> 
+              <h3 className="text-xl md:text-2xl font-bold text-text-primary flex items-center gap-3">
+                <div className="p-2 bg-[var(--accent-primary-bg)] rounded-xl border border-[var(--accent-primary-glow)]">
+                  <Plus className="w-5 h-5 text-[var(--accent-primary)]" /> 
                 </div>
                 Start Practice Lounge
               </h3>
               <button 
                 onClick={() => setShowCreateModal(false)}
-                className="text-white/40 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full p-2"
+                className="text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-2"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1042,24 +997,24 @@ export default function App() {
 
             <form onSubmit={handleCreateRoom} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Room Title</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Room Title</label>
                 <input 
                   type="text" 
                   placeholder="e.g. Intermediate Spanish Chat & Tacos 🌮" 
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  className="w-full text-sm bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-inner"
+                  className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary placeholder-white/30 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all shadow-inner"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Language Focus</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Language Focus</label>
                   <select 
                     value={newRoomLanguage}
                     onChange={(e) => setNewRoomLanguage(e.target.value)}
-                    className="w-full text-sm bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--accent)] transition-all shadow-inner"
+                    className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-all shadow-inner"
                   >
                     {LANGUAGES.slice(1).map(lang => (
                       <option key={lang} value={lang} className="bg-[#1a1c23]">{lang}</option>
@@ -1068,34 +1023,34 @@ export default function App() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Tags (comma separated)</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Tags (comma separated)</label>
                   <input 
                     type="text" 
                     placeholder="e.g. Casual, Debate" 
                     value={newRoomTags}
                     onChange={(e) => setNewRoomTags(e.target.value)}
-                    className="w-full text-sm bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-inner"
+                    className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary placeholder-white/30 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all shadow-inner"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Lounge Description / Topic</label>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Lounge Description / Topic</label>
                 <textarea 
                   placeholder="Give speakers details about what you want to talk about..." 
                   value={newRoomTopic}
                   onChange={(e) => setNewRoomTopic(e.target.value)}
-                  className="w-full text-sm h-24 resize-none bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all shadow-inner"
+                  className="w-full text-sm h-24 resize-none bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary placeholder-white/30 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all shadow-inner"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Privacy</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Privacy</label>
                   <select 
                     value={newRoomAccessType}
                     onChange={(e) => setNewRoomAccessType(e.target.value)}
-                    className="w-full text-sm bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--accent)] transition-all shadow-inner"
+                    className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-all shadow-inner"
                   >
                     <option value="public" className="bg-[#1a1c23]">Public (Anyone can join)</option>
                     <option value="friends" className="bg-[#1a1c23]">Friends Only (Followers)</option>
@@ -1103,15 +1058,15 @@ export default function App() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-light)] mb-2 drop-shadow-sm">Speaking Mode</label>
-                  <label className="flex items-center gap-3 w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 cursor-pointer hover:bg-white/5 transition-colors">
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Speaking Mode</label>
+                  <label className="flex items-center gap-3 w-full bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 cursor-pointer hover:bg-white/5 transition-colors">
                     <input 
                       type="checkbox" 
                       checked={newRoomIsOpenMic}
                       onChange={(e) => setNewRoomIsOpenMic(e.target.checked)}
-                      className="w-4 h-4 accent-[var(--accent)] cursor-pointer"
+                      className="w-4 h-4 accent-[var(--accent-primary)] cursor-pointer"
                     />
-                    <span className="text-sm text-white font-medium select-none">Open Mic Mode</span>
+                    <span className="text-sm text-text-primary font-medium select-none">Open Mic Mode</span>
                   </label>
                 </div>
               </div>
@@ -1120,14 +1075,14 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-6 py-3 rounded-xl text-sm font-bold bg-[#121212] border border-white/10 text-white/70 hover:bg-white/10 hover:text-white transition-all shadow-lg"
+                  className="px-6 py-3 rounded-xl text-sm font-bold bg-[#121212] border border-white/10 text-text-primary/70 hover:bg-white/10 hover:text-text-primary transition-all shadow-lg"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isCreatingRoom}
-                  className={`px-6 py-3 rounded-xl text-sm font-bold bg-[#cd1c18] text-black hover:bg-[#e5322d] transition-all flex items-center justify-center min-w-[150px] ${isCreatingRoom ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  className={`px-6 py-3 rounded-xl text-sm font-bold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] transition-all flex items-center justify-center min-w-[150px] ${isCreatingRoom ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
                   {isCreatingRoom ? 'Launching...' : 'Create & Launch'}
                 </button>
@@ -1139,15 +1094,15 @@ export default function App() {
 
       {/* USER PROFILE MODAL */}
       {showSettingsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/30 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm glass rounded-2xl p-6 animate-fade-in">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-[var(--ink)] flex items-center gap-1.5">
-                <Settings className="w-5 h-5 text-[var(--accent)]" /> Customize Identity
+              <h3 className="text-lg font-bold text-text-primary flex items-center gap-1.5">
+                <Settings className="w-5 h-5 text-[var(--accent-primary)]" /> Customize Identity
               </h3>
               <button 
                 onClick={() => setShowSettingsModal(false)}
-                className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition text-[var(--ink-tertiary)] hover:text-[var(--ink)]"
+                className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition text-text-secondary hover:text-text-primary"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1163,15 +1118,15 @@ export default function App() {
                   {user.emoji}
                 </div>
                 <div>
-                  <span className="text-xs text-[var(--ink-tertiary)]">Live Preview</span>
-                  <h4 className="text-lg font-bold text-[var(--ink)] leading-tight">{user.name || 'Anonymous Learner'}</h4>
-                  <span className="text-xs text-[var(--accent)] font-semibold">Native Speaker</span>
+                  <span className="text-xs text-text-secondary">Live Preview</span>
+                  <h4 className="text-lg font-bold text-text-primary leading-tight">{user.name || 'Anonymous Learner'}</h4>
+                  <span className="text-xs text-[var(--accent-primary)] font-semibold">Native Speaker</span>
                 </div>
               </div>
 
               {/* Name Edit Input */}
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Nickname</label>
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5">Nickname</label>
                 <input 
                   type="text" 
                   value={user.name}
@@ -1183,14 +1138,14 @@ export default function App() {
 
               {/* Emoji Selector grid */}
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Avatar Icon</label>
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5">Avatar Icon</label>
                 <div className="grid grid-cols-8 gap-2">
                   {EMOJIS.map(em => (
                     <button
                       key={em}
                       onClick={() => setUser(prev => ({ ...prev, emoji: em }))}
                       className={`text-xl p-1 rounded-md hover:bg-[var(--bg-hover)] transition ${
-                        user.emoji === em ? 'bg-[var(--accent-bg)] border border-[var(--accent)]' : 'border border-transparent'
+                        user.emoji === em ? 'bg-[var(--accent-primary-bg)] border border-[var(--accent-primary)]' : 'border border-transparent'
                       }`}
                     >
                       {em}
@@ -1201,7 +1156,7 @@ export default function App() {
 
               {/* Color Selector pills */}
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">Background Style</label>
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5">Background Style</label>
                 <div className="flex flex-wrap gap-2">
                   {AVATAR_COLORS.map(color => (
                     <button
@@ -1231,29 +1186,29 @@ export default function App() {
 
       {/* DEVELOPER LIVEKIT CREDENTIALS MODAL */}
       {showDevModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/30 backdrop-blur-sm p-4">
           <div className="w-full max-w-md glass rounded-2xl p-6 animate-fade-in">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[var(--ink)] flex items-center gap-2">
-                <Settings className="w-5 h-5 text-[var(--accent)]" /> LiveKit Credentials
+              <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                <Settings className="w-5 h-5 text-[var(--accent-primary)]" /> LiveKit Credentials
               </h3>
               <button 
                 onClick={() => setShowDevModal(false)}
-                className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition text-[var(--ink-tertiary)] hover:text-[var(--ink)]"
+                className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition text-text-secondary hover:text-text-primary"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3.5 bg-[var(--accent-bg)] border border-[var(--accent-glow)] rounded-xl text-xs text-[var(--accent)] leading-normal mb-5">
+            <div className="p-3.5 bg-[var(--accent-primary-bg)] border border-[var(--accent-primary-glow)] rounded-xl text-xs text-[var(--accent-primary)] leading-normal mb-5">
               Inputting credentials here lets the server call the real LiveKit WebRTC service to generate active meeting rooms and voice channels. 
               <br />
-              If you leave these fields empty, SOLITH.IN works in <strong>Demo Simulator Mode</strong> with simulated speech visualisers and mock partners.
+              If you leave these fields empty, Talk34 works in <strong>Demo Simulator Mode</strong> with simulated speech visualisers and mock partners.
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">LiveKit WebSocket URL</label>
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5">LiveKit WebSocket URL</label>
                 <input 
                   type="text" 
                   placeholder="wss://your-project.livekit.cloud" 
@@ -1261,11 +1216,11 @@ export default function App() {
                   onChange={(e) => setLivekitUrl(e.target.value)}
                   className="w-full text-sm"
                 />
-                <span className="text-[10px] text-[var(--ink-tertiary)] mt-1 block">Your project's WSS URL</span>
+                <span className="text-[10px] text-text-secondary mt-1 block">Your project's WSS URL</span>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">LiveKit API Key</label>
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5">LiveKit API Key</label>
                 <input 
                   type="text" 
                   placeholder="e.g. API..." 
@@ -1276,7 +1231,7 @@ export default function App() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)] mb-1.5">LiveKit API Secret</label>
+                <label className="block text-xs font-semibold text-text-secondary mb-1.5">LiveKit API Secret</label>
                 <input 
                   type="password" 
                   placeholder="e.g. 5ca7...da8b" 
@@ -1307,10 +1262,10 @@ export default function App() {
       )}
       {/* AUTH MODAL */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/30 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in text-center">
-            <h3 className="text-2xl font-serif text-[var(--ink)] mb-2">Join SOLITH.IN</h3>
-            <p className="text-sm text-[var(--ink-secondary)] mb-8">Sign in with Google to create rooms, track your language learning streak, and earn XP.</p>
+            <h3 className="text-2xl font-serif text-text-primary mb-2">Join Talk34</h3>
+            <p className="text-sm text-text-secondary mb-8">Sign in with Google to create rooms, track your language learning streak, and earn XP.</p>
             <button 
               onClick={handleLogin}
               className="w-full btn-primary py-3 px-6 text-sm flex items-center justify-center gap-3"
@@ -1323,15 +1278,15 @@ export default function App() {
               </svg>
               Sign in with Google
             </button>
-            <p className="mt-6 mb-4 text-[10px] text-[var(--ink-tertiary)] uppercase tracking-wide">
+            <p className="mt-6 mb-4 text-[10px] text-text-secondary uppercase tracking-wide">
               By signing in, you agree to our{' '}
-              <button onClick={() => { setShowAuthModal(false); setView('guidelines'); }} className="underline hover:text-[var(--accent)]">
+              <button onClick={() => { setShowAuthModal(false); setView('guidelines'); }} className="underline hover:text-[var(--accent-primary)]">
                 Community Guidelines
               </button>
             </p>
             <button 
               onClick={() => setShowAuthModal(false)}
-              className="text-[var(--ink-tertiary)] hover:text-[var(--ink)] text-xs uppercase tracking-widest font-bold"
+              className="text-text-secondary hover:text-text-primary text-xs uppercase tracking-widest font-bold"
             >
               Cancel
             </button>
@@ -1341,11 +1296,11 @@ export default function App() {
 
       {/* PROFILE MODAL */}
       {showProfileModal && user && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="w-full max-w-sm rounded-3xl p-8 animate-fade-in relative bg-[#121418] border border-[#24272e] shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-sm rounded-3xl p-8 animate-fade-in relative bg-bg-base border border-border-color shadow-xl">
             <button 
               onClick={() => setShowProfileModal(false)}
-              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20"
+              className="absolute top-4 right-4 text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20"
             >
               <X className="w-5 h-5" />
             </button>
@@ -1355,22 +1310,22 @@ export default function App() {
                 
                 <img src={user.photoUrl} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
                 {user.isPremium && (
-                  <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
+                  <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
                 )}
               </div>
 
-              <h3 className="text-2xl font-black text-white mb-1">{user.name}</h3>
+              <h3 className="text-2xl font-black text-text-primary mb-1">{user.name}</h3>
               <p className="text-xs text-yellow-500/60 mb-8 font-mono">{user.email}</p>
               
               <div className="w-full grid grid-cols-2 gap-4 mb-8">
-                <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
+                <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-border-color shadow-inner">
                   <div className="flex justify-center mb-2"><Flame className="w-6 h-6 text-orange-500 fill-orange-500 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] animate-pulse" /></div>
                   <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">{user.streak || 0}</div>
                   <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-orange-500/90 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]">Day Streak</div>
                 </div>
-                <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
+                <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-border-color shadow-inner">
                   <div className="flex justify-center mb-2"><Award className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
-                  <div className="text-3xl font-black text-[#cd1c18]">{user.xp || 0}</div>
+                  <div className="text-3xl font-black text-[var(--accent-primary)]">{user.xp || 0}</div>
                   <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Total XP</div>
                 </div>
               </div>
@@ -1398,7 +1353,7 @@ export default function App() {
                   signOut(auth);
                   setShowProfileModal(false);
                 }}
-                className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-[#121212] border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg hover:shadow-red-500/20"
+                className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-[#121212] border border-accent-secondary/20 text-accent-secondary hover:bg-accent-secondary hover:text-text-primary transition-all shadow-lg hover:shadow-accent-secondary/20"
               >
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
@@ -1409,11 +1364,11 @@ export default function App() {
 
       {/* PUBLIC PROFILE MODAL */}
       {showTargetProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
-          <div className="w-full max-w-sm rounded-3xl p-8 animate-fade-in relative bg-[#121418] border border-[#24272e] shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-sm rounded-3xl p-8 animate-fade-in relative bg-bg-base border border-border-color shadow-xl">
             <button 
               onClick={() => setShowTargetProfileModal(false)}
-              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20"
+              className="absolute top-4 right-4 text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20"
             >
               <X className="w-5 h-5" />
             </button>
@@ -1428,22 +1383,22 @@ export default function App() {
                   
                   <img src={targetProfile.photoUrl || ''} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
                   {targetProfile.isPremium && (
-                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
+                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
                   )}
                 </div>
                 
-                <h3 className="text-2xl font-black text-white mb-1">{targetProfile.name}</h3>
+                <h3 className="text-2xl font-black text-text-primary mb-1">{targetProfile.name}</h3>
                 <p className="text-xs text-yellow-500/60 mb-8 font-mono">Joined {new Date(targetProfile.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}</p>
                 
                 <div className="w-full grid grid-cols-2 gap-4 mb-8">
-                  <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
+                  <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-border-color shadow-inner">
                     <div className="flex justify-center mb-2"><Flame className="w-6 h-6 text-orange-500 fill-orange-500 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] animate-pulse" /></div>
                     <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">{targetProfile.streak || 0}</div>
                     <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-orange-500/90 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]">Day Streak</div>
                   </div>
-                  <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-[#24272e] shadow-inner">
+                  <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-border-color shadow-inner">
                     <div className="flex justify-center mb-2"><Award className="w-5 h-5 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" /></div>
-                    <div className="text-3xl font-black text-[#cd1c18]">{targetProfile.xp || 0}</div>
+                    <div className="text-3xl font-black text-[var(--accent-primary)]">{targetProfile.xp || 0}</div>
                     <div className="text-[10px] mt-1 font-bold uppercase tracking-[0.2em] text-yellow-500/60">Total XP</div>
                   </div>
                 </div>
@@ -1472,7 +1427,7 @@ export default function App() {
                     className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
                       user.following?.includes(targetProfile.id) 
                         ? 'bg-[#121212] border border-yellow-500/20 text-yellow-500/80 hover:text-yellow-500 hover:bg-yellow-500/10' 
-                        : 'bg-[#cd1c18] text-black hover:scale-[1.02] hover:shadow-red-500/30'
+                        : 'bg-[var(--accent-primary)] text-white hover:scale-[1.02] hover:shadow-[0_0_15px_var(--accent-primary-glow)]'
                     }`}
                   >
                     {user.following?.includes(targetProfile.id) ? (
@@ -1495,7 +1450,7 @@ export default function App() {
                       setView('messages');
                       window.location.hash = 'messages';
                     }}
-                    className="w-full py-3.5 rounded-xl text-sm font-bold border border-[var(--line-bright)] text-[var(--ink)] bg-[var(--bg-elevated)] hover:bg-[var(--bg-secondary)] hover:border-[var(--ink-tertiary)] flex items-center justify-center gap-2 transition-all shadow-sm mt-3"
+                    className="w-full py-3.5 rounded-xl text-sm font-bold border border-[var(--line-bright)] text-text-primary bg-[var(--bg-elevated)] hover:bg-[var(--bg-secondary)] hover:border-[var(--ink-tertiary)] flex items-center justify-center gap-2 transition-all shadow-sm mt-3"
                   >
                     <MessageSquare className="w-4 h-4" /> Message
                   </button>
@@ -1503,7 +1458,7 @@ export default function App() {
                 {!user && (
                   <button 
                     onClick={() => { setShowTargetProfileModal(false); setShowAuthModal(true); }}
-                    className="w-full py-3.5 rounded-xl text-sm font-bold bg-[#cd1c18] text-black shadow-lg hover:scale-[1.02]"
+                    className="w-full py-3.5 rounded-xl text-sm font-bold bg-[var(--accent-primary)] text-white shadow-lg hover:scale-[1.02]"
                   >
                     Sign in to follow
                   </button>
@@ -1548,18 +1503,18 @@ export default function App() {
       renderAppLayout(
         <Suspense
           fallback={(
-            <div className="flex min-h-[100dvh] w-full items-center justify-center bg-[#0f1115] text-white">
-              <div className="w-full max-w-2xl rounded-[2rem] border border-[#24272e] bg-[#121418] px-6 py-8 shadow-2xl mx-4">
+            <div className="flex min-h-[100dvh] w-full items-center justify-center bg-bg-base text-text-primary">
+              <div className="w-full max-w-2xl rounded-[2rem] border border-border-color bg-bg-base px-6 py-8 shadow-2xl mx-4">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="h-3 w-3 rounded-full bg-[var(--accent)] animate-pulse" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--accent)]">SOLITH.IN Live Chat</span>
+                  <div className="h-3 w-3 rounded-full bg-[var(--accent-primary)] animate-pulse" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--accent-primary)]">Talk34 Live Chat</span>
                 </div>
                 <div className="h-8 w-48 rounded-full bg-white/5 mb-4" />
                 <div className="space-y-3">
-                  <div className="h-28 rounded-3xl border border-[#24272e] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
-                  <div className="h-16 rounded-3xl border border-[#24272e] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
+                  <div className="h-28 rounded-3xl border border-border-color bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
+                  <div className="h-16 rounded-3xl border border-border-color bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
                 </div>
-                <div className="mt-6 h-12 rounded-2xl border border-[#32363e] bg-[#1c1f26]" />
+                <div className="mt-6 h-12 rounded-2xl border border-border-color bg-bg-surface" />
               </div>
             </div>
           )}
@@ -1584,21 +1539,21 @@ export default function App() {
   if (view === 'admin') {
     if (authLoading) {
       return (
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-          <div className="text-white text-xl animate-pulse">Loading Admin Portal...</div>
+        <div className="min-h-screen bg-bg-base flex items-center justify-center">
+          <div className="text-text-primary text-xl animate-pulse">Loading Admin Portal...</div>
         </div>
       );
     }
     if (!user) {
       return (
-        <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4">
-          <div className="bg-[#111] border border-red-900/30 p-8 rounded-2xl w-full max-w-md text-center">
-            <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">Admin Portal</h1>
-            <p className="text-gray-400 text-sm mb-8">Sign in with an administrator account to continue.</p>
+        <div className="min-h-screen bg-bg-base flex flex-col items-center justify-center p-4">
+          <div className="bg-bg-surface border border-red-900/30 p-8 rounded-2xl w-full max-w-md text-center">
+            <Shield className="w-12 h-12 text-accent-secondary mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-text-primary mb-2">Admin Portal</h1>
+            <p className="text-text-secondary text-sm mb-8">Sign in with an administrator account to continue.</p>
             <button 
               onClick={() => signInWithPopup(auth, googleProvider)}
-              className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors"
+              className="w-full py-3 bg-red-600 hover:bg-red-700 text-text-primary rounded-xl font-bold transition-colors"
             >
               Sign In with Google
             </button>
@@ -1607,7 +1562,7 @@ export default function App() {
                 window.history.pushState({}, '', '/');
                 setView('landing');
               }}
-              className="w-full py-3 mt-3 text-gray-500 hover:text-white transition-colors text-sm"
+              className="w-full py-3 mt-3 text-gray-500 hover:text-text-primary transition-colors text-sm"
             >
               Return to App
             </button>
@@ -1617,19 +1572,19 @@ export default function App() {
     }
     if (!isAdmin) {
       return (
-        <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4">
-          <div className="bg-[#111] border border-red-900/30 p-8 rounded-2xl w-full max-w-md text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-            <p className="text-gray-400 text-sm mb-6">Your account ({user.email}) does not have administrative privileges.</p>
+        <div className="min-h-screen bg-bg-base flex flex-col items-center justify-center p-4">
+          <div className="bg-bg-surface border border-red-900/30 p-8 rounded-2xl w-full max-w-md text-center">
+            <AlertCircle className="w-12 h-12 text-accent-secondary mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-text-primary mb-2">Access Denied</h1>
+            <p className="text-text-secondary text-sm mb-6">Your account ({user.email}) does not have administrative privileges.</p>
             <div className="flex gap-4 justify-center">
-              <button onClick={() => signOut(auth)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm">Sign Out</button>
+              <button onClick={() => signOut(auth)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-text-primary rounded-lg text-sm">Sign Out</button>
               <button 
                 onClick={() => {
                   window.history.pushState({}, '', '/');
                   setView('landing');
                 }} 
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-text-primary rounded-lg text-sm"
               >
                 Return to App
               </button>
@@ -1738,7 +1693,7 @@ export default function App() {
         <div className="absolute bottom-6 left-0 right-0 text-center z-10">
           <button 
             onClick={() => setView('guidelines')}
-            className="text-xs text-[var(--ink-tertiary)] hover:text-[var(--ink)] transition-colors opacity-70 hover:opacity-100"
+            className="text-xs text-text-secondary hover:text-text-primary transition-colors opacity-70 hover:opacity-100"
           >
             Community Guidelines
           </button>
@@ -1747,113 +1702,164 @@ export default function App() {
       </>
     );
   }
-
   // RENDER MAIN LOBBY DASHBOARD
   return (
     renderAppLayout(
       <>
 <div className={activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
-        <header className="w-full flex items-center justify-end p-6 z-30 sticky top-0 bg-[var(--bg)]/90 backdrop-blur-xl border-b border-[var(--line)]">
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-6">
+        {/* Global Header */}
+        <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 bg-bg-base/95 backdrop-blur-md sticky top-0 z-30 border-b border-border-color">
+          
+          {/* Left: Actions */}
+          <div className="flex-1 flex items-center justify-start gap-3">
+            <button 
+              onClick={() => { if(user) setShowCreateModal(true); else setShowAuthModal(true); }}
+              className="px-4 py-2 bg-[var(--accent-primary)] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-2 hover:bg-[var(--accent-primary-hover)] transition-all shadow-[0_4px_20px_var(--accent-primary-glow)] hover:scale-105 whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
+            </button>
+            <button 
+              onClick={() => window.open('https://buymeacoffee.com', '_blank')}
+              className="hidden lg:flex px-3.5 py-2 bg-[#FFDD00]/10 border border-[#FFDD00]/30 text-[#FFDD00] font-bold rounded-xl text-[13px] items-center gap-2 hover:bg-[#FFDD00]/20 transition-all hover:scale-105 whitespace-nowrap"
+              title="Buy me a coffee"
+            >
+              <Coffee className="w-4 h-4 text-[#FFDD00]" />
+              Buy Coffee
+            </button>
+          </div>
+
+          {/* Center: Brand Identity */}
+          <div className="flex-shrink-0 flex items-center justify-center">
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView('lobby')}>
+              <span className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center select-none">
+                solith
+                <span className="text-[var(--accent-primary)] font-bold flex items-center">
+                  .
+                  <span className="relative inline-block mx-[1px]">
+                    <span className="opacity-0">i</span>
+                    <span className="absolute inset-0 flex justify-center">
+                      <span className="absolute bottom-0 leading-none">ı</span>
+                      <span className="absolute bottom-[60%] sm:bottom-[65%] w-[12px] h-[12px] sm:w-[15px] sm:h-[15px] rounded-full overflow-hidden bg-white shadow-sm pointer-events-none z-10 border border-[var(--accent-primary)]/20">
+                        <video src="/freevideo2.mp4" autoPlay loop muted playsInline className="w-full h-full object-cover scale-[1.1]" />
+                      </span>
+                    </span>
+                  </span>
+                  n
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Controls & User */}
+          <div className="flex-1 flex items-center justify-end gap-3 sm:gap-6">
+            
+            {/* More Dropdown */}
+            <div className="relative group">
+              <button className="text-text-secondary hover:text-text-primary p-2 rounded-xl transition-colors hidden sm:block">
+                <MoreVertical className="w-5 h-5" />
+              </button>
+              <div className="absolute right-0 top-full mt-2 w-48 bg-bg-surface-elevated border border-border-color rounded-xl shadow-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all flex flex-col p-2 z-50">
+                <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('privacy')}><Shield className="w-4 h-4"/> Privacy Policy</button>
+                <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('contact')}><MessageSquare className="w-4 h-4"/> Contact Us</button>
+                <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('about')}><Info className="w-4 h-4"/> About Us</button>
+                <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => window.open('https://facebook.com', '_blank')}><Facebook className="w-4 h-4"/> Facebook Group</button>
+              </div>
+            </div>
+
             {user ? (
               <>
                 {/* Level / XP */}
-                <div className="flex items-center gap-2 text-[15px] font-mono text-gray-400">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#cd1c18]"></div>
-                  <span className="text-white font-bold">{levelInfo ? levelInfo.level : 11}</span>
+                <div className="hidden lg:flex items-center gap-2 text-[15px] font-mono text-text-secondary">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]"></div>
+                  <span className="text-text-primary font-bold">{levelInfo ? levelInfo.level : 11}</span>
                   <span>/</span>
                   <span>{user.xp ? user.xp.toLocaleString() : '6,470'}</span>
                 </div>
                 
                 {/* Inbox Icon */}
-                <button className="relative text-gray-400 hover:text-white transition-colors ml-4">
+                <button className="relative text-text-secondary hover:text-text-primary transition-colors hidden sm:block">
                   <Inbox className="w-6 h-6" />
-                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#e57373] rounded-md text-[11px] font-bold text-white flex items-center justify-center">5</span>
-                </button>
-
-                {/* Earn Button */}
-                <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors ml-4 font-semibold text-[15px]">
-                  <Lock className="w-5 h-5" />
-                  Earn
+                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-accent-secondary rounded-md text-[11px] font-bold text-text-primary flex items-center justify-center">5</span>
                 </button>
 
                 {/* Avatar */}
                 <img 
                   src={user.photoUrl || "https://ui-avatars.com/api/?name=User"} 
                   alt="Profile" 
-                  className="w-10 h-10 rounded-full cursor-pointer border-2 border-[#cd1c18] hover:opacity-80 transition-opacity ml-4" 
+                  className="w-10 h-10 rounded-full cursor-pointer border-2 border-border-color hover:border-[var(--accent-primary)] transition-all object-cover" 
                   onClick={() => setShowProfileModal(true)} 
                 />
               </>
             ) : (
               <button 
                 onClick={() => setShowAuthModal(true)}
-                className="px-6 py-2.5 text-xs font-bold bg-[#cd1c18] text-[#0b0d10] rounded-full hover:bg-[#e5322d] transition-colors shadow-[0_0_15px_rgba(205,28,24,0.3)]"
+                className="px-5 py-2.5 text-xs font-bold bg-[var(--accent-primary)] text-white rounded-xl hover:bg-[var(--accent-primary-hover)] transition-colors shadow-[0_0_15px_var(--accent-primary-glow)] z-40 relative"
               >
-                Sign in with Google
+                Sign In
               </button>
             )}
           </div>
         </header>
 
-
         {/* Main Content Area */}
-        <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-10 flex flex-col items-center gap-8">
+        <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center gap-8 relative">
           
-          {/* Centered Animated Logo */}
-          <AnimatedLogo />
-
-          {/* Action Buttons Row */}
-          <div className="flex overflow-x-auto hide-scrollbar w-full max-w-full justify-start md:justify-center items-center gap-3 pb-2 px-1">
-            <button 
-              onClick={() => { if(user) setShowCreateModal(true); else setShowAuthModal(true); }}
-              className={`whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-blue-500 text-white font-semibold rounded text-[13px] flex items-center gap-1.5 hover:bg-blue-600 transition-colors ${user?.isRestricted ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Plus className="w-4 h-4" /> Create a new group
-            </button>
-            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-yellow-400 text-black font-bold rounded text-[13px] flex items-center gap-1.5 hover:bg-yellow-500 transition-colors" onClick={() => window.open('https://buymeacoffee.com', '_blank')}>
-              <Coffee className="w-4 h-4" /> Buy me a coffee
-            </button>
-            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('privacy')}>
-              <Shield className="w-4 h-4" /> Privacy Policy
-            </button>
-            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('contact')}>
-              <MessageSquare className="w-4 h-4" /> Contact Us
-            </button>
-            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => setActiveModal('about')}>
-              <Info className="w-4 h-4" /> About Us
-            </button>
-            <button className="whitespace-nowrap flex-shrink-0 px-5 py-2.5 bg-[#24272e] text-white font-medium rounded text-[13px] flex items-center gap-1.5 hover:bg-[#32363e] transition-colors border border-[#32363e]" onClick={() => window.open('https://facebook.com', '_blank')}>
-              <Facebook className="w-4 h-4" /> Facebook Group
-            </button>
+          {/* Main Hero Video Banner */}
+          <div className="w-full relative rounded-2xl border border-border-color overflow-hidden shadow-2xl flex flex-col items-center justify-center bg-black group">
+            <video 
+              src="/freevideo.mp4" 
+              autoPlay 
+              loop 
+              muted 
+              playsInline 
+              className="w-full h-[220px] sm:h-[320px] lg:h-[400px] object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-[var(--bg-base)]/10 to-transparent pointer-events-none"></div>
+            <div className="absolute bottom-6 left-0 right-0 text-center z-10 px-4 pointer-events-none">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">Practice languages live on solith.in</h2>
+              <p className="text-sm sm:text-base text-white/90 max-w-lg mx-auto leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-medium">
+                Join live voice rooms, talk with native speakers, and improve your pronunciation in real-time.
+              </p>
+            </div>
           </div>
 
           {/* Full Width Search Row */}
-          <div className="w-full flex flex-row items-center gap-2 md:gap-4 bg-[#121418] p-2 rounded-xl border border-[#24272e] animate-slide-up-delayed overflow-hidden">
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#86868b]" />
+          <div className="w-full flex flex-row items-center gap-2 md:gap-4 bg-bg-base/60 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-2xl overflow-hidden focus-within:border-[var(--accent-primary)] focus-within:bg-bg-base transition-all">
+            <div className="relative flex-1 min-w-0 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors" />
               <input 
                 type="text" 
-                placeholder="Search..." 
+                placeholder="Search rooms or languages..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-2.5 md:py-3 pl-9 pr-2 md:pr-4 text-[13px] md:text-sm bg-transparent focus:outline-none text-white placeholder-[#5c5c60] border-none shadow-none"
+                className="w-full py-3 md:py-4 pl-12 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium"
               />
             </div>
-            <button className="px-3 md:px-6 py-2.5 md:py-3 bg-[#24272e] text-white text-[13px] md:text-sm font-semibold rounded-lg hover:bg-[#32363e] transition-colors flex items-center gap-2 flex-shrink-0">
-              <Search className="hidden md:block w-4 h-4" /> <span className="hidden md:inline">Search</span><Search className="block md:hidden w-4 h-4" />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="p-2 text-text-secondary hover:text-white transition-colors"
+              >
+                Clear
+              </button>
+            )}
+            <button className="px-4 md:px-6 py-3 bg-[var(--accent-primary)] text-white text-[13px] md:text-sm font-bold rounded-xl hover:bg-[var(--accent-primary-hover)] transition-colors flex items-center gap-2 flex-shrink-0 shadow-[0_0_15px_rgba(24,119,242,0.3)]">
+              <Search className="w-4 h-4" /> <span className="hidden md:inline">Search</span>
             </button>
-            <div className="hidden lg:flex items-center gap-2 border-l border-[#32363e] pl-4 text-[#86868b] text-xs font-semibold px-2">
+            <div className="hidden lg:flex items-center gap-2 border-l border-white/10 pl-4 text-text-secondary text-xs font-semibold px-2">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#cd1c18]"></span> 
-                {Math.floor(Date.now() / 10000) % 50 + 1200} Users Online
+                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e] animate-pulse"></span> 
+                {rooms.length} Active Rooms
               </span>
             </div>
-            <div className="hidden md:flex items-center gap-2 border-l border-[#32363e] pl-4">
-              <button className="px-3 py-1.5 text-xs font-semibold rounded bg-blue-500 text-white">3x</button>
-              <button className="px-3 py-1.5 text-xs font-semibold rounded bg-[#24272e] text-[#86868b] hover:text-white">2x</button>
-              <button className="px-3 py-1.5 text-xs font-semibold rounded bg-[#24272e] text-[#86868b] hover:text-white">1x</button>
+            <div className="hidden md:flex items-center gap-2 border-l border-white/10 pl-4">
+              <button 
+                onClick={() => setView('leaderboard')}
+                className="p-2 md:p-2.5 text-text-secondary hover:text-[var(--accent-primary)] bg-transparent hover:bg-white/5 rounded-lg transition-all"
+                title="Leaderboard"
+              >
+                <Trophy className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -1876,20 +1882,20 @@ export default function App() {
         {/* Rooms Grid */}
         <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16 animate-slide-up-delayed-2">
           {filteredRooms.length === 0 ? (
-            <div className="py-16 mt-4 flex flex-col items-center justify-center text-center border border-[#24272e] bg-[#121418] rounded-xl relative overflow-hidden">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border border-[#24272e] mb-6 relative bg-black/50">
-                <video src="/freevideo2.mp4" autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover opacity-90" />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-3">No active rooms found</h3>
-              <p className="text-[11px] text-[var(--ink-tertiary)] mb-8 font-mono uppercase tracking-[0.2em]">
-                Initiate a new connection.
+            <div className="py-16 mt-4 flex flex-col items-center justify-center text-center rounded-2xl border border-border-color bg-bg-surface/60 backdrop-blur-md relative overflow-hidden max-w-2xl mx-auto w-full p-8 shadow-2xl">
+              {/* Radial glow background */}
+              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[var(--accent-primary)]/15 rounded-full blur-3xl pointer-events-none"></div>
+              
+              <h3 className="text-2xl md:text-3xl font-extrabold text-text-primary mb-2 tracking-tight">No active rooms right now</h3>
+              <p className="text-sm text-text-secondary mb-8 max-w-md leading-relaxed">
+                Be the first to initiate a room on <span className="text-[var(--accent-primary)] font-bold">solith.in</span> and connect live with language learners worldwide!
               </p>
+              
               <button 
                 onClick={() => user ? setShowCreateModal(true) : setShowAuthModal(true)}
-                className="create-room-btn"
+                className="px-8 py-3.5 bg-[var(--accent-primary)] text-white font-bold rounded-xl text-sm flex items-center gap-2.5 hover:bg-[var(--accent-primary-hover)] transition-all shadow-[0_0_25px_var(--accent-primary-glow)] hover:scale-105"
               >
-                <span>Start a Room</span>
-                <span className="inline-block">↗</span>
+                <Plus className="w-5 h-5" /> Start a Room Now
               </button>
             </div>
           ) : (
@@ -1923,25 +1929,25 @@ export default function App() {
         const hasRaisedHand = speakingQueue.includes(user?.id);
 
         return (
-        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-[#121418] flex flex-col z-50 overflow-hidden">
+        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-bg-base flex flex-col z-50 overflow-hidden">
           
           {/* Top Floating Control Bar */}
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-1rem)] flex-wrap items-center justify-center gap-2 bg-[#1c1f26]/90 backdrop-blur-md rounded-2xl p-2 border border-white/5 shadow-2xl">
-             <div className="px-3 border-r border-white/10 flex items-center gap-2 text-white/50 text-xs font-mono">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-1rem)] flex-wrap items-center justify-center gap-2 bg-bg-surface/90 backdrop-blur-md rounded-2xl p-2 border border-white/5 shadow-2xl">
+             <div className="px-3 border-r border-white/10 flex items-center gap-2 text-text-primary/50 text-xs font-mono">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-secondary animate-pulse"></span>
                 12:47
              </div>
              {/* Left - Raise Hand Button (Optional for everyone) */}
-             <button onClick={hasRaisedHand ? lowerHand : raiseHand} className="p-2 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 rounded-xl flex items-center gap-2 text-xs font-bold text-[var(--accent)] transition-colors">
+             <button onClick={hasRaisedHand ? lowerHand : raiseHand} className="p-2 bg-[var(--accent-primary)]/10 hover:bg-[var(--accent-primary)]/20 rounded-xl flex items-center gap-2 text-xs font-bold text-[var(--accent-primary)] transition-colors">
                <Hand className="w-4 h-4"/> {hasRaisedHand ? 'Lower' : 'Raise'}
              </button>
 
              {/* Center - Mute Button (Always available in Free4Talk) */}
-             <button onClick={toggleMute} className={`p-2 rounded-xl transition-colors ${isMuted ? 'bg-red-500 text-white' : 'bg-[#2a2d36] text-white hover:bg-white/20'}`}>
+             <button onClick={toggleMute} className={`p-2 rounded-xl transition-colors ${isMuted ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`}>
                  {isMuted ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
              </button>
-             <button onClick={() => setShowSettingsModal(true)} className="p-2 rounded-xl bg-[#2a2d36] text-white hover:bg-white/20 transition-colors"><Settings className="w-4 h-4"/></button>
-             <button onClick={leaveVoiceRoom} className="p-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors ml-2"><LogOut className="w-4 h-4"/></button>
+             <button onClick={() => setShowSettingsModal(true)} className="p-2 rounded-xl bg-[#2a2d36] text-text-primary hover:bg-white/20 transition-colors"><Settings className="w-4 h-4"/></button>
+             <button onClick={leaveVoiceRoom} className="p-2 rounded-xl bg-accent-secondary text-text-primary hover:bg-accent-secondary-hover transition-colors ml-2"><LogOut className="w-4 h-4"/></button>
           </div>
 
           {/* Full-Screen Participant Grid */}
@@ -1962,24 +1968,24 @@ export default function App() {
                     const canPromote = myRole === 'owner';
 
                     return (
-                        <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-[#1c1f26] border-4 transition-all duration-300 ${isSpeaking ? 'border-[#cd1c18] shadow-[0_0_25px_rgba(205,28,24,0.3)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
+                        <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-bg-surface border-4 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_25px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
                            {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-6xl">{pEmoji}</span>}
                            
                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-2 px-3 text-center">
-                              <span className="text-white text-xs font-bold drop-shadow-md truncate block">{pName}</span>
-                              {targetRole === 'owner' && <span className="text-[9px] text-[#cd1c18] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
+                              <span className="text-text-primary text-xs font-bold drop-shadow-md truncate block">{pName}</span>
+                              {targetRole === 'owner' && <span className="text-[9px] text-[var(--accent-primary)] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
                            </div>
 
                            {p.muted && (
-                              <div className="absolute top-3 right-3 w-7 h-7 bg-black/60 backdrop-blur-md rounded-full flex items-center justify-center">
+                              <div className="absolute top-3 right-3 w-7 h-7 bg-bg-base/60 backdrop-blur-md rounded-full flex items-center justify-center">
                                 <MicOff className="w-3.5 h-3.5 text-red-400" />
                               </div>
                            )}
 
                            {/* Moderation Dropdown */}
                            {selectedParticipant === p.id && !p.isLocal && (
-                                <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 text-xs animate-fade-in gap-2">
-                                  <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors">Profile</button>
+                                <div className="absolute inset-0 bg-bg-base/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 text-xs animate-fade-in gap-2">
+                                  <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-white/10 hover:bg-white/20 text-text-primary rounded-xl transition-colors">Profile</button>
                                   {canPromote && targetRole !== 'owner' && (
                                     <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 rounded-xl transition-colors">Make Co-Owner</button>
                                   )}
@@ -1996,14 +2002,14 @@ export default function App() {
 
           {/* Chat Overlay (Hidden by Default) */}
           {isChatOpen && (
-             <div className="absolute bottom-[90px] left-4 right-4 md:left-auto md:right-8 md:w-[380px] h-[400px] max-h-[50vh] bg-[#121418]/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-40 flex flex-col animate-fade-in">
+             <div className="absolute bottom-[90px] left-4 right-4 md:left-auto md:right-8 md:w-[380px] h-[400px] max-h-[50vh] bg-bg-base/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-40 flex flex-col animate-fade-in">
                 <div className="px-5 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
-                  <span className="font-bold text-sm tracking-widest text-white uppercase">Room Chat</span>
-                  <button onClick={() => setIsChatOpen(false)} className="text-white/50 hover:text-white p-1 rounded-full"><X className="w-4 h-4"/></button>
+                  <span className="font-bold text-sm tracking-widest text-text-primary uppercase">Room Chat</span>
+                  <button onClick={() => setIsChatOpen(false)} className="text-text-primary/50 hover:text-text-primary p-1 rounded-full"><X className="w-4 h-4"/></button>
                 </div>
                 <div className="flex-1 flex flex-col gap-3 p-4 overflow-y-auto" id="chat-container">
                   {chatMessages.length === 0 && (
-                    <div className="text-center text-white/30 text-xs italic mb-4">Messages are ephemeral and disappear when you leave.</div>
+                    <div className="text-center text-text-primary/30 text-xs italic mb-4">Messages are ephemeral and disappear when you leave.</div>
                   )}
                   {chatMessages.map(msg => (
                     <div key={msg.id} className={`flex gap-3 w-full items-end ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
@@ -2012,7 +2018,7 @@ export default function App() {
                            {msg.senderEmoji || '👤'}
                          </div>
                       )}
-                      <div className={msg.senderId === user?.id ? 'chat-bubble-right bg-[#cd1c18]/20 text-white rounded-2xl rounded-br-sm px-3 py-2 text-sm max-w-[80%]' : 'chat-bubble-left bg-white/10 text-white rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[80%]'}>
+                      <div className={msg.senderId === user?.id ? 'chat-bubble-right bg-[var(--accent-primary-bg)] text-[var(--accent-primary)] rounded-2xl rounded-br-sm px-3 py-2 text-sm max-w-[80%]' : 'chat-bubble-left bg-white/10 text-text-primary rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[80%]'}>
                         <span className="font-bold block text-[10px] opacity-50 mb-0.5">{msg.senderName}</span>
                         {msg.text}
                       </div>
@@ -2024,16 +2030,16 @@ export default function App() {
           )}
 
           {/* Bottom Floating App Bar */}
-          <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 bg-[#1c1f26]/90 backdrop-blur-md rounded-3xl px-2 py-2 border border-white/5 shadow-2xl flex items-center gap-2 z-50 w-[calc(100%-1rem)] md:w-auto md:min-w-[400px] justify-between md:justify-center">
+          <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 bg-bg-surface/90 backdrop-blur-md rounded-3xl px-2 py-2 border border-white/5 shadow-2xl flex items-center gap-2 z-50 w-[calc(100%-1rem)] md:w-auto md:min-w-[400px] justify-between md:justify-center">
              
              {/* Left - Room Info */}
              <div className="flex items-center gap-2 px-3 flex-shrink-0">
-               <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-[var(--accent)]">
+               <div className="w-8 h-8 rounded-full bg-[var(--accent-primary)]/20 flex items-center justify-center text-[var(--accent-primary)]">
                  <Users className="w-4 h-4"/>
                </div>
                <div className="flex flex-col hidden md:flex">
-                 <span className="text-xs font-bold text-white tracking-wide truncate max-w-[120px]">{activeRoom.name}</span>
-                 <span className="text-[9px] text-[var(--accent)] font-mono uppercase">{participants.length} connected</span>
+                 <span className="text-xs font-bold text-text-primary tracking-wide truncate max-w-[120px]">{activeRoom.name}</span>
+                 <span className="text-[9px] text-[var(--accent-primary)] font-mono uppercase">{participants.length} connected</span>
                </div>
              </div>
 
@@ -2041,18 +2047,18 @@ export default function App() {
 
              {/* Center - Action Buttons */}
              <div className="flex items-center gap-2 flex-shrink-0">
-                <button onClick={() => setIsChatOpen(!isChatOpen)} className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isChatOpen ? 'bg-white/20 text-white' : 'bg-transparent text-white/50 hover:bg-white/10 hover:text-white'}`}>
+                <button onClick={() => setIsChatOpen(!isChatOpen)} className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isChatOpen ? 'bg-white/20 text-text-primary' : 'bg-transparent text-text-primary/50 hover:bg-white/10 hover:text-text-primary'}`}>
                   <MessageSquare className="w-5 h-5"/>
-                  {chatMessages.length > 0 && !isChatOpen && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border border-[#1c1f26]"></span>}
+                  {chatMessages.length > 0 && !isChatOpen && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-accent-secondary rounded-full border border-bg-surface"></span>}
                 </button>
              </div>
 
              <div className="w-px h-8 bg-white/10 mx-1"></div>
 
              {/* Right - Chat Input */}
-             <form onSubmit={(e) => { e.preventDefault(); setIsChatOpen(true); sendChatMessage(e); }} className="flex-1 min-w-[120px] max-w-[200px] flex bg-white/5 rounded-full p-1 items-center border border-white/5 focus-within:border-[var(--accent)] transition-colors">
-                <input type="text" placeholder="Send message..." value={chatInput} onChange={e => setChatInput(e.target.value)} onClick={() => setIsChatOpen(true)} className="flex-1 bg-transparent border-none text-white text-xs outline-none shadow-none px-3 w-full placeholder:text-white/30" />
-                <button type="submit" className="w-8 h-8 rounded-full bg-[var(--accent)]/80 hover:bg-[var(--accent)] transition-colors flex items-center justify-center text-black shadow-md flex-shrink-0"><Send className="w-3.5 h-3.5 ml-0.5"/></button>
+             <form onSubmit={(e) => { e.preventDefault(); setIsChatOpen(true); sendChatMessage(e); }} className="flex-1 min-w-[120px] max-w-[200px] flex bg-white/5 rounded-full p-1 items-center border border-white/5 focus-within:border-[var(--accent-primary)] transition-colors">
+                <input type="text" placeholder="Send message..." value={chatInput} onChange={e => setChatInput(e.target.value)} onClick={() => setIsChatOpen(true)} className="flex-1 bg-transparent border-none text-text-primary text-xs outline-none shadow-none px-3 w-full placeholder:text-text-primary/30" />
+                <button type="submit" className="w-8 h-8 rounded-full bg-[var(--accent-primary)]/80 hover:bg-[var(--accent-primary)] transition-colors flex items-center justify-center text-white shadow-md flex-shrink-0"><Send className="w-3.5 h-3.5 ml-0.5"/></button>
              </form>
           </div>
 

@@ -39,11 +39,11 @@ export default function ReportModal({ isOpen, onClose, targetUser, currentUser, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/40 backdrop-blur-sm p-4 animate-fade-in">
       <div className="w-full max-w-sm bg-[var(--bg)] border border-[var(--line-subtle)] rounded-2xl p-6 relative">
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-[var(--ink-secondary)] hover:text-[var(--ink)] transition-colors"
+          className="absolute top-4 right-4 text-text-secondary hover:text-text-primary transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -53,8 +53,8 @@ export default function ReportModal({ isOpen, onClose, targetUser, currentUser, 
             <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
               <ShieldCheck className="w-6 h-6 text-red-500" />
             </div>
-            <h3 className="text-lg font-semibold text-[var(--ink)] mb-2">Report Submitted</h3>
-            <p className="text-sm text-[var(--ink-secondary)]">Thank you for helping keep our community safe.</p>
+            <h3 className="text-lg font-semibold text-text-primary mb-2">Report Submitted</h3>
+            <p className="text-sm text-text-secondary">Thank you for helping keep our community safe.</p>
           </div>
         ) : (
           <>
@@ -63,19 +63,19 @@ export default function ReportModal({ isOpen, onClose, targetUser, currentUser, 
                 <Flag className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[var(--ink)]">Report User</h3>
-                <p className="text-xs text-[var(--ink-tertiary)]">Reporting {targetUser.name}</p>
+                <h3 className="text-lg font-semibold text-text-primary">Report User</h3>
+                <p className="text-xs text-text-secondary">Reporting {targetUser.name}</p>
               </div>
             </div>
 
             <div className="space-y-4 mb-6">
-              <p className="text-sm text-[var(--ink-secondary)]">
+              <p className="text-sm text-text-secondary">
                 Please select a reason for reporting this user. False reports may result in account restrictions.
               </p>
               <select 
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-xl px-4 py-3 text-sm text-[var(--ink)] focus:outline-none focus:border-[var(--accent)]"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[var(--accent-primary)]"
               >
                 <option value="Harassment">Harassment or Hate Speech</option>
                 <option value="Inappropriate">Inappropriate/Sexual Content</option>
@@ -88,14 +88,14 @@ export default function ReportModal({ isOpen, onClose, targetUser, currentUser, 
             <div className="flex gap-3">
               <button 
                 onClick={onClose}
-                className="flex-1 py-3 px-4 rounded-xl text-sm font-medium border border-[var(--line-subtle)] text-[var(--ink-secondary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                className="flex-1 py-3 px-4 rounded-xl text-sm font-medium border border-[var(--line-subtle)] text-text-secondary hover:bg-[var(--bg-secondary)] transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-1 py-3 px-4 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                className="flex-1 py-3 px-4 rounded-xl text-sm font-medium bg-red-500 text-text-primary hover:bg-red-600 transition-colors disabled:opacity-50"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Report'}
               </button>

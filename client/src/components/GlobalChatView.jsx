@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from '../firebase';
-import { Volume2, Smile, Send, Search, Users, Inbox, Lock, Sparkles, Loader2 } from 'lucide-react';
+import { Volume2, Smile, Send, Search, Users, Inbox, Lock, Sparkles, Loader2, MessageSquare } from 'lucide-react';
+import { Meteors } from './Meteors';
+import { playSound } from '../utils/sounds';
 
-const GLOBAL_CHAT_CACHE_KEY = 'SOLITH.IN-global-chat-cache';
+const GLOBAL_CHAT_CACHE_KEY = 'Talk34-global-chat-cache';
 
 export default function GlobalChatView({ user, onSignIn }) {
   const [messages, setMessages] = useState(() => {
@@ -32,79 +34,82 @@ export default function GlobalChatView({ user, onSignIn }) {
     }
   };
 
+  const previousMessagesLength = useRef(0);
+
   // Subscribe to global chat messages
   useEffect(() => {
     let unsubscribe = () => {};
     
-    try {
-      if (!db) {
-        throw new Error("Firebase database is not initialized.");
-      }
-
-      const q = query(
-        collection(db, 'global_chat'),
-        orderBy('createdAt', 'desc'),
-        limit(100)
-      );
-
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetchedMessages = [];
-        const uniqueUsers = new Map();
-
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          fetchedMessages.push({ id: doc.id, ...data });
-          
-          // Track unique users for the right sidebar
-          if (data.uid) {
-            if (!uniqueUsers.has(data.uid)) {
-              uniqueUsers.set(data.uid, {
-                uid: data.uid,
-                displayName: data.displayName || 'Anonymous',
-                photoUrl: data.photoUrl,
-                lastSeen: data.createdAt?.toDate() || new Date()
-              });
-            } else {
-              // Update last seen if newer
-              const existing = uniqueUsers.get(data.uid);
-              const currentMsgDate = data.createdAt?.toDate() || new Date();
-              if (currentMsgDate > existing.lastSeen) {
-                uniqueUsers.set(data.uid, { ...existing, lastSeen: currentMsgDate });
-              }
-            }
-          }
-        });
-
-        persistMessages(fetchedMessages.reverse());
-        setLoadError('');
-        setIsLoading(false);
-
-        // Simple heuristic for online/offline based on recent messages (last 10 mins)
-        const now = new Date();
-        const online = [];
-        const offline = [];
-        
-        Array.from(uniqueUsers.values()).forEach(u => {
-          const diffMinutes = (now - u.lastSeen) / 1000 / 60;
-          if (diffMinutes < 10) online.push(u);
-          else offline.push(u);
-        });
-
-        setOnlineMembers(online);
-        setOfflineMembers(offline);
-
-      }, (error) => {
-        console.error("Error fetching global chat: ", error);
-        setLoadError('Live feed is temporarily unavailable. Showing cached messages.');
-        setIsLoading(false);
-      });
-    } catch (err) {
-      console.error("Failed to setup chat listener:", err);
-      setLoadError('Live feed is temporarily unavailable. Showing cached messages.');
+    if (!db) {
+      setLoadError('Firebase database is not initialized. Please configure Firebase to enable live chat.');
       setIsLoading(false);
+      return;
     }
 
-    // Safety timeout just in case it hangs forever
+    const q = query(
+      collection(db, 'global_chat'),
+      orderBy('createdAt', 'desc'),
+      limit(100)
+    );
+
+    unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedMessages = [];
+      const uniqueUsers = new Map();
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        fetchedMessages.push({ id: docSnap.id, ...data });
+        
+        if (data.uid) {
+          if (!uniqueUsers.has(data.uid)) {
+            uniqueUsers.set(data.uid, {
+              uid: data.uid,
+              displayName: data.displayName || 'Anonymous',
+              photoUrl: data.photoUrl,
+              lastSeen: data.createdAt?.toDate() || new Date()
+            });
+          } else {
+            const existing = uniqueUsers.get(data.uid);
+            const currentMsgDate = data.createdAt?.toDate() || new Date();
+            if (currentMsgDate > existing.lastSeen) {
+              uniqueUsers.set(data.uid, { ...existing, lastSeen: currentMsgDate });
+            }
+          }
+        }
+      });
+
+      const reversedMsgs = fetchedMessages.reverse();
+      persistMessages(reversedMsgs);
+      setLoadError('');
+      setIsLoading(false);
+
+      // Play sound on new incoming message
+      if (previousMessagesLength.current > 0 && reversedMsgs.length > previousMessagesLength.current) {
+        const lastMsg = reversedMsgs[reversedMsgs.length - 1];
+        if (lastMsg && (!user || lastMsg.uid !== user.id)) {
+          playSound('message');
+        }
+      }
+      previousMessagesLength.current = reversedMsgs.length;
+
+      // Sort members: online (last seen < 10min) vs offline
+      const now = new Date();
+      const online = [];
+      const offline = [];
+      Array.from(uniqueUsers.values()).forEach(u => {
+        const diffMinutes = (now - u.lastSeen) / 1000 / 60;
+        if (diffMinutes < 10) online.push(u);
+        else offline.push(u);
+      });
+      setOnlineMembers(online);
+      setOfflineMembers(offline);
+
+    }, (error) => {
+      console.error("Error fetching global chat:", error);
+      setLoadError('Live feed is temporarily unavailable. Showing cached messages.');
+      setIsLoading(false);
+    });
+
     const timeout = setTimeout(() => {
       setIsLoading(false);
     }, 5000);
@@ -113,7 +118,7 @@ export default function GlobalChatView({ user, onSignIn }) {
       unsubscribe();
       clearTimeout(timeout);
     };
-  }, []);
+  }, [user]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -153,6 +158,7 @@ export default function GlobalChatView({ user, onSignIn }) {
         photoUrl: user.photoUrl,
         createdAt: serverTimestamp(),
       });
+      playSound('message');
     } catch (err) {
       console.error('Error sending message:', err);
       setLoadError('Message saved locally, but live sync is unavailable right now.');
@@ -171,7 +177,7 @@ export default function GlobalChatView({ user, onSignIn }) {
 
     return (
       <div className="mb-6">
-        <h3 className="text-[10px] font-bold text-[#86868b] uppercase tracking-widest mb-3 px-2">
+        <h3 className="text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-3 px-2">
           {title} — {filtered.length}
         </h3>
         <div className="flex flex-col gap-1">
@@ -184,10 +190,10 @@ export default function GlobalChatView({ user, onSignIn }) {
                   className="w-8 h-8 rounded-full object-cover" 
                 />
                 {title === 'ONLINE' && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#cd1c18] border-2 border-[#121418] rounded-full"></div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-success border-2 border-bg-base rounded-full"></div>
                 )}
               </div>
-              <span className={`text-sm font-medium truncate ${title === 'ONLINE' ? 'text-gray-200' : 'text-[#86868b]'} group-hover:text-white transition-colors`}>
+              <span className={`text-sm font-medium truncate ${title === 'ONLINE' ? 'text-text-primary' : 'text-text-secondary'} group-hover:text-text-primary transition-colors`}>
                 {member.displayName}
               </span>
             </div>
@@ -198,33 +204,36 @@ export default function GlobalChatView({ user, onSignIn }) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[100dvh] w-full bg-[#0f1115] text-white overflow-hidden">
+    <div className="flex flex-col h-[100dvh] w-full bg-[#0B0D12] text-text-primary overflow-hidden relative">
+      <Meteors number={20} />
       
       {/* Global Header */}
-      <header className="w-full flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 lg:px-8 py-4 border-b border-[#24272e] flex-shrink-0 bg-[#0f1115]/95 backdrop-blur-md sticky top-0 z-30">
+      <header className="w-full flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 lg:px-8 py-4 border-b border-white/10 flex-shrink-0 bg-black/40 backdrop-blur-xl sticky top-0 z-30">
         <div className="flex flex-col min-w-0">
-          <span className="text-[10px] text-[var(--accent)] font-bold tracking-[0.28em] uppercase">SOLITH.IN</span>
-          <h1 className="text-xl font-semibold">Global Chat</h1>
+          <span className="text-[10px] text-[var(--accent-primary)] font-bold tracking-[0.28em] uppercase flex items-center gap-2">
+            <Sparkles className="w-3 h-3" /> Live Feed
+          </span>
+          <h1 className="text-2xl font-extrabold tracking-tight text-white mt-1">Global Chat</h1>
         </div>
         
         <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-start sm:justify-end">
           {/* Level / XP */}
-          <div className="flex items-center gap-2 text-[15px] font-mono text-gray-400">
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></div>
+          <div className="flex items-center gap-2 text-[15px] font-mono text-text-secondary bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] shadow-[0_0_8px_var(--accent-primary)]"></div>
             <span className="text-white font-bold">11</span>
-            <span>/</span>
+            <span className="text-white/30">/</span>
             <span>6,470</span>
           </div>
           
           {/* Inbox Icon */}
-          <button className="relative text-gray-400 hover:text-white transition-colors ml-4">
-            <Inbox className="w-6 h-6" />
-            <span className="absolute -top-2 -right-2 w-5 h-5 bg-[var(--accent)] rounded-md text-[11px] font-bold text-white flex items-center justify-center">5</span>
+          <button className="relative text-text-secondary hover:text-white transition-colors ml-2 bg-white/5 p-2 rounded-xl border border-white/10 hover:bg-white/10">
+            <Inbox className="w-5 h-5" />
+            <span className="absolute -top-2 -right-2 w-5 h-5 bg-[var(--accent-primary)] rounded-md text-[11px] font-bold text-white flex items-center justify-center shadow-lg">5</span>
           </button>
 
           {/* Earn Button */}
-          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors ml-4 font-semibold text-[15px]">
-            <Lock className="w-5 h-5" />
+          <button className="flex items-center gap-2 text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl transition-colors ml-2 font-bold text-[13px] border border-white/10">
+            <Lock className="w-4 h-4 text-[var(--accent-primary)]" />
             Earn
           </button>
 
@@ -232,41 +241,40 @@ export default function GlobalChatView({ user, onSignIn }) {
           <img 
             src={user?.photoUrl || "https://ui-avatars.com/api/?name=User"} 
             alt="Profile" 
-            className="w-10 h-10 rounded-full cursor-pointer border-2 border-[var(--accent)] hover:opacity-80 transition-opacity ml-4 object-cover" 
+            className="w-10 h-10 rounded-full cursor-pointer border-2 border-[var(--accent-primary)] hover:scale-105 transition-transform ml-2 object-cover shadow-[0_0_15px_rgba(24,119,242,0.3)]" 
           />
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 min-h-0 flex-col lg:flex-row overflow-hidden">
+      <div className="flex flex-1 min-h-0 flex-col lg:flex-row overflow-hidden relative z-10">
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0 border-r-0 lg:border-r border-[#24272e] min-h-0 bg-[radial-gradient(circle_at_top,rgba(255,77,79,0.08),transparent_35%),linear-gradient(180deg,rgba(255,255,255,0.01),transparent)]">
+        <div className="flex-1 flex flex-col min-w-0 border-r-0 lg:border-r border-white/10 min-h-0 bg-gradient-to-b from-transparent to-black/40">
         
         {/* Chat Header */}
-        <div className="min-h-14 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-3 border-b border-[#24272e] flex-shrink-0 bg-[#0f1115]/80 backdrop-blur-sm">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[var(--accent)] text-lg font-light">#</span>
-            <span className="font-semibold truncate">Lobby</span>
-            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.24em] text-[#86868b] ml-2">
-              <Sparkles className="w-3 h-3 text-[var(--accent)]" /> Live feed
-            </span>
+        <div className="min-h-14 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-3 border-b border-white/5 flex-shrink-0 bg-white/[0.02] backdrop-blur-md">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)]/10 flex items-center justify-center border border-[var(--accent-primary)]/20">
+              <MessageSquare className="w-4 h-4 text-[var(--accent-primary)]" />
+            </div>
+            <span className="font-bold tracking-wide text-white">Lobby Community</span>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></div>
-              <span className="text-xs font-bold text-[#86868b]">{onlineMembers.length} ONLINE</span>
+            <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e] animate-pulse"></div>
+              <span className="text-[11px] font-bold text-white tracking-widest">{onlineMembers.length} ONLINE</span>
             </div>
             <button
               type="button"
               onClick={() => setShowMembersPanel((value) => !value)}
-              className="lg:hidden px-3 py-1.5 rounded border border-[rgba(255,77,79,0.22)] bg-[var(--accent-bg)] text-[var(--accent)] text-xs font-bold"
+              className="lg:hidden px-3 py-1.5 rounded-lg border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-[11px] font-bold tracking-widest uppercase"
             >
               Members
             </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent-bg)] text-[var(--accent)] rounded border border-[rgba(255,77,79,0.22)] text-xs font-bold">
-              <Volume2 className="w-3.5 h-3.5" />
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-white/5 text-white rounded-lg border border-white/10 text-[11px] font-bold tracking-widest hover:bg-white/10 transition-colors">
+              <Volume2 className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
               SOUND
-              <div className="w-6 h-3.5 bg-[var(--accent)] rounded-full relative ml-1">
+              <div className="w-6 h-3.5 bg-[var(--accent-primary)] rounded-full relative ml-1 shadow-[0_0_8px_var(--accent-primary)]">
                 <div className="absolute right-0.5 top-0.5 w-2.5 h-2.5 bg-white rounded-full"></div>
               </div>
             </button>
@@ -274,42 +282,44 @@ export default function GlobalChatView({ user, onSignIn }) {
         </div>
 
         {/* Messages List */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth min-h-0 custom-scrollbar">
           {loadError && (
-            <div className="mb-4 rounded-2xl border border-[rgba(255,77,79,0.2)] bg-[var(--accent-bg)] px-4 py-3 text-sm text-[#ffe9e9]">
-              {loadError}
+            <div className="mb-6 rounded-2xl border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/10 px-4 py-3 text-sm text-[var(--accent-primary)] backdrop-blur-md shadow-lg flex items-center gap-3">
+               <Sparkles className="w-5 h-5" /> {loadError}
             </div>
           )}
           {isLoading ? (
-            <div className="h-full min-h-[320px] flex items-center justify-center text-[#86868b]">
-              <div className="flex flex-col items-center gap-3 text-center">
-                <Loader2 className="w-7 h-7 animate-spin text-[var(--accent)]" />
-                <span className="text-xs uppercase tracking-[0.28em]">Connecting to live feed...</span>
+            <div className="h-full min-h-[320px] flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="w-12 h-12 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center backdrop-blur-md">
+                   <Loader2 className="w-6 h-6 animate-spin text-[var(--accent-primary)]" />
+                </div>
+                <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/50">Connecting to live feed...</span>
               </div>
             </div>
           ) : messages.length === 0 ? (
-            <div className="h-full min-h-[240px] flex items-center justify-center text-[#86868b]">
-              <div className="max-w-md w-full rounded-[2rem] border border-[#24272e] bg-[#15181f] px-6 py-8 text-center shadow-2xl">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-bg)] text-[var(--accent)]">
-                  <Sparkles className="w-5 h-5" />
+            <div className="h-full min-h-[240px] flex items-center justify-center">
+              <div className="max-w-md w-full rounded-[2rem] border border-white/10 bg-white/5 px-8 py-10 text-center shadow-2xl backdrop-blur-xl">
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 text-[var(--accent-primary)] shadow-[0_0_30px_rgba(24,119,242,0.2)]">
+                  <Sparkles className="w-6 h-6" />
                 </div>
-                <h2 className="text-xl font-semibold text-white mb-2">The room is quiet</h2>
-                <p className="text-sm leading-6 text-[#a7a7ad]">
+                <h2 className="text-2xl font-black text-white mb-2 tracking-tight">The room is quiet</h2>
+                <p className="text-sm leading-relaxed text-white/60">
                   Start the conversation. Messages are cached so the live feed stays visible even if the connection drops.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-1 max-w-4xl mx-auto w-full">
+            <div className="flex flex-col gap-2 max-w-5xl mx-auto w-full">
               {messages.map((msg, index) => {
                 const prevMsg = index > 0 ? messages[index - 1] : null;
                 const isSameUser = prevMsg && prevMsg.uid === msg.uid;
                 
                 // Add top margin if it's a new sender
-                const marginClass = isSameUser ? 'mt-0.5' : 'mt-5';
+                const marginClass = isSameUser ? 'mt-0' : 'mt-6';
 
                 return (
-                  <div key={msg.id} className={`flex items-start gap-4 ${marginClass} group hover:bg-[rgba(255,255,255,0.02)] -mx-4 px-4 py-1 rounded-2xl transition-colors`}>
+                  <div key={msg.id} className={`flex items-start gap-4 ${marginClass} group hover:bg-white/[0.02] -mx-4 px-4 py-1.5 rounded-2xl transition-all`}>
                     
                     {/* Avatar Gutter */}
                     <div className="w-10 flex-shrink-0 flex justify-center pt-0.5">
@@ -317,10 +327,10 @@ export default function GlobalChatView({ user, onSignIn }) {
                         <img 
                           src={msg.photoUrl || `https://ui-avatars.com/api/?name=${msg.displayName || 'User'}`} 
                           alt="Avatar" 
-                          className="w-10 h-10 rounded-full object-cover shadow-sm cursor-pointer"
+                          className="w-10 h-10 rounded-full object-cover shadow-lg border border-white/10 cursor-pointer hover:border-[var(--accent-primary)] transition-colors"
                         />
                       ) : (
-                        <span className="text-[10px] text-[#86868b] opacity-0 group-hover:opacity-100 font-mono mt-1 w-full text-center">
+                        <span className="text-[10px] text-white/30 opacity-0 group-hover:opacity-100 font-mono mt-1 w-full text-center transition-opacity">
                           {formatTime(msg.createdAt).split(' ')[0]}
                         </span>
                       )}
@@ -329,13 +339,13 @@ export default function GlobalChatView({ user, onSignIn }) {
                     {/* Message Content */}
                     <div className="flex-1 min-w-0">
                       {!isSameUser && (
-                        <div className="flex items-baseline gap-2 mb-0.5">
-                          <span className="font-semibold text-white cursor-pointer hover:underline text-[15px]">{msg.displayName || 'Anonymous'}</span>
-                          <span className="text-xs text-[#86868b] font-medium">{formatTime(msg.createdAt)}</span>
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="font-bold text-white cursor-pointer hover:underline text-[15px] tracking-wide">{msg.displayName || 'Anonymous'}</span>
+                          <span className="text-[11px] text-white/40 font-medium tracking-wide">{formatTime(msg.createdAt)}</span>
                         </div>
                       )}
                       
-                      <div className="text-[15px] text-[#d1d5db] leading-relaxed break-words whitespace-pre-wrap">
+                      <div className="text-[15px] text-white/90 leading-relaxed break-words whitespace-pre-wrap">
                         {msg.text}
                       </div>
                     </div>
@@ -343,37 +353,37 @@ export default function GlobalChatView({ user, onSignIn }) {
                   </div>
                 );
               })}
-              <div ref={messagesEndRef} className="h-4" />
+              <div ref={messagesEndRef} className="h-6" />
             </div>
           )}
         </div>
 
         {/* Chat Input */}
-        <div className="p-4 sm:p-6 pt-2 sticky bottom-0 bg-[#0f1115]/90 backdrop-blur-md border-t border-[#24272e]">
-          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto w-full relative flex items-end bg-[#1c1f26] border border-[#32363e] rounded-2xl shadow-inner overflow-hidden focus-within:border-[var(--accent)] transition-colors">
+        <div className="p-4 sm:p-6 pt-2 sticky bottom-0 bg-black/40 backdrop-blur-xl border-t border-white/5">
+          <form onSubmit={handleSendMessage} className="max-w-5xl mx-auto w-full relative flex items-end bg-white/[0.03] border border-white/10 rounded-2xl shadow-2xl overflow-hidden focus-within:border-[var(--accent-primary)] focus-within:bg-white/[0.05] transition-all">
             
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={user ? "@ mention, # private" : "Sign in to chat"}
-              className="flex-1 bg-transparent py-4 pl-4 pr-12 text-sm text-white focus:outline-none placeholder:text-[#86868b] cursor-text"
+              placeholder={user ? "Type a message..." : "Sign in to chat"}
+              className="flex-1 bg-transparent py-4 pl-5 pr-16 text-[15px] text-white focus:outline-none placeholder:text-white/30 cursor-text font-medium"
               readOnly={!user}
               onClick={() => {
                 if (!user && onSignIn) onSignIn();
               }}
             />
             
-            <div className="absolute right-2 bottom-3 flex items-center gap-1">
-              <button type="button" className="p-1.5 text-[#86868b] hover:text-white transition-colors disabled:opacity-50">
+            <div className="absolute right-2 bottom-2.5 flex items-center gap-1">
+              <button type="button" className="p-2 text-white/40 hover:text-white transition-colors disabled:opacity-50 hover:bg-white/5 rounded-xl">
                 <Smile className="w-5 h-5" />
               </button>
               <button 
                 type="submit" 
-                className="p-1.5 text-[#86868b] hover:text-[var(--accent)] transition-colors disabled:opacity-30"
+                className="p-2 bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] transition-colors disabled:opacity-30 disabled:bg-white/10 disabled:text-white/30 rounded-xl shadow-[0_0_15px_rgba(24,119,242,0.3)] disabled:shadow-none"
                 disabled={!inputText.trim()}
               >
-                <Send className="w-5 h-5" />
+                <Send className="w-5 h-5 ml-0.5" />
               </button>
             </div>
           </form>
@@ -382,27 +392,41 @@ export default function GlobalChatView({ user, onSignIn }) {
       </div>
 
       {/* Members Sidebar */}
-      <aside className={`w-full lg:w-[280px] flex-shrink-0 flex-col bg-[#121418] border-t lg:border-t-0 lg:border-l border-[#24272e] min-h-0 ${showMembersPanel ? 'flex fixed inset-x-0 bottom-0 top-[110px] z-40 lg:static lg:inset-auto' : 'hidden lg:flex'}`}>
+      <aside className={`w-full lg:w-[320px] flex-shrink-0 flex-col bg-black/80 lg:bg-black/40 backdrop-blur-3xl lg:backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-white/10 min-h-0 relative z-50 lg:z-20 ${showMembersPanel ? 'flex fixed inset-0 lg:static' : 'hidden lg:flex'}`}>
         
         {/* Members Header */}
-        <div className="h-14 flex items-center px-4 border-b border-[#24272e] flex-shrink-0">
-          <div className="flex items-center gap-2 text-[#86868b]">
-            <Users className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-widest">Members — {onlineMembers.length + offlineMembers.length + 489}</span>
+        <div className="h-16 flex items-center justify-between px-6 border-b border-white/5 flex-shrink-0 bg-white/[0.02]">
+          <div className="flex items-center gap-2 text-white/60">
+            <Users className="w-4 h-4 text-[var(--accent-primary)]" />
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-white">Members — {onlineMembers.length + offlineMembers.length}</span>
           </div>
+          <button 
+            onClick={() => setShowMembersPanel(false)}
+            className="lg:hidden text-white/50 hover:text-white transition-colors p-2 -mr-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-[#24272e]">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#86868b]" />
+        <div className="p-4 border-b border-white/5">
+          <div className="relative group flex items-center gap-2 bg-white/5 focus-within:bg-white/10 border border-white/10 focus-within:border-[var(--accent-primary)] rounded-xl overflow-hidden transition-all shadow-inner">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 group-focus-within:text-[var(--accent-primary)] transition-colors" />
             <input 
               type="text"
               placeholder="Search members..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#1c1f26] border border-[#32363e] rounded py-1.5 pl-8 pr-3 text-xs text-white focus:outline-none focus:border-[#cd1c18]"
+              className="w-full bg-transparent py-3 pl-10 pr-10 text-sm text-white focus:outline-none placeholder:text-white/30 font-medium"
             />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            )}
           </div>
         </div>
 
@@ -410,35 +434,6 @@ export default function GlobalChatView({ user, onSignIn }) {
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar min-h-0">
           {renderMembers(onlineMembers, 'ONLINE')}
           {renderMembers(offlineMembers, 'OFFLINE')}
-
-          {/* Dummy offline members to match UI "OFFLINE - 489" */}
-          {searchQuery === '' && (
-            <div className="mb-6">
-              <h3 className="text-[10px] font-bold text-[#86868b] uppercase tracking-widest mb-3 px-2">
-                OFFLINE — 489
-              </h3>
-              <div className="flex flex-col gap-1">
-                {[
-                  { name: 'Khan', pic: 'https://ui-avatars.com/api/?name=Khan' },
-                  { name: ';chatdisabled', pic: 'https://ui-avatars.com/api/?name=chatdisabled' },
-                  { name: '........', pic: 'https://ui-avatars.com/api/?name=anon' },
-                  { name: 'O Mr ~ - Wajid ♥', pic: 'https://ui-avatars.com/api/?name=Wajid' },
-                  { name: '666', pic: 'https://ui-avatars.com/api/?name=666' }
-                ].map((dummy, i) => (
-                  <div key={`dummy-${i}`} className="flex items-center gap-3 px-2 py-1.5 hover:bg-[rgba(255,255,255,0.02)] rounded cursor-pointer group opacity-60">
-                    <img 
-                      src={dummy.pic} 
-                      alt={dummy.name} 
-                      className="w-8 h-8 rounded-full object-cover grayscale opacity-70" 
-                    />
-                    <span className="text-sm font-medium text-[#86868b] truncate group-hover:text-gray-300 transition-colors">
-                      {dummy.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </aside>
       </div>
