@@ -3,7 +3,7 @@ import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCir
 import { db, collection, getDocs } from '../firebase';
 import { Meteors } from './Meteors';
 
-export default function Leaderboard({ onBack, user }) {
+export default function Leaderboard({ onBack, user, openUserProfile }) {
   const [activeTab, setActiveTab] = useState('weekly');
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +154,10 @@ export default function Leaderboard({ onBack, user }) {
                 leaders.map((leader, index) => (
                   <div 
                     key={leader.id} 
-                    className={`flex items-center gap-4 sm:gap-6 px-6 sm:px-8 py-5 transition-all group ${leader.id === user?.id ? 'bg-[var(--accent-primary)]/10' : 'hover:bg-white/[0.02]'}`}
+                    onClick={() => {
+                      if (openUserProfile) openUserProfile(leader.id);
+                    }}
+                    className={`flex items-center gap-4 sm:gap-6 px-6 sm:px-8 py-5 transition-all group cursor-pointer ${leader.id === user?.id ? 'bg-[var(--accent-primary)]/10' : 'hover:bg-white/[0.02]'}`}
                   >
                     <div className="w-10 flex justify-center flex-shrink-0">
                       {renderRankIcon(index)}
