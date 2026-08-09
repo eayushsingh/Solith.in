@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, db, updateDoc, doc, serverTimestamp } from '../firebase';
 import { ArrowLeft, Send, Shield, Flag, MoreVertical, Loader2 } from 'lucide-react';
 import ReportModal from './ReportModal';
+import { playSound } from '../utils/sounds';
 
 export default function DirectMessage({ conversationId, currentUser, targetProfile, onBack }) {
   const [messages, setMessages] = useState([]);
@@ -12,6 +13,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
   const [showReportModal, setShowReportModal] = useState(false);
   
   const endOfMessagesRef = useRef(null);
+  const previousMessagesLength = useRef(0);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -25,6 +27,15 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMessages(msgs);
       setLoading(false);
+      
+      // Play sound on new message
+      if (previousMessagesLength.current > 0 && msgs.length > previousMessagesLength.current) {
+        const lastMsg = msgs[msgs.length - 1];
+        if (lastMsg && lastMsg.senderId !== currentUser.id) {
+          playSound('message');
+        }
+      }
+      previousMessagesLength.current = msgs.length;
       
       // Update read status for messages sent by the other user
       msgs.forEach(msg => {
@@ -49,6 +60,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
     if (!text || text.length > 2000) return;
 
     setSending(true);
+    playSound('message');
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     
     try {
@@ -109,7 +121,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
         <div className="flex items-center gap-3 min-w-0">
           <button 
             onClick={onBack}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors text-[var(--ink-secondary)] hover:text-[var(--ink)]"
+            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors text-text-secondary hover:text-text-primary"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -119,12 +131,12 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
               <img src={targetProfile.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-[var(--line-subtle)]" />
             ) : (
               <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] flex items-center justify-center">
-                <span className="text-[var(--ink-secondary)] font-bold">{targetProfile.name?.charAt(0)}</span>
+                <span className="text-text-secondary font-bold">{targetProfile.name?.charAt(0)}</span>
               </div>
             )}
             <div>
-              <h3 className="text-base font-bold text-[var(--ink)]">{targetProfile.name}</h3>
-              <p className="text-xs text-[var(--ink-tertiary)]">Level {Math.max(1, Math.floor((targetProfile.xp || 0)/100))}</p>
+              <h3 className="text-base font-bold text-text-primary">{targetProfile.name}</h3>
+              <p className="text-xs text-text-secondary">Level {Math.max(1, Math.floor((targetProfile.xp || 0)/100))}</p>
             </div>
           </div>
         </div>
@@ -133,7 +145,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
         <div className="relative">
           <button 
             onClick={() => setShowOptions(!showOptions)}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors text-[var(--ink-secondary)] hover:text-[var(--ink)]"
+            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors text-text-secondary hover:text-text-primary"
           >
             <MoreVertical className="w-5 h-5" />
           </button>
@@ -148,7 +160,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
               </button>
               <button 
                 onClick={() => { setShowOptions(false); setShowReportModal(true); }}
-                className="w-full px-4 py-2.5 text-left text-sm font-medium hover:bg-[var(--bg-hover)] text-[var(--ink-secondary)] flex items-center gap-2 transition-colors"
+                className="w-full px-4 py-2.5 text-left text-sm font-medium hover:bg-[var(--bg-hover)] text-text-secondary flex items-center gap-2 transition-colors"
               >
                 <Flag className="w-4 h-4" /> Report User
               </button>
@@ -161,14 +173,14 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       <div className="flex-1 overflow-y-auto p-4 sm:p-4 custom-scrollbar flex flex-col gap-4 min-h-0">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-[var(--ink-tertiary)] animate-spin" />
+            <Loader2 className="w-8 h-8 text-text-secondary animate-spin" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
             <div className="w-16 h-16 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-4">
-              <Shield className="w-6 h-6 text-[var(--ink-tertiary)]" />
+              <Shield className="w-6 h-6 text-text-secondary" />
             </div>
-            <p className="text-[var(--ink-secondary)] max-w-sm">This is the beginning of your direct message history with {targetProfile.name}. Be respectful and follow community guidelines.</p>
+            <p className="text-text-secondary max-w-sm">This is the beginning of your direct message history with {targetProfile.name}. Be respectful and follow community guidelines.</p>
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -178,7 +190,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
             return (
               <React.Fragment key={msg.id}>
                 {showTime && msg.sentAt && (
-                  <div className="text-center text-[10px] uppercase font-bold tracking-widest text-[var(--ink-tertiary)] my-2">
+                  <div className="text-center text-[10px] uppercase font-bold tracking-widest text-text-secondary my-2">
                     {msg.sentAt.toDate().toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 )}
@@ -186,8 +198,8 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
                   <div 
                     className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed break-words shadow-sm ${
                       isMe 
-                        ? 'bg-blue-600 text-white rounded-br-sm' 
-                        : 'bg-[var(--bg-secondary)] border border-[var(--line-subtle)] text-[var(--ink)] rounded-bl-sm'
+                        ? 'bg-blue-600 text-text-primary rounded-br-sm' 
+                        : 'bg-[var(--bg-secondary)] border border-[var(--line-subtle)] text-text-primary rounded-bl-sm'
                     }`}
                   >
                     {msg.text}
@@ -208,7 +220,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))} // Client side limit
             placeholder="Type a message..." 
-            className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-full pl-5 pr-12 py-3.5 text-[15px] text-[var(--ink)] placeholder-[var(--ink-tertiary)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all min-w-0"
+            className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-full pl-5 pr-12 py-3.5 text-[15px] text-text-primary placeholder-[var(--ink-tertiary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all min-w-0"
             autoFocus
           />
           <button 

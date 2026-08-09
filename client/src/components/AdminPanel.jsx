@@ -6,13 +6,13 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-bg-base/60 p-4">
       <div className="bg-[#1a1a1a] border border-red-500/30 rounded-2xl p-6 max-w-sm w-full">
-        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-        <p className="text-gray-400 text-sm mb-6">{message}</p>
+        <h3 className="text-xl font-bold text-text-primary mb-2">{title}</h3>
+        <p className="text-text-secondary text-sm mb-6">{message}</p>
         <div className="flex justify-end gap-3">
-          <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-300 hover:text-white">Cancel</button>
-          <button onClick={onConfirm} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-colors">Confirm</button>
+          <button onClick={onCancel} className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary">Cancel</button>
+          <button onClick={onConfirm} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-text-primary rounded-xl font-bold transition-colors">Confirm</button>
         </div>
       </div>
     </div>
@@ -124,7 +124,7 @@ export default function AdminPanel({ onBack, user }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-200 font-mono overflow-x-hidden">
+    <div className="min-h-screen bg-bg-base text-text-primary font-mono overflow-x-hidden">
       <ConfirmDialog 
         {...confirmDialog} 
         onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
@@ -135,9 +135,9 @@ export default function AdminPanel({ onBack, user }) {
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#111] border-b border-red-900/30 px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <header className="sticky top-0 z-40 bg-bg-surface border-b border-red-900/30 px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 min-w-0">
-          <button onClick={onBack} className="p-2 hover:bg-[#222] rounded-full transition-colors text-gray-400 hover:text-white">
+          <button onClick={onBack} className="p-2 hover:bg-[#222] rounded-full transition-colors text-text-secondary hover:text-text-primary">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2 text-red-500">
@@ -150,7 +150,7 @@ export default function AdminPanel({ onBack, user }) {
 
       <div className="flex flex-col lg:flex-row min-h-[calc(100dvh-73px)]">
         {/* Sidebar */}
-        <div className="w-full lg:w-64 bg-[#111] border-b lg:border-b-0 lg:border-r border-red-900/20 p-4 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
+        <div className="w-full lg:w-64 bg-bg-surface border-b lg:border-b-0 lg:border-r border-red-900/20 p-4 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
           {[
             { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
             { id: 'users', icon: Users, label: 'Users' },
@@ -165,7 +165,7 @@ export default function AdminPanel({ onBack, user }) {
               className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm ${
                 activeTab === tab.id 
                   ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
-                  : 'text-gray-400 hover:bg-[#222] hover:text-white border border-transparent'
+                  : 'text-text-secondary hover:bg-[#222] hover:text-text-primary border border-transparent'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -183,19 +183,19 @@ export default function AdminPanel({ onBack, user }) {
               {/* OVERVIEW TAB */}
               {activeTab === 'overview' && stats && (
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-white mb-6">Platform Overview</h2>
+                  <h2 className="text-2xl font-bold text-text-primary mb-6">Platform Overview</h2>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
-                      <div className="text-gray-400 text-sm mb-2">Total Users</div>
-                      <div className="text-4xl font-bold text-white">{stats.usersTotal}</div>
+                      <div className="text-text-secondary text-sm mb-2">Total Users</div>
+                      <div className="text-4xl font-bold text-text-primary">{stats.usersTotal}</div>
                     </div>
                     <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
-                      <div className="text-gray-400 text-sm mb-2">Active Rooms</div>
+                      <div className="text-text-secondary text-sm mb-2">Active Rooms</div>
                       <div className="text-4xl font-bold text-blue-400">{stats.activeRooms}</div>
                     </div>
                     <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
-                      <div className="text-gray-400 text-sm mb-2">Total Reports</div>
-                      <div className="text-4xl font-bold text-white">{stats.reportsTotal}</div>
+                      <div className="text-text-secondary text-sm mb-2">Total Reports</div>
+                      <div className="text-4xl font-bold text-text-primary">{stats.reportsTotal}</div>
                     </div>
                     <div className="bg-[#151515] p-6 rounded-2xl border border-red-900/50">
                       <div className="text-red-400 text-sm mb-2">Pending Reports</div>
@@ -208,11 +208,11 @@ export default function AdminPanel({ onBack, user }) {
               {/* USERS TAB */}
               {activeTab === 'users' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-6">Manage Users</h2>
+                  <h2 className="text-2xl font-bold text-text-primary mb-6">Manage Users</h2>
                   <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
                     <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm min-w-[760px]">
-                      <thead className="bg-[#222] text-gray-400 uppercase text-xs">
+                      <thead className="bg-[#222] text-text-secondary uppercase text-xs">
                         <tr>
                           <th className="px-6 py-4">Name / Email</th>
                           <th className="px-6 py-4">Status</th>
@@ -224,9 +224,9 @@ export default function AdminPanel({ onBack, user }) {
                         {usersList.map(u => (
                           <tr key={u.id} className="hover:bg-[#1a1a1a]">
                             <td className="px-6 py-4">
-                              <div className="font-bold text-white flex items-center gap-2">
+                              <div className="font-bold text-text-primary flex items-center gap-2">
                                 {u.name}
-                                {u.isPremium && <span className="bg-yellow-500 text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-widest">PRO</span>}
+                                {u.isPremium && <span className="bg-yellow-500 text-bg-base text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-widest">PRO</span>}
                               </div>
                               <div className="text-gray-500 text-xs">{u.email}</div>
                               {u.role === 'admin' && <span className="inline-block mt-1 px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] rounded">ADMIN</span>}
@@ -240,10 +240,10 @@ export default function AdminPanel({ onBack, user }) {
                                 <span className="text-red-500">Active</span>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-gray-400">{u.warningCount || 0}</td>
+                            <td className="px-6 py-4 text-text-secondary">{u.warningCount || 0}</td>
                             <td className="px-6 py-4 space-x-2">
                               {u.isBanned || u.isRestricted ? (
-                                <button onClick={() => handleUserAction(u.id, 'reinstate')} className="text-xs px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-white transition-colors">Reinstate</button>
+                                <button onClick={() => handleUserAction(u.id, 'reinstate')} className="text-xs px-3 py-1 bg-bg-surface hover:bg-gray-700 rounded text-text-primary transition-colors">Reinstate</button>
                               ) : (
                                 <>
                                   <button onClick={() => handleUserAction(u.id, 'restrict')} className="text-xs px-3 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded transition-colors">Restrict</button>
@@ -256,7 +256,7 @@ export default function AdminPanel({ onBack, user }) {
                                 </>
                               )}
                               {u.isPremium ? (
-                                <button onClick={() => handleUserAction(u.id, 'remove_pro')} className="text-xs px-3 py-1 bg-gray-500/10 hover:bg-gray-500/20 text-gray-400 rounded transition-colors mt-1">Remove PRO</button>
+                                <button onClick={() => handleUserAction(u.id, 'remove_pro')} className="text-xs px-3 py-1 bg-gray-500/10 hover:bg-gray-500/20 text-text-secondary rounded transition-colors mt-1">Remove PRO</button>
                               ) : (
                                 <button onClick={() => handleUserAction(u.id, 'make_pro')} className="text-xs px-3 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded transition-colors mt-1">Make PRO</button>
                               )}
@@ -281,11 +281,11 @@ export default function AdminPanel({ onBack, user }) {
               {/* SUBSCRIPTIONS TAB */}
               {activeTab === 'subscriptions' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-6">Manage Subscriptions</h2>
+                  <h2 className="text-2xl font-bold text-text-primary mb-6">Manage Subscriptions</h2>
                   <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
                     <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm min-w-[640px]">
-                      <thead className="bg-[#222] text-gray-400 uppercase text-xs">
+                      <thead className="bg-[#222] text-text-secondary uppercase text-xs">
                         <tr>
                           <th className="px-6 py-4">User</th>
                           <th className="px-6 py-4">Subscription Status</th>
@@ -296,7 +296,7 @@ export default function AdminPanel({ onBack, user }) {
                         {usersList.map(u => (
                           <tr key={u.id} className="hover:bg-[#1a1a1a]">
                             <td className="px-6 py-4">
-                              <div className="font-bold text-white">{u.name}</div>
+                              <div className="font-bold text-text-primary">{u.name}</div>
                               <div className="text-gray-500 text-xs">{u.email}</div>
                             </td>
                             <td className="px-6 py-4">
@@ -339,8 +339,8 @@ export default function AdminPanel({ onBack, user }) {
               {activeTab === 'reports' && (
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white">Reports Queue</h2>
-                    <a href="#guidelines" onClick={(e) => { e.preventDefault(); window.location.hash = 'guidelines'; window.location.reload(); }} className="text-sm text-[var(--accent)] hover:underline flex items-center gap-1">
+                    <h2 className="text-2xl font-bold text-text-primary">Reports Queue</h2>
+                    <a href="#guidelines" onClick={(e) => { e.preventDefault(); window.location.hash = 'guidelines'; window.location.reload(); }} className="text-sm text-[var(--accent-primary)] hover:underline flex items-center gap-1">
                       View Guidelines
                     </a>
                   </div>
@@ -352,15 +352,15 @@ export default function AdminPanel({ onBack, user }) {
                         <div key={report.id} className="bg-[#151515] p-5 rounded-2xl border border-gray-800 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                           <div>
                             <div className="flex items-center gap-3 mb-2">
-                              <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${report.status === 'pending' ? 'bg-red-500/20 text-red-400' : 'bg-gray-800 text-gray-400'}`}>
+                              <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${report.status === 'pending' ? 'bg-red-500/20 text-red-400' : 'bg-bg-surface text-text-secondary'}`}>
                                 {report.status || 'pending'}
                               </span>
                               <span className="text-xs text-gray-500">{new Date(report.timestamp?.seconds * 1000 || Date.now()).toLocaleString()}</span>
                             </div>
-                            <p className="text-sm text-gray-300"><strong>Reporter:</strong> {report.reporterName}</p>
-                            <p className="text-sm text-gray-300"><strong>Reported:</strong> {report.reportedUserName}</p>
-                            <p className="text-sm text-gray-300"><strong>Room:</strong> {report.roomName || 'Unknown'}</p>
-                            <div className="mt-2 bg-[#1a1a1a] p-3 rounded text-sm text-gray-400 border border-gray-800">
+                            <p className="text-sm text-text-secondary"><strong>Reporter:</strong> {report.reporterName}</p>
+                            <p className="text-sm text-text-secondary"><strong>Reported:</strong> {report.reportedUserName}</p>
+                            <p className="text-sm text-text-secondary"><strong>Room:</strong> {report.roomName || 'Unknown'}</p>
+                            <div className="mt-2 bg-[#1a1a1a] p-3 rounded text-sm text-text-secondary border border-gray-800">
                               <span className="text-red-400 font-bold mr-2">{report.reason}</span>
                               {report.details}
                             </div>
@@ -368,7 +368,7 @@ export default function AdminPanel({ onBack, user }) {
                           
                           {report.status === 'pending' && (
                             <div className="flex flex-col gap-2 min-w-[120px]">
-                              <button onClick={() => handleReportAction(report.id, 'dismiss', report.reportedUserId)} className="text-xs px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded">Dismiss</button>
+                              <button onClick={() => handleReportAction(report.id, 'dismiss', report.reportedUserId)} className="text-xs px-4 py-2 bg-bg-surface hover:bg-gray-700 text-text-primary rounded">Dismiss</button>
                               <button onClick={() => handleReportAction(report.id, 'warn', report.reportedUserId)} className="text-xs px-4 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 rounded">Warn User</button>
                               <button onClick={() => handleReportAction(report.id, 'restrict', report.reportedUserId)} className="text-xs px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded">Restrict</button>
                               <button 
@@ -389,7 +389,7 @@ export default function AdminPanel({ onBack, user }) {
               {/* ROOMS TAB */}
               {activeTab === 'rooms' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-6">Active Rooms</h2>
+                  <h2 className="text-2xl font-bold text-text-primary mb-6">Active Rooms</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {rooms.length === 0 ? (
                       <div className="text-gray-500">No active rooms.</div>
@@ -398,7 +398,7 @@ export default function AdminPanel({ onBack, user }) {
                         <div key={room.id} className="bg-[#151515] p-5 rounded-2xl border border-gray-800 flex flex-col justify-between">
                           <div>
                             <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-lg text-white">{room.name}</h3>
+                              <h3 className="font-bold text-lg text-text-primary">{room.name}</h3>
                               <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">{room.participants?.length || 0}/8</span>
                             </div>
                             <p className="text-xs text-gray-500 mb-4">{room.topic || 'No topic'}</p>
@@ -420,11 +420,11 @@ export default function AdminPanel({ onBack, user }) {
               {/* LOGS TAB */}
               {activeTab === 'logs' && (
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-6">Activity Log</h2>
+                  <h2 className="text-2xl font-bold text-text-primary mb-6">Activity Log</h2>
                   <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
                     <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm min-w-[760px]">
-                      <thead className="bg-[#222] text-gray-400 uppercase text-xs">
+                      <thead className="bg-[#222] text-text-secondary uppercase text-xs">
                         <tr>
                           <th className="px-6 py-4">Time</th>
                           <th className="px-6 py-4">Admin</th>
@@ -441,13 +441,13 @@ export default function AdminPanel({ onBack, user }) {
                               <td className="px-6 py-4 text-gray-500 text-xs">
                                 {new Date(log.timestamp?.seconds * 1000 || Date.now()).toLocaleString()}
                               </td>
-                              <td className="px-6 py-4 font-bold text-white text-xs">{log.adminEmail}</td>
+                              <td className="px-6 py-4 font-bold text-text-primary text-xs">{log.adminEmail}</td>
                               <td className="px-6 py-4">
-                                <span className="px-2 py-1 bg-[#222] text-gray-300 rounded text-[10px] uppercase tracking-wider border border-gray-700">
+                                <span className="px-2 py-1 bg-[#222] text-text-secondary rounded text-[10px] uppercase tracking-wider border border-gray-700">
                                   {log.action}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 text-gray-400 text-xs">
+                              <td className="px-6 py-4 text-text-secondary text-xs">
                                 <div>{log.details}</div>
                                 <div className="text-[10px] text-gray-600 mt-1">ID: {log.targetId}</div>
                               </td>

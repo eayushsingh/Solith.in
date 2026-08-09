@@ -11,7 +11,15 @@ export default {
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
-        ink: '#050505',
+        'bg-base': 'var(--bg-base)',
+        'bg-surface': 'var(--bg-surface)',
+        'bg-surface-elevated': 'var(--bg-surface-elevated)',
+        'accent-primary': 'var(--accent-primary)',
+        'accent-secondary': 'var(--accent-secondary)',
+        'success': 'var(--success)',
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'border-color': 'var(--border-color)',
       }
     },
   },

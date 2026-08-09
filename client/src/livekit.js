@@ -1,4 +1,5 @@
 import { Room, RoomEvent, Track, setLogLevel } from 'livekit-client';
+import { playSound } from './utils/sounds';
 
 let roomObject = null;
 let audioLevelCallback = null;
@@ -52,11 +53,13 @@ export const LiveKitService = {
 
       // Bind LiveKit events
       roomObject.on(RoomEvent.Connected, () => {
+        playSound('join');
         connectionCallback?.({ state: 'joined', isMock: false });
         updateParticipantsList();
       });
 
       roomObject.on(RoomEvent.Disconnected, () => {
+        playSound('leave');
         connectionCallback?.({ state: 'left' });
         cleanupRealCall();
       });

@@ -62,7 +62,7 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
   if (loading) {
     return (
       <div className="flex-1 h-full min-h-[50vh] flex flex-col items-center justify-center px-4">
-        <Loader2 className="w-8 h-8 text-[var(--ink-tertiary)] animate-spin" />
+        <Loader2 className="w-8 h-8 text-text-secondary animate-spin" />
       </div>
     );
   }
@@ -71,26 +71,26 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
     <div className="w-full max-w-4xl mx-auto h-full flex flex-col pt-20 sm:pt-24 px-4 sm:px-6 pb-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-6 sm:mb-8">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-          <MessageSquare className="w-6 h-6 text-white" />
+          <MessageSquare className="w-6 h-6 text-text-primary" />
         </div>
         <div>
-          <h2 className="text-3xl font-serif tracking-tight text-[var(--ink)]">Direct Messages</h2>
-          <p className="text-sm text-[var(--ink-secondary)] mt-1">Your private conversations</p>
+          <h2 className="text-3xl font-serif tracking-tight text-text-primary">Direct Messages</h2>
+          <p className="text-sm text-text-secondary mt-1">Your private conversations</p>
         </div>
       </div>
 
       <div className="flex-1 bg-[var(--bg)] border border-[var(--line-subtle)] rounded-3xl overflow-hidden shadow-2xl shadow-black/5 flex flex-col min-h-0">
         {error ? (
-          <div className="flex-1 flex items-center justify-center p-8 text-center text-[var(--ink-secondary)] text-sm">
+          <div className="flex-1 flex items-center justify-center p-8 text-center text-text-secondary text-sm">
             {error}
           </div>
         ) : conversations.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="w-20 h-20 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-6">
-              <MessageSquare className="w-8 h-8 text-[var(--ink-tertiary)] opacity-50" />
+              <MessageSquare className="w-8 h-8 text-text-secondary opacity-50" />
             </div>
-            <h3 className="text-xl font-bold text-[var(--ink)] mb-2">No messages yet</h3>
-            <p className="text-[var(--ink-secondary)] max-w-sm">Start a conversation from someone's profile to connect privately.</p>
+            <h3 className="text-xl font-bold text-text-primary mb-2">No messages yet</h3>
+            <p className="text-text-secondary max-w-sm">Start a conversation from someone's profile to connect privately.</p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-[var(--line-subtle)] min-h-0">
@@ -110,7 +110,7 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
                       <img src={profile.photoUrl} alt="" className="w-14 h-14 rounded-full object-cover border border-[var(--line-subtle)]" />
                     ) : (
                       <div className="w-14 h-14 rounded-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] flex items-center justify-center">
-                        <User className="w-6 h-6 text-[var(--ink-tertiary)]" />
+                        <User className="w-6 h-6 text-text-secondary" />
                       </div>
                     )}
                     {isUnread && (
@@ -120,22 +120,22 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between mb-1">
-                      <h4 className={`text-base truncate ${isUnread ? 'font-bold text-[var(--ink)]' : 'font-medium text-[var(--ink-secondary)]'}`}>
+                      <h4 className={`text-base truncate ${isUnread ? 'font-bold text-text-primary' : 'font-medium text-text-secondary'}`}>
                         {profile.name}
                       </h4>
                       {convo.lastMessageAt && (
-                        <span className="text-xs text-[var(--ink-tertiary)] whitespace-nowrap ml-2">
+                        <span className="text-xs text-text-secondary whitespace-nowrap ml-2">
                           {convo.lastMessageAt?.toDate ? convo.lastMessageAt.toDate().toLocaleDateString() : 'Just now'}
                         </span>
                       )}
                     </div>
-                    <p className={`text-sm truncate ${isUnread ? 'text-[var(--ink)] font-medium' : 'text-[var(--ink-tertiary)]'}`}>
+                    <p className={`text-sm truncate ${isUnread ? 'text-text-primary font-medium' : 'text-text-secondary'}`}>
                       {convo.lastMessageSenderId === currentUser.id ? 'You: ' : ''}
                       {convo.lastMessageText || 'Tap to view conversation'}
                     </p>
                   </div>
 
-                  <div className="w-8 flex items-center justify-center text-[var(--ink-tertiary)] group-hover:text-[var(--ink)] group-hover:translate-x-1 transition-all">
+                  <div className="w-8 flex items-center justify-center text-text-secondary group-hover:text-text-primary group-hover:translate-x-1 transition-all">
                     <ChevronRight className="w-5 h-5" />
                   </div>
                 </div>

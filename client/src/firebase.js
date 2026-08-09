@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, inMemoryPersistence, browserLocalPersistence } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, onSnapshot, limit } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, onSnapshot, limit, getCountFromServer } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
 // Replace these with your actual Firebase project config in .env
@@ -32,4 +32,4 @@ if (firebaseConfig.apiKey) {
   console.warn("Firebase configuration is missing! Please add VITE_FIREBASE_* variables to your client/.env file.");
 }
 
-export { auth, db, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, inMemoryPersistence, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, onSnapshot, limit };
+export { auth, db, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, inMemoryPersistence, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, onSnapshot, limit, getCountFromServer };
