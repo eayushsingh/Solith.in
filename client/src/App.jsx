@@ -15,8 +15,13 @@ import {
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
-import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence, getCountFromServer } from './firebase';
+import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence, getCountFromServer, onSnapshot } from './firebase';
 import socket from './socket';
+
+const getAvatarUrl = (photoUrl, uid) => {
+  if (photoUrl && photoUrl.trim() !== '') return photoUrl;
+  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid || 'default')}`;
+};
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -45,9 +50,13 @@ export default function App() {
   const [user, setUser] = useState(null);
   const isAdmin = user && (user.role === 'admin' || ADMIN_EMAILS.includes(user.email));
   const [view, setView] = useState(() => {
-    const hash = window.location.hash;
+    const hash = window.location.hash.replace('#', '');
+    const path = window.location.pathname.replace('/', '');
     const hasSeenLanding = localStorage.getItem('seenLanding');
-    return hash === '#admin' ? 'admin' : (hash === '#guidelines' ? 'guidelines' : (hash === '#messages' ? 'messages' : (hash === '#leaderboard' ? 'leaderboard' : (hasSeenLanding ? 'lobby' : 'landing'))));
+    
+    if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(hash)) return hash;
+    if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(path)) return path;
+    return hasSeenLanding ? 'lobby' : 'landing';
   }); 
   const [activeDm, setActiveDm] = useState(null); // { id: string, profile: object }
   const [isConnected, setIsConnected] = useState(false);
@@ -120,14 +129,17 @@ export default function App() {
   useEffect(() => {
     const syncViewFromHash = () => {
       const hash = window.location.hash.replace('#', '');
-      if (!hash) return;
-
-      if (['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(hash)) {
+      const path = window.location.pathname.replace('/', '');
+      
+      if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(hash)) {
         setView(hash);
+      } else if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(path)) {
+        setView(path);
       }
     };
 
     window.addEventListener('hashchange', syncViewFromHash);
+    syncViewFromHash(); // Check on mount
     return () => window.removeEventListener('hashchange', syncViewFromHash);
   }, []);
 
@@ -145,21 +157,30 @@ export default function App() {
       alert("Redirect login failed: " + error.message);
     });
 
+    let unsubscribeUserSnap = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       try {
+        if (unsubscribeUserSnap) {
+          unsubscribeUserSnap();
+          unsubscribeUserSnap = null;
+        }
+
         if (currentUser && !currentUser.isAnonymous) {
           console.log("onAuthStateChanged: Authenticated as", currentUser.email);
           
           // 1. Instantly get the token (cached by Firebase, very fast)
           const token = await currentUser.getIdToken();
           
+          const defaultAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(currentUser.uid)}`;
+
           // 2. OPTIMISTIC UI UPDATE for lightning-fast perceived performance
           setUser(prev => {
             if (prev && prev.id === currentUser.uid) return prev; // Avoid unnecessary re-renders if already set
             return {
               id: currentUser.uid,
               name: currentUser.displayName || 'Anonymous Learner',
-              photoUrl: currentUser.photoURL || '',
+              photoUrl: currentUser.photoURL || defaultAvatar,
               email: currentUser.email,
               xp: 25,
               streak: 1,
@@ -209,6 +230,9 @@ export default function App() {
                 if (currentUser.photoURL && dbData.photoUrl !== currentUser.photoURL) {
                   updates.photoUrl = currentUser.photoURL;
                   dbData.photoUrl = currentUser.photoURL;
+                } else if (!dbData.photoUrl) {
+                  updates.photoUrl = defaultAvatar;
+                  dbData.photoUrl = defaultAvatar;
                 }
                 
                 if (currentUser.email === 'ayushsinghe07@gmail.com' && dbData.role !== 'admin') {
@@ -223,22 +247,35 @@ export default function App() {
                 dbData = {
                   id: currentUser.uid,
                   name: currentUser.displayName || 'Anonymous Learner',
-                  photoUrl: currentUser.photoURL || '',
+                  photoUrl: currentUser.photoURL || defaultAvatar,
                   email: currentUser.email,
                   role: currentUser.email === 'ayushsinghe07@gmail.com' ? 'admin' : 'user',
                   isPremium: currentUser.email === 'ayushsinghe07@gmail.com',
                   xp: 25,
                   streak: 1,
                   lastActiveDay: today,
-                  createdAt: serverTimestamp()
+                  createdAt: serverTimestamp(),
+                  following: [],
+                  followers: []
                 };
                 await setDoc(userRef, dbData);
               }
 
-              // Silently update the UI with the real stats from the database once loaded
+              // Update the UI with real stats
               setUser(prev => {
                 if (!prev || prev.id !== currentUser.uid) return prev;
                 return { ...prev, ...dbData, token };
+              });
+
+              // Set up realtime listener on current user doc to update following/followers in real-time
+              unsubscribeUserSnap = onSnapshot(userRef, (snapshot) => {
+                if (snapshot.exists()) {
+                  const latestData = snapshot.data();
+                  setUser(prev => {
+                    if (!prev || prev.id !== currentUser.uid) return prev;
+                    return { ...prev, ...latestData, token };
+                  });
+                }
               });
 
             } catch (dbError) {
@@ -261,7 +298,11 @@ export default function App() {
         setAuthLoading(false);
       }
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribe();
+      if (unsubscribeUserSnap) unsubscribeUserSnap();
+    };
   }, []);
 
   const handleLogin = async () => {
@@ -1308,7 +1349,7 @@ export default function App() {
             <div className="flex flex-col items-center mt-2 relative z-10">
               <div className="relative mb-6">
                 
-                <img src={user.photoUrl} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
+                <img src={getAvatarUrl(user.photoUrl, user.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
                 {user.isPremium && (
                   <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
                 )}
@@ -1381,7 +1422,7 @@ export default function App() {
               <div className="flex flex-col items-center mt-2 relative z-10">
                 <div className="relative mb-6">
                   
-                  <img src={targetProfile.photoUrl || ''} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
+                  <img src={getAvatarUrl(targetProfile.photoUrl, targetProfile.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
                   {targetProfile.isPremium && (
                     <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
                   )}
@@ -1784,7 +1825,7 @@ export default function App() {
 
                 {/* Avatar */}
                 <img 
-                  src={user.photoUrl || "https://ui-avatars.com/api/?name=User"} 
+                  src={getAvatarUrl(user.photoUrl, user.id)} 
                   alt="Profile" 
                   className="w-10 h-10 rounded-full cursor-pointer border-2 border-border-color hover:border-[var(--accent-primary)] transition-all object-cover" 
                   onClick={() => setShowProfileModal(true)} 
@@ -1956,7 +1997,7 @@ export default function App() {
                 {participants.map(p => {
                     const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                     const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
-                    const pPhotoUrl = p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl);
+                    const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
                     const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
                     const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
                     const pName = p.isLocal ? 'You' : (backendP?.name || p.name);

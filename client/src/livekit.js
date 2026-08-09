@@ -190,8 +190,8 @@ function updateParticipantsList() {
   }
 
   // Add remote participants
-  if (roomObject.participants) {
-    roomObject.participants.forEach(p => {
+  if (roomObject.remoteParticipants) {
+    roomObject.remoteParticipants.forEach(p => {
       const isMuted = !p.isMicrophoneEnabled;
       let meta = {};
       try { if (p.metadata) meta = JSON.parse(p.metadata); } catch(e){}

@@ -53,7 +53,7 @@ export default function RoomCard({ room, onJoin }) {
                 </div>
                 <div className="flex items-center gap-1 text-accent-primary text-xs font-bold">
                   <Heart className="w-3 h-3 fill-current" />
-                  <span>{Math.floor(Math.random() * 200) + 10}</span>
+                  <span>{participant.followersCount || 0}</span>
                 </div>
               </div>
             );

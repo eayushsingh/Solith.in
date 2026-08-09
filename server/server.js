@@ -359,12 +359,28 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
   });
 
   // Add user to the target room
+  const adminInstance = initFirebaseAdmin();
+  let followersCount = 0;
+  if (adminInstance) {
+    try {
+      const db = adminInstance.firestore();
+      const userSnap = await db.collection('users').doc(userId).get();
+      if (userSnap.exists) {
+        const userData = userSnap.data();
+        followersCount = userData.followers ? userData.followers.length : 0;
+      }
+    } catch (err) {
+      console.error('Error fetching follower count on join:', err);
+    }
+  }
+
   const participant = {
     id: userId,
     name,
     color: color || '#ff4d4d',
     emoji: emoji || '😊',
     photoUrl: photoUrl || '',
+    followersCount,
     joinedAt: Date.now(),
     lastPing: Date.now()
   };
@@ -614,6 +630,7 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
     const userRef = db.collection('users').doc(userId);
     const targetRef = db.collection('users').doc(targetId);
 
+    let didFollow = false;
     await db.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userRef);
       const targetDoc = await transaction.get(targetRef);
@@ -629,6 +646,7 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
         transaction.set(userRef, { following: adminInstance.firestore.FieldValue.arrayRemove(targetId) }, { merge: true });
         transaction.set(targetRef, { followers: adminInstance.firestore.FieldValue.arrayRemove(userId) }, { merge: true });
         transaction.delete(followDocRef);
+        didFollow = false;
       } else {
         // Follow
         transaction.set(userRef, { following: adminInstance.firestore.FieldValue.arrayUnion(targetId) }, { merge: true });
@@ -638,7 +656,17 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
           followingId: targetId,
           createdAt: adminInstance.firestore.FieldValue.serverTimestamp()
         });
+        didFollow = true;
       }
+    });
+
+    // Update in-memory room participant follower counts
+    rooms.forEach(r => {
+      r.participants.forEach(p => {
+        if (p.id === targetId) {
+          p.followersCount = didFollow ? (p.followersCount || 0) + 1 : Math.max(0, (p.followersCount || 0) - 1);
+        }
+      });
     });
 
     res.json({ success: true });
