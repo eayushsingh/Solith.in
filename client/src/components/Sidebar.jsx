@@ -1,28 +1,28 @@
 import React from 'react';
-import { Home, MessageSquare, GraduationCap, Flame, MessageCircle, Crown, LogOut, Settings } from 'lucide-react';
+import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn } from 'lucide-react';
 
-export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick }) {
+export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, isAdmin }) {
   const navItems = [
     { id: 'lobby', icon: Home, title: 'Home' },
     { id: 'messages', icon: MessageSquare, title: 'Global Chat' },
-    { id: 'teachers', icon: GraduationCap, title: 'Teachers' },
-    { id: 'streak', icon: Flame, title: 'Streak' },
-    { id: 'rooms', icon: MessageCircle, title: 'Clans' },
+    { id: 'leaderboard', icon: Award, title: 'Leaderboard' },
+    { id: 'guidelines', icon: BookOpen, title: 'Guidelines' },
+    ...(isAdmin ? [{ id: 'admin', icon: Shield, title: 'Admin' }] : []),
   ];
 
   return (
-    <aside className="fixed bottom-0 left-0 w-full h-16 md:h-screen md:w-[72px] md:top-0 bg-[#121418]/95 backdrop-blur-md md:bg-[#121418] border-t md:border-t-0 md:border-r border-[#24272e] flex flex-row md:flex-col items-center justify-around md:justify-start px-4 md:px-0 py-0 md:py-6 z-50">
+    <aside className="fixed bottom-0 left-0 w-full h-16 md:h-screen md:w-[88px] md:top-0 bg-[#121418]/95 backdrop-blur-md md:bg-[#121418] border-t md:border-t-0 md:border-r border-[#24272e] flex flex-row md:flex-col items-center justify-around md:justify-start px-3 md:px-0 py-0 md:py-6 z-50">
       {/* Logo Area */}
       <div 
         onClick={() => setView('lobby')}
         className="hidden md:flex w-10 h-10 rounded bg-[#cd1c18] items-center justify-center cursor-pointer mb-8 shadow-[0_0_15px_rgba(205,28,24,0.3)] transition-transform hover:scale-105"
-        title="TalkFree Home"
+        title="SOLITH.IN Home"
       >
         <span className="text-[#0b0d10] font-black text-xl tracking-tighter">T</span>
       </div>
 
       {/* Main Navigation */}
-      <div className="flex flex-row md:flex-col gap-1 md:gap-6 w-full items-center justify-center flex-1">
+      <div className="flex flex-row md:flex-col gap-1 md:gap-4 w-full items-center justify-center flex-1">
         {navItems.map(item => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
@@ -31,12 +31,13 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
             <button
               key={item.id}
               onClick={() => { setView(item.id); window.location.hash = item.id; }}
-              className={`relative p-3 rounded-full transition-all duration-200 group flex items-center justify-center ${
+              className={`relative w-11 h-11 md:w-12 md:h-12 rounded-full transition-all duration-200 group flex items-center justify-center ${
                 isActive 
                   ? 'text-[#cd1c18] border border-[#cd1c18]' 
                   : 'text-[#86868b] hover:text-white hover:bg-[rgba(255,255,255,0.05)] border border-transparent'
               }`}
               title={item.title}
+              aria-label={item.title}
             >
               <Icon className="w-5 h-5" />
             </button>
@@ -68,9 +69,10 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
         {user ? (
           <div className="relative group mt-2">
             <button 
-              className="w-10 h-10 rounded-full bg-[#2a2d36] border border-[#32363e] flex items-center justify-center text-white hover:border-[#cd1c18] transition-all"
+              className="w-11 h-11 rounded-full bg-[#2a2d36] border border-[#32363e] flex items-center justify-center text-white hover:border-[#cd1c18] transition-all"
               onClick={onSettingsClick}
               title={user.displayName || "Profile"}
+              aria-label={user.displayName || 'Profile'}
             >
               <span className="font-bold text-xs uppercase">
                 {(user.displayName && user.displayName.length >= 2) ? user.displayName.substring(0, 2) : 'IN'}
@@ -84,10 +86,11 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
         ) : (
           <button 
             onClick={onAuthClick}
-            className="w-10 h-10 mt-2 rounded-full border border-[var(--line-bright)] flex items-center justify-center text-[#86868b] hover:text-white transition-all hover:bg-[rgba(255,255,255,0.05)]"
+            className="w-11 h-11 mt-2 rounded-full border border-[var(--line-bright)] flex items-center justify-center text-[#86868b] hover:text-white transition-all hover:bg-[rgba(255,255,255,0.05)]"
             title="Sign In"
+            aria-label="Sign In"
           >
-            <span className="font-bold text-xs">IN</span>
+            <LogIn className="w-4 h-4" />
           </button>
         )}
       </div>

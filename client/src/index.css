@@ -19,16 +19,16 @@
   --line: #24272e;
   --line-bright: #323640;
 
-  /* Talk4Now Red */
-  --accent: #cd1c18;
-  --accent-light: #e5322d;
-  --accent-bg: rgba(0, 216, 89, 0.15);
-  --accent-glow: rgba(0, 216, 89, 0.35);
+  /* Warm coral red for a more premium, eye-friendly UI */
+  --accent: #ff4d4f;
+  --accent-light: #ff756d;
+  --accent-bg: rgba(255, 77, 79, 0.16);
+  --accent-glow: rgba(255, 77, 79, 0.34);
 
   --success: #22c55e;
   --success-bg: rgba(34, 197, 94, 0.15);
-  --danger: #cd1c18;
-  --danger-bg: rgba(205, 28, 24, 0.15);
+  --danger: #ff4d4f;
+  --danger-bg: rgba(255, 77, 79, 0.15);
 
   --bg-dark: var(--bg);
   --bg-card: var(--bg-elevated);
@@ -44,9 +44,19 @@
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.6;
   font-weight: 400;
-  color-scheme: light;
+  color-scheme: dark;
   color: var(--text-primary);
   background-color: var(--bg);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  scroll-behavior: smooth;
 }
 
 
@@ -72,9 +82,26 @@ body {
   padding: 0;
   min-height: 100vh;
   background-color: var(--bg);
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+img, video, svg, canvas {
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 
@@ -187,6 +214,82 @@ button {
   border-radius: 12px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.layout-container {
+  min-height: 100dvh;
+}
+
+.main-content {
+  min-width: 0;
+  width: 100%;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-bright) var(--bg-secondary);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--line-bright);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.filter-pill,
+.create-room-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.filter-pill {
+  padding: 0.625rem 0.875rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-secondary);
+  background: var(--bg-secondary);
+}
+
+.filter-pill.active {
+  color: var(--ink);
+  border-color: var(--accent);
+  background: rgba(205, 28, 24, 0.15);
+}
+
+.create-room-btn {
+  padding: 0.875rem 1.25rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-weight: 700;
+  border: none;
 }
 
 .btn-primary {
@@ -350,6 +453,30 @@ button {
   background: #f0f0f0;
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 640px) {
+  .landing-hero {
+    min-height: 100dvh;
+    padding: 5rem 1rem 4rem;
+  }
+
+  .headline {
+    font-size: 30px;
+  }
+
+  #char-wrap {
+    width: min(280px, 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .glitch-badge {

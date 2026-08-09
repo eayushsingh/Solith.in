@@ -14,7 +14,7 @@ export default function StaticModals({ activeModal, closeModal }) {
       icon = <Shield className="w-5 h-5 text-blue-400" />;
       content = (
         <div className="space-y-4 text-sm text-gray-300">
-          <p>At TalkFree, your privacy is our top priority. We do not sell your personal data to third parties.</p>
+          <p>At SOLITH.IN, your privacy is our top priority. We do not sell your personal data to third parties.</p>
           <p><strong>Voice Data:</strong> All audio streams in voice rooms are transmitted using WebRTC protocols. We do not record or store your voice conversations on our servers unless explicitly stated for moderation purposes.</p>
           <p><strong>Account Information:</strong> We store basic profile information (like your Google account email and avatar) solely for account management and community safety features.</p>
           <p><strong>Cookies:</strong> We use strictly necessary cookies to keep you logged in and ensure application security.</p>
@@ -27,7 +27,7 @@ export default function StaticModals({ activeModal, closeModal }) {
       content = (
         <div className="space-y-4 text-sm text-gray-300">
           <p>Need help, found a bug, or just want to say hi?</p>
-          <p>You can reach out to the TalkFree team at:</p>
+          <p>You can reach out to the SOLITH.IN team at:</p>
           <div className="p-4 bg-black/40 rounded-lg border border-white/10 font-mono text-center text-white">
             support@talkfree.example.com
           </div>
@@ -40,7 +40,7 @@ export default function StaticModals({ activeModal, closeModal }) {
       icon = <Info className="w-5 h-5 text-purple-400" />;
       content = (
         <div className="space-y-4 text-sm text-gray-300">
-          <p>TalkFree was built with a simple mission: to connect language learners around the world through free, high-quality voice conversations.</p>
+          <p>SOLITH.IN was built with a simple mission: to connect language learners around the world through free, high-quality voice conversations.</p>
           <p>Whether you're practicing English for an upcoming interview, trying to pick up conversational Spanish, or helping others learn your native tongue, our platform provides a safe, low-latency environment to practice real-world speaking.</p>
           <p className="text-center font-bold text-white mt-4">Built with ❤️ for the global language community.</p>
         </div>

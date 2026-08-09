@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import RoomCard from './components/RoomCard';
 import Guidelines from './components/Guidelines';
 import AdminPanel from './components/AdminPanel';
@@ -10,21 +10,20 @@ import Leaderboard from './components/Leaderboard';
 import Sidebar from './components/Sidebar';
 import { Meteors } from './components/Meteors';
 import StaticModals from './components/StaticModals';
-import GlobalChatView from './components/GlobalChatView';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
 import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence } from './firebase';
-import { io } from 'socket.io-client';
+import socket from './socket';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const socket = io(API_URL);
 
 const EMOJIS = ['😊', '🦊', '🐼', '🦁', '🚀', '🎮', '🎧', '☕', '🎨', '🍕', '🌍', '🐱', '🥑', '👾', '🦄', '🧙‍♂️'];
 const AVATAR_COLORS = ['#ff4d4d', '#ff944d', '#ffd11a', '#4da6ff', '#a64dff', '#ff4da6', '#33cc33', '#33cccc', '#f43f5e', '#8b5cf6'];
 const LANGUAGES = ['All Languages', 'English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean'];
+const GlobalChatView = lazy(() => import('./components/GlobalChatView'));
 
 // XP / Fluency level bands
 const getLevelInfo = (xp) => {
@@ -78,29 +77,8 @@ const AnimatedLogo = () => {
         className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover shadow-[0_0_20px_rgba(255,255,255,0.1)] border border-white/20 relative z-10"
       />
       <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-center relative z-10">
-        <span className="text-[#4285F4]">S</span>
-        <span className="text-[#EA4335]">o</span>
-        <span className="text-[#FBBC05]">l</span>
-        <span className="text-[#4285F4]">i</span>
-        <span className="text-[#34A853]">t</span>
-        <span className="text-[#EA4335]">h</span>
-        <span className="text-white">.</span>
-        <span className="text-[#4285F4] relative inline-block">
-          ı
-          <span 
-            id="logo-dot" 
-            className="absolute bg-[#4285F4] rounded-full"
-            style={{
-              width: '0.15em',
-              height: '0.15em',
-              top: '0.12em',
-              left: '50%',
-              marginLeft: '-0.075em',
-              opacity: 0,
-            }}
-          ></span>
-        </span>
-        <span className="text-[#34A853]">n</span>
+        <span className="text-white">Talk</span>
+        <span className="text-[var(--accent)] ml-1">34</span>
       </h1>
     </div>
   );
@@ -183,6 +161,20 @@ export default function App() {
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
 
   const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    const syncViewFromHash = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (!hash) return;
+
+      if (['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(hash)) {
+        setView(hash);
+      }
+    };
+
+    window.addEventListener('hashchange', syncViewFromHash);
+    return () => window.removeEventListener('hashchange', syncViewFromHash);
+  }, []);
 
 
   // Load configuration and room list on mount
@@ -647,7 +639,7 @@ export default function App() {
       setShowCreateModal(false);
       
       // Auto-join newly created room in a new tab
-      window.open('/?room=' + newRoom.id, '_blank');
+      window.open(`${window.location.origin}/?room=${newRoom.id}`, '_blank', 'noopener,noreferrer');
 
       // Reset form
       setNewRoomName('');
@@ -1014,13 +1006,14 @@ export default function App() {
     currentView: view,
     setView: (v) => { setView(v); window.location.hash = v; },
     user,
-    setShowAuthModal,
-    setShowSettingsModal,
-    signOutFunc: () => signOut(auth)
+    onAuthClick: () => setShowAuthModal(true),
+    onSettingsClick: () => setShowProfileModal(true),
+    onLogoutClick: () => signOut(auth),
+    isAdmin
   };
 
     const renderAppLayout = (children) => (
-    <div className="layout-container relative">
+    <div className="layout-container relative min-h-[100dvh] overflow-x-hidden">
       <Meteors number={20} />
       {!activeRoom && <Sidebar {...layoutProps} />}
       <div className="main-content hide-scrollbar z-10 relative">
@@ -1255,7 +1248,7 @@ export default function App() {
             <div className="p-3.5 bg-[var(--accent-bg)] border border-[var(--accent-glow)] rounded-xl text-xs text-[var(--accent)] leading-normal mb-5">
               Inputting credentials here lets the server call the real LiveKit WebRTC service to generate active meeting rooms and voice channels. 
               <br />
-              If you leave these fields empty, Solith works in <strong>Demo Simulator Mode</strong> with simulated speech visualisers and mock partners.
+              If you leave these fields empty, SOLITH.IN works in <strong>Demo Simulator Mode</strong> with simulated speech visualisers and mock partners.
             </div>
 
             <div className="space-y-4">
@@ -1316,7 +1309,7 @@ export default function App() {
       {showAuthModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in text-center">
-            <h3 className="text-2xl font-serif text-[var(--ink)] mb-2">Join Solith</h3>
+            <h3 className="text-2xl font-serif text-[var(--ink)] mb-2">Join SOLITH.IN</h3>
             <p className="text-sm text-[var(--ink-secondary)] mb-8">Sign in with Google to create rooms, track your language learning streak, and earn XP.</p>
             <button 
               onClick={handleLogin}
@@ -1553,7 +1546,26 @@ export default function App() {
   if (view === 'messages') {
     return (
       renderAppLayout(
-<GlobalChatView user={user} onSignIn={() => setShowAuthModal(true)} />
+        <Suspense
+          fallback={(
+            <div className="flex min-h-[100dvh] w-full items-center justify-center bg-[#0f1115] text-white">
+              <div className="w-full max-w-2xl rounded-[2rem] border border-[#24272e] bg-[#121418] px-6 py-8 shadow-2xl mx-4">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="h-3 w-3 rounded-full bg-[var(--accent)] animate-pulse" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--accent)]">SOLITH.IN Live Chat</span>
+                </div>
+                <div className="h-8 w-48 rounded-full bg-white/5 mb-4" />
+                <div className="space-y-3">
+                  <div className="h-28 rounded-3xl border border-[#24272e] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
+                  <div className="h-16 rounded-3xl border border-[#24272e] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
+                </div>
+                <div className="mt-6 h-12 rounded-2xl border border-[#32363e] bg-[#1c1f26]" />
+              </div>
+            </div>
+          )}
+        >
+          <GlobalChatView user={user} onSignIn={() => setShowAuthModal(true)} />
+        </Suspense>
 )
     );
   }
@@ -1787,7 +1799,7 @@ export default function App() {
 
 
         {/* Main Content Area */}
-        <div className="w-full max-w-[1400px] px-8 py-10 flex flex-col items-center gap-8">
+        <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-10 flex flex-col items-center gap-8">
           
           {/* Centered Animated Logo */}
           <AnimatedLogo />
@@ -1847,7 +1859,7 @@ export default function App() {
         </div>
 
         {/* Filters */}
-        <div className="w-full max-w-[1400px] px-8 py-6 flex items-center gap-3 overflow-x-auto hide-scrollbar animate-slide-up-delayed-2">
+        <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6 flex items-center gap-3 overflow-x-auto hide-scrollbar animate-slide-up-delayed-2">
           {LANGUAGES.map(lang => (
             <button
               key={lang}
@@ -1862,7 +1874,7 @@ export default function App() {
         </div>
 
         {/* Rooms Grid */}
-        <div className="w-full max-w-[1400px] px-8 pb-16 animate-slide-up-delayed-2">
+        <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16 animate-slide-up-delayed-2">
           {filteredRooms.length === 0 ? (
             <div className="py-16 mt-4 flex flex-col items-center justify-center text-center border border-[#24272e] bg-[#121418] rounded-xl relative overflow-hidden">
               <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border border-[#24272e] mb-6 relative bg-black/50">
@@ -1911,10 +1923,10 @@ export default function App() {
         const hasRaisedHand = speakingQueue.includes(user?.id);
 
         return (
-        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-[#121418] flex flex-col z-50">
+        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-[#121418] flex flex-col z-50 overflow-hidden">
           
           {/* Top Floating Control Bar */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2 bg-[#1c1f26]/90 backdrop-blur-md rounded-2xl p-2 border border-white/5 shadow-2xl">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-1rem)] flex-wrap items-center justify-center gap-2 bg-[#1c1f26]/90 backdrop-blur-md rounded-2xl p-2 border border-white/5 shadow-2xl">
              <div className="px-3 border-r border-white/10 flex items-center gap-2 text-white/50 text-xs font-mono">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                 12:47
@@ -2012,7 +2024,7 @@ export default function App() {
           )}
 
           {/* Bottom Floating App Bar */}
-          <div className="absolute bottom-8 md:bottom-6 left-1/2 -translate-x-1/2 bg-[#1c1f26]/90 backdrop-blur-md rounded-full px-2 py-2 border border-white/5 shadow-2xl flex items-center gap-2 z-50 w-[92%] md:w-auto md:min-w-[400px] justify-between md:justify-center">
+          <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 bg-[#1c1f26]/90 backdrop-blur-md rounded-3xl px-2 py-2 border border-white/5 shadow-2xl flex items-center gap-2 z-50 w-[calc(100%-1rem)] md:w-auto md:min-w-[400px] justify-between md:justify-center">
              
              {/* Left - Room Info */}
              <div className="flex items-center gap-2 px-3 flex-shrink-0">

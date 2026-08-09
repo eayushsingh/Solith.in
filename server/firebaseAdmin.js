@@ -4,6 +4,21 @@ import path from 'path';
 import chalk from 'chalk';
 
 let adminInstance = null;
+const isProduction = process.env.NODE_ENV === 'production';
+
+function decodeJwtPayload(idToken) {
+  const payloadSegment = idToken.split('.')[1];
+  if (!payloadSegment) return null;
+
+  const normalized = payloadSegment.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+
+  try {
+    return JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
 
 export const initFirebaseAdmin = () => {
   if (adminInstance) return adminInstance;
@@ -43,17 +58,16 @@ export async function verifyToken(req, res, next) {
   const adminInstance = initFirebaseAdmin();
 
   if (!adminInstance) {
-    if (process.env.NODE_ENV === 'production') {
-      console.warn("⚠️ WARNING: Firebase Admin SDK not initialized in production. Bypassing verification to allow app to function, but THIS IS INSECURE.");
-    } else {
-      console.warn("Bypassing verifyToken - no Firebase Admin SDK");
+    if (isProduction) {
+      return res.status(503).json({ error: 'Authentication service unavailable' });
     }
-    
+
+    console.warn('Bypassing verifyToken - no Firebase Admin SDK');
     if (idToken) {
-      try {
-        const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
+      const payload = decodeJwtPayload(idToken);
+      if (payload) {
         req.user = { ...payload, uid: payload.user_id || payload.uid || 'local-dev-user' };
-      } catch (e) {
+      } else {
         req.user = { uid: 'local-dev-user', email: 'ayushfun01@gmail.com', name: 'Local Admin' };
       }
     } else {
@@ -68,7 +82,7 @@ export async function verifyToken(req, res, next) {
 
   try {
     const decodedToken = await adminInstance.auth().verifyIdToken(idToken);
-    req.user = decodedToken; // attach user payload to request
+    req.user = decodedToken;
     next();
   } catch (error) {
     console.error('Error verifying Firebase ID token:', error);
@@ -77,13 +91,14 @@ export async function verifyToken(req, res, next) {
 }
 
 export async function verifyAdmin(req, res, next) {
-  // First, run standard token verification
   verifyToken(req, res, async () => {
-    // If verifyToken succeeded, req.user will be populated
     const adminInstance = initFirebaseAdmin();
     if (!adminInstance) {
-      // Local dev bypass when no service account is provided
-      console.warn("Bypassing verifyAdmin - no Firebase Admin SDK");
+      if (isProduction) {
+        return res.status(503).json({ error: 'Authentication service unavailable' });
+      }
+
+      console.warn('Bypassing verifyAdmin - no Firebase Admin SDK');
       req.adminData = { role: 'admin', email: req.user?.email || 'ayushfun01@gmail.com', id: req.user?.uid || 'local-dev-user' };
       return next();
     }

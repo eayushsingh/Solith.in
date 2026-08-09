@@ -6,9 +6,13 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
   const [conversations, setConversations] = useState([]);
   const [profiles, setProfiles] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !db) {
+      setLoading(false);
+      return;
+    }
 
     const q = query(
       collection(db, 'conversations'),
@@ -39,12 +43,13 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
           const res = await fetch(`${API_URL}/api/users/profiles?ids=${[...new Set(missingProfileIds)].join(',')}`);
           if (res.ok) {
             const data = await res.json();
-            const newProfiles = { ...profiles };
-            data.profiles.forEach(p => { newProfiles[p.id] = p; });
-            setProfiles(newProfiles);
+            const fetchedProfiles = {};
+            (data.profiles || []).forEach(p => { fetchedProfiles[p.id] = p; });
+            setProfiles(prev => ({ ...prev, ...fetchedProfiles }));
           }
         } catch (err) {
           console.error("Failed to fetch profiles for inbox", err);
+          setError('Unable to load some conversation profiles.');
         }
       }
       
@@ -52,19 +57,19 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
     });
 
     return () => unsubscribe();
-  }, [currentUser, profiles]); // adding profiles might cause extra fetches, but we only fetch missing ones
+  }, [currentUser]);
 
   if (loading) {
     return (
-      <div className="flex-1 h-full flex flex-col items-center justify-center">
+      <div className="flex-1 h-full min-h-[50vh] flex flex-col items-center justify-center px-4">
         <Loader2 className="w-8 h-8 text-[var(--ink-tertiary)] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto h-full flex flex-col pt-24 px-6 pb-6 animate-fade-in">
-      <div className="flex items-center gap-3 mb-8">
+    <div className="w-full max-w-4xl mx-auto h-full flex flex-col pt-20 sm:pt-24 px-4 sm:px-6 pb-6 animate-fade-in">
+      <div className="flex items-center gap-3 mb-6 sm:mb-8">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
           <MessageSquare className="w-6 h-6 text-white" />
         </div>
@@ -74,8 +79,12 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
         </div>
       </div>
 
-      <div className="flex-1 bg-[var(--bg)] border border-[var(--line-subtle)] rounded-3xl overflow-hidden shadow-2xl shadow-black/5 flex flex-col">
-        {conversations.length === 0 ? (
+      <div className="flex-1 bg-[var(--bg)] border border-[var(--line-subtle)] rounded-3xl overflow-hidden shadow-2xl shadow-black/5 flex flex-col min-h-0">
+        {error ? (
+          <div className="flex-1 flex items-center justify-center p-8 text-center text-[var(--ink-secondary)] text-sm">
+            {error}
+          </div>
+        ) : conversations.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="w-20 h-20 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-6">
               <MessageSquare className="w-8 h-8 text-[var(--ink-tertiary)] opacity-50" />
@@ -84,7 +93,7 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
             <p className="text-[var(--ink-secondary)] max-w-sm">Start a conversation from someone's profile to connect privately.</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-[var(--line-subtle)]">
+          <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-[var(--line-subtle)] min-h-0">
             {conversations.map(convo => {
               const otherId = convo.participants.find(p => p !== currentUser.id);
               const profile = profiles[otherId] || { name: 'Unknown User' };

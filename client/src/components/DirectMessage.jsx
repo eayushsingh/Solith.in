@@ -103,10 +103,10 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-[var(--bg)] relative animate-fade-in">
+    <div className="w-full h-full min-h-[100dvh] flex flex-col bg-[var(--bg)] relative animate-fade-in overflow-hidden">
       {/* Header */}
-      <div className="h-16 px-4 border-b border-[var(--line-subtle)] flex items-center justify-between shrink-0 bg-[var(--bg)]/80 backdrop-blur-md z-10 sticky top-0">
-        <div className="flex items-center gap-3">
+      <div className="min-h-16 px-4 py-3 border-b border-[var(--line-subtle)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 bg-[var(--bg)]/80 backdrop-blur-md z-10 sticky top-0">
+        <div className="flex items-center gap-3 min-w-0">
           <button 
             onClick={onBack}
             className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors text-[var(--ink-secondary)] hover:text-[var(--ink)]"
@@ -114,7 +114,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
             <ArrowLeft className="w-5 h-5" />
           </button>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             {targetProfile.photoUrl ? (
               <img src={targetProfile.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-[var(--line-subtle)]" />
             ) : (
@@ -139,7 +139,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
           </button>
 
           {showOptions && (
-            <div className="absolute top-12 right-0 w-48 bg-[var(--bg-elevated)] border border-[var(--line-subtle)] shadow-2xl rounded-xl overflow-hidden py-1 z-50">
+            <div className="absolute top-12 right-0 w-[min(18rem,calc(100vw-2rem))] bg-[var(--bg-elevated)] border border-[var(--line-subtle)] shadow-2xl rounded-xl overflow-hidden py-1 z-50">
               <button 
                 onClick={() => { setShowOptions(false); handleBlock(); }}
                 className="w-full px-4 py-2.5 text-left text-sm font-medium hover:bg-[var(--bg-hover)] text-red-500 flex items-center gap-2 transition-colors"
@@ -158,7 +158,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-4 custom-scrollbar flex flex-col gap-4 min-h-0">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-[var(--ink-tertiary)] animate-spin" />
@@ -208,7 +208,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))} // Client side limit
             placeholder="Type a message..." 
-            className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-full pl-5 pr-12 py-3.5 text-[15px] text-[var(--ink)] placeholder-[var(--ink-tertiary)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all"
+            className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-full pl-5 pr-12 py-3.5 text-[15px] text-[var(--ink)] placeholder-[var(--ink-tertiary)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-all min-w-0"
             autoFocus
           />
           <button 
