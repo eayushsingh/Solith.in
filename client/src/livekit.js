@@ -27,11 +27,62 @@ export const LiveKitService = {
     connectionCallback = onConnectionChange;
   },
 
+  localUserMock: null,
+  isMutedMock: true,
+  triggerMockParticipantsList: () => {
+    const local = LiveKitService.localUserMock || { id: 'local', name: 'You', photoUrl: '', color: '#ff4d4d', emoji: '👤' };
+    participantCallback?.([
+      { 
+        id: local.id, 
+        name: local.name, 
+        isLocal: true, 
+        muted: LiveKitService.isMutedMock, 
+        photoUrl: local.photoUrl || '', 
+        color: local.color || '#0d94a8', 
+        emoji: local.emoji || '👤' 
+      },
+      { id: 'mock-user-1', name: 'Sophia', isLocal: false, muted: false, photoUrl: '', color: '#ff944d', emoji: '🦊' },
+      { id: 'mock-user-2', name: 'Hiro', isLocal: false, muted: false, photoUrl: '', color: '#ffd11a', emoji: '🐼' },
+      { id: 'mock-user-3', name: 'Elena', isLocal: false, muted: true, photoUrl: '', color: '#4da6ff', emoji: '🦁' }
+    ]);
+  },
+
   /**
    * Join a room (Real LiveKit connection OR Mock connection)
    */
   join: async (url, token, isReal, localUser) => {
+    if (!isReal) {
+      console.log('LiveKitService: Joining in Mock Demo Mode');
+      connectionCallback?.({ state: 'joining' });
 
+      // Simulate network latency
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      connectionCallback?.({ state: 'joined', isMock: true });
+
+      // Start simulated speaking pulses for mock participants
+      mockActiveSpeakers = {};
+      if (mockSpeakingInterval) clearInterval(mockSpeakingInterval);
+      mockSpeakingInterval = setInterval(() => {
+        const levels = {};
+        const mockIds = ['mock-user-1', 'mock-user-2', 'mock-user-3'];
+        mockIds.forEach(id => {
+          if (Math.random() > 0.6) {
+            levels[id] = Math.random() * 0.8 + 0.2; // random volume
+          } else {
+            levels[id] = 0;
+          }
+        });
+        audioLevelCallback?.(levels);
+      }, 1000);
+
+      // Trigger initial mock participant list
+      LiveKitService.localUserMock = localUser;
+      LiveKitService.isMutedMock = true;
+      LiveKitService.triggerMockParticipantsList();
+
+      return true;
+    }
 
     try {
       console.log(`LiveKitService: Joining real room at: ${url}`);
@@ -137,7 +188,15 @@ export const LiveKitService = {
    * Leave current room
    */
   leave: async (isReal) => {
-
+    if (!isReal) {
+      console.log('LiveKitService: Leaving Mock Demo Mode');
+      if (mockSpeakingInterval) {
+        clearInterval(mockSpeakingInterval);
+        mockSpeakingInterval = null;
+      }
+      connectionCallback?.({ state: 'left' });
+      return;
+    }
 
     if (roomObject) {
       try {
@@ -154,7 +213,12 @@ export const LiveKitService = {
    * Mute/Unmute local user microphone
    */
   setLocalAudio: (muted, isReal) => {
-
+    if (!isReal) {
+      console.log(`LiveKitService: Set mock audio muted to ${muted}`);
+      LiveKitService.isMutedMock = muted;
+      LiveKitService.triggerMockParticipantsList();
+      return muted;
+    }
 
     if (roomObject) {
       roomObject.localParticipant.setMicrophoneEnabled(!muted)

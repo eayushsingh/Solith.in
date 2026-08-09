@@ -59,6 +59,7 @@ export default function App() {
     return hasSeenLanding ? 'lobby' : 'landing';
   }); 
   const [activeDm, setActiveDm] = useState(null); // { id: string, profile: object }
+  const [msgTab, setMsgTab] = useState('global'); // 'global' or 'direct'
   const [isConnected, setIsConnected] = useState(false);
   
   // Landing Page Interactive Eye Tracking & Node Lines States
@@ -1488,6 +1489,7 @@ export default function App() {
                       setShowTargetProfileModal(false);
                       const convoId = user.id < targetProfile.id ? `${user.id}_${targetProfile.id}` : `${targetProfile.id}_${user.id}`;
                       setActiveDm({ id: convoId, profile: targetProfile });
+                      setMsgTab('direct');
                       setView('messages');
                       window.location.hash = 'messages';
                     }}
@@ -1542,27 +1544,68 @@ export default function App() {
   if (view === 'messages') {
     return (
       renderAppLayout(
-        <Suspense
-          fallback={(
-            <div className="flex min-h-[100dvh] w-full items-center justify-center bg-bg-base text-text-primary">
-              <div className="w-full max-w-2xl rounded-[2rem] border border-border-color bg-bg-base px-6 py-8 shadow-2xl mx-4">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="h-3 w-3 rounded-full bg-[var(--accent-primary)] animate-pulse" />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--accent-primary)]">Talk34 Live Chat</span>
-                </div>
-                <div className="h-8 w-48 rounded-full bg-white/5 mb-4" />
-                <div className="space-y-3">
-                  <div className="h-28 rounded-3xl border border-border-color bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
-                  <div className="h-16 rounded-3xl border border-border-color bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
-                </div>
-                <div className="mt-6 h-12 rounded-2xl border border-border-color bg-bg-surface" />
-              </div>
-            </div>
-          )}
-        >
-          <GlobalChatView user={user} onSignIn={() => setShowAuthModal(true)} />
-        </Suspense>
-)
+        <div className="flex flex-col h-[calc(100vh-73px)] bg-bg-base overflow-hidden">
+          {/* Header tabs */}
+          <div className="flex border-b border-border-color bg-bg-surface px-4 py-2 gap-4 flex-shrink-0">
+            <button 
+              onClick={() => {
+                setActiveDm(null);
+                setMsgTab('global');
+              }}
+              className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${!activeDm && msgTab === 'global' ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
+            >
+              Global Chat
+            </button>
+            <button 
+              onClick={() => {
+                setActiveDm(null);
+                setMsgTab('direct');
+              }}
+              className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${(activeDm || msgTab === 'direct') ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
+            >
+              Direct Messages
+            </button>
+          </div>
+
+          <div className="flex-1 min-h-0 relative overflow-hidden">
+            {activeDm ? (
+              <DirectMessage 
+                conversationId={activeDm.id} 
+                currentUser={user} 
+                targetProfile={activeDm.profile} 
+                onBack={() => setActiveDm(null)} 
+                openUserProfile={openUserProfile}
+              />
+            ) : msgTab === 'global' ? (
+              <Suspense
+                fallback={(
+                  <div className="flex min-h-[100dvh] w-full items-center justify-center bg-bg-base text-text-primary">
+                    <div className="w-full max-w-2xl rounded-[2rem] border border-border-color bg-bg-base px-6 py-8 shadow-2xl mx-4">
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="h-3 w-3 rounded-full bg-[var(--accent-primary)] animate-pulse" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-[var(--accent-primary)]">Talk34 Live Chat</span>
+                      </div>
+                      <div className="h-8 w-48 rounded-full bg-white/5 mb-4" />
+                      <div className="space-y-3">
+                        <div className="h-28 rounded-3xl border border-border-color bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
+                        <div className="h-16 rounded-3xl border border-border-color bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))]" />
+                      </div>
+                      <div className="mt-6 h-12 rounded-2xl border border-border-color bg-bg-surface" />
+                    </div>
+                  </div>
+                )}
+              >
+                <GlobalChatView user={user} onSignIn={() => setShowAuthModal(true)} />
+              </Suspense>
+            ) : (
+              <MessagesView 
+                currentUser={user} 
+                onOpenConversation={(convoId, profile) => setActiveDm({ id: convoId, profile })} 
+              />
+            )}
+          </div>
+        </div>
+      )
     );
   }
 
@@ -1572,6 +1615,7 @@ export default function App() {
 <Leaderboard 
           user={user} 
           onBack={() => { setView('lobby'); window.history.pushState({}, '', '/'); }} 
+          openUserProfile={openUserProfile}
         />
 )
     );
@@ -1818,7 +1862,15 @@ export default function App() {
                 </div>
                 
                 {/* Inbox Icon */}
-                <button className="relative text-text-secondary hover:text-text-primary transition-colors hidden sm:block">
+                <button 
+                  onClick={() => {
+                    setView('messages');
+                    setMsgTab('direct');
+                    setActiveDm(null);
+                    window.location.hash = 'messages';
+                  }}
+                  className="relative text-text-secondary hover:text-text-primary transition-colors hidden sm:block"
+                >
                   <Inbox className="w-6 h-6" />
                   <span className="absolute -top-2 -right-2 w-5 h-5 bg-accent-secondary rounded-md text-[11px] font-bold text-text-primary flex items-center justify-center">5</span>
                 </button>

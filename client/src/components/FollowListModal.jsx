@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Loader2 } from 'lucide-react';
 
-export default function FollowListModal({ isOpen, onClose, title, ids }) {
+export default function FollowListModal({ isOpen, onClose, title, ids, openUserProfile }) {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,7 +64,14 @@ export default function FollowListModal({ isOpen, onClose, title, ids }) {
             </div>
           ) : (
             profiles.map(profile => (
-              <div key={profile.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg-secondary)] border border-transparent hover:border-[var(--line-subtle)] transition-all">
+              <div 
+                key={profile.id} 
+                onClick={() => {
+                  onClose();
+                  if (openUserProfile) openUserProfile(profile.id);
+                }}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg-secondary)] border border-transparent hover:border-[var(--line-subtle)] transition-all cursor-pointer"
+              >
                 {profile.photoUrl ? (
                   <img src={profile.photoUrl} alt={profile.name} className="w-10 h-10 rounded-full object-cover bg-[var(--line)]" />
                 ) : (
