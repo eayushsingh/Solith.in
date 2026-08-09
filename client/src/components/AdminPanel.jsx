@@ -124,7 +124,7 @@ export default function AdminPanel({ onBack, user }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-200 font-mono">
+    <div className="min-h-screen bg-[#0a0a0a] text-gray-200 font-mono overflow-x-hidden">
       <ConfirmDialog 
         {...confirmDialog} 
         onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
@@ -135,8 +135,8 @@ export default function AdminPanel({ onBack, user }) {
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#111] border-b border-red-900/30 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-40 bg-[#111] border-b border-red-900/30 px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 min-w-0">
           <button onClick={onBack} className="p-2 hover:bg-[#222] rounded-full transition-colors text-gray-400 hover:text-white">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -145,12 +145,12 @@ export default function AdminPanel({ onBack, user }) {
             <h1 className="text-xl font-bold tracking-widest uppercase">Admin Dashboard</h1>
           </div>
         </div>
-        <div className="text-xs text-gray-500">Logged in as {user?.email}</div>
+        <div className="text-xs text-gray-500 break-all sm:text-right">Logged in as {user?.email}</div>
       </header>
 
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex flex-col lg:flex-row min-h-[calc(100dvh-73px)]">
         {/* Sidebar */}
-        <div className="w-64 bg-[#111] border-r border-red-900/20 p-4 flex flex-col gap-2">
+        <div className="w-full lg:w-64 bg-[#111] border-b lg:border-b-0 lg:border-r border-red-900/20 p-4 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
           {[
             { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
             { id: 'users', icon: Users, label: 'Users' },
@@ -175,7 +175,7 @@ export default function AdminPanel({ onBack, user }) {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar min-w-0">
           {loading ? (
             <div className="flex items-center justify-center h-full text-gray-500">Loading data...</div>
           ) : (
@@ -210,7 +210,8 @@ export default function AdminPanel({ onBack, user }) {
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-6">Manage Users</h2>
                   <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
-                    <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm min-w-[760px]">
                       <thead className="bg-[#222] text-gray-400 uppercase text-xs">
                         <tr>
                           <th className="px-6 py-4">Name / Email</th>
@@ -272,6 +273,7 @@ export default function AdminPanel({ onBack, user }) {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -281,7 +283,8 @@ export default function AdminPanel({ onBack, user }) {
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-6">Manage Subscriptions</h2>
                   <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
-                    <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm min-w-[640px]">
                       <thead className="bg-[#222] text-gray-400 uppercase text-xs">
                         <tr>
                           <th className="px-6 py-4">User</th>
@@ -327,6 +330,7 @@ export default function AdminPanel({ onBack, user }) {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -418,7 +422,8 @@ export default function AdminPanel({ onBack, user }) {
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-6">Activity Log</h2>
                   <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
-                    <table className="w-full text-left text-sm">
+                    <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm min-w-[760px]">
                       <thead className="bg-[#222] text-gray-400 uppercase text-xs">
                         <tr>
                           <th className="px-6 py-4">Time</th>
@@ -451,6 +456,7 @@ export default function AdminPanel({ onBack, user }) {
                         )}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               )}

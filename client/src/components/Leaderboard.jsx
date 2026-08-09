@@ -72,7 +72,7 @@ export default function Leaderboard({ onBack, user }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-12 px-4 md:px-8 animate-fade-in relative z-20">
+    <div className="w-full max-w-4xl mx-auto py-10 sm:py-12 px-4 md:px-8 animate-fade-in relative z-20 overflow-x-hidden">
       <button 
         onClick={onBack}
         className="mb-8 flex items-center gap-2 text-white/60 hover:text-white transition-colors group"
@@ -89,10 +89,10 @@ export default function Leaderboard({ onBack, user }) {
             <Award className="w-10 h-10 text-[var(--accent)]" /> 
             Hall of Fame
           </h1>
-          <p className="text-white/60 mt-2">The most active language learners on TalkFree.</p>
+          <p className="text-white/60 mt-2">The most active language learners on SOLITH.IN.</p>
         </div>
 
-        <div className="flex bg-black/40 border border-white/10 rounded-xl p-1.5 backdrop-blur-md">
+        <div className="flex flex-wrap justify-center bg-black/40 border border-white/10 rounded-xl p-1.5 backdrop-blur-md gap-1">
           <button 
             onClick={() => setActiveTab('weekly')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'weekly' ? 'bg-[var(--accent)] text-white shadow-[0_0_15px_rgba(0,229,255,0.3)]' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
@@ -114,7 +114,7 @@ export default function Leaderboard({ onBack, user }) {
         </div>
       </div>
 
-      <div className="bg-[#1a1c23]/80 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative">
+      <div className="bg-[#1a1c23]/80 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative min-w-0">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--accent)] to-[#b042ff]"></div>
         
         {loading ? (
@@ -131,13 +131,13 @@ export default function Leaderboard({ onBack, user }) {
                 leaders.map((leader, index) => (
                   <div 
                     key={leader.id} 
-                    className={`flex items-center gap-4 px-6 py-4 transition-colors ${leader.id === user?.id ? 'bg-[var(--accent)]/10 border-l-4 border-l-[var(--accent)]' : 'hover:bg-white/5'}`}
+                    className={`flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-4 transition-colors ${leader.id === user?.id ? 'bg-[var(--accent)]/10 border-l-4 border-l-[var(--accent)]' : 'hover:bg-white/5'}`}
                   >
                     <div className="w-8 flex justify-center">
                       {renderRankIcon(index)}
                     </div>
                     
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: leader.color || '#333' }}>
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-white/10 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: leader.color || '#333' }}>
                       {leader.photoUrl ? (
                         <img src={leader.photoUrl} alt="" className="w-full h-full object-cover" />
                       ) : (

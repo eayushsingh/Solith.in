@@ -1,16 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from '../firebase';
-import { Volume2, Smile, Send, Search, Users, Inbox, Lock } from 'lucide-react';
+import { Volume2, Smile, Send, Search, Users, Inbox, Lock, Sparkles, Loader2 } from 'lucide-react';
+
+const GLOBAL_CHAT_CACHE_KEY = 'SOLITH.IN-global-chat-cache';
 
 export default function GlobalChatView({ user, onSignIn }) {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const cached = localStorage.getItem(GLOBAL_CHAT_CACHE_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [onlineMembers, setOnlineMembers] = useState([]);
   const [offlineMembers, setOfflineMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [showMembersPanel, setShowMembersPanel] = useState(false);
 
   const messagesEndRef = useRef(null);
+
+  const persistMessages = (nextMessages) => {
+    setMessages(nextMessages);
+    try {
+      localStorage.setItem(GLOBAL_CHAT_CACHE_KEY, JSON.stringify(nextMessages.slice(-100)));
+    } catch {
+      // Ignore storage failures and keep the live UI working.
+    }
+  };
 
   // Subscribe to global chat messages
   useEffect(() => {
@@ -55,7 +75,8 @@ export default function GlobalChatView({ user, onSignIn }) {
           }
         });
 
-        setMessages(fetchedMessages.reverse());
+        persistMessages(fetchedMessages.reverse());
+        setLoadError('');
         setIsLoading(false);
 
         // Simple heuristic for online/offline based on recent messages (last 10 mins)
@@ -74,10 +95,12 @@ export default function GlobalChatView({ user, onSignIn }) {
 
       }, (error) => {
         console.error("Error fetching global chat: ", error);
+        setLoadError('Live feed is temporarily unavailable. Showing cached messages.');
         setIsLoading(false);
       });
     } catch (err) {
       console.error("Failed to setup chat listener:", err);
+      setLoadError('Live feed is temporarily unavailable. Showing cached messages.');
       setIsLoading(false);
     }
 
@@ -111,6 +134,17 @@ export default function GlobalChatView({ user, onSignIn }) {
     const messageToSend = inputText.trim();
     setInputText('');
 
+    const optimisticMessage = {
+      id: `local-${Date.now()}`,
+      text: messageToSend,
+      uid: user.id,
+      displayName: user.name,
+      photoUrl: user.photoUrl,
+      createdAt: new Date(),
+    };
+
+    persistMessages([...messages, optimisticMessage]);
+
     try {
       await addDoc(collection(db, 'global_chat'), {
         text: messageToSend,
@@ -121,6 +155,7 @@ export default function GlobalChatView({ user, onSignIn }) {
       });
     } catch (err) {
       console.error('Error sending message:', err);
+      setLoadError('Message saved locally, but live sync is unavailable right now.');
     }
   };
 
@@ -163,19 +198,19 @@ export default function GlobalChatView({ user, onSignIn }) {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#0f1115] text-white">
+    <div className="flex flex-col lg:flex-row h-[100dvh] w-full bg-[#0f1115] text-white overflow-hidden">
       
       {/* Global Header */}
-      <header className="w-full flex items-center justify-between px-8 py-4 border-b border-[#24272e] flex-shrink-0">
-        <div className="flex flex-col">
-          <span className="text-[10px] text-[#86868b] font-bold tracking-widest uppercase">SOLITH</span>
+      <header className="w-full flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 lg:px-8 py-4 border-b border-[#24272e] flex-shrink-0 bg-[#0f1115]/95 backdrop-blur-md sticky top-0 z-30">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[10px] text-[var(--accent)] font-bold tracking-[0.28em] uppercase">SOLITH.IN</span>
           <h1 className="text-xl font-semibold">Global Chat</h1>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-start sm:justify-end">
           {/* Level / XP */}
           <div className="flex items-center gap-2 text-[15px] font-mono text-gray-400">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#cd1c18]"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></div>
             <span className="text-white font-bold">11</span>
             <span>/</span>
             <span>6,470</span>
@@ -184,7 +219,7 @@ export default function GlobalChatView({ user, onSignIn }) {
           {/* Inbox Icon */}
           <button className="relative text-gray-400 hover:text-white transition-colors ml-4">
             <Inbox className="w-6 h-6" />
-            <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#e57373] rounded-md text-[11px] font-bold text-white flex items-center justify-center">5</span>
+            <span className="absolute -top-2 -right-2 w-5 h-5 bg-[var(--accent)] rounded-md text-[11px] font-bold text-white flex items-center justify-center">5</span>
           </button>
 
           {/* Earn Button */}
@@ -197,31 +232,41 @@ export default function GlobalChatView({ user, onSignIn }) {
           <img 
             src={user?.photoUrl || "https://ui-avatars.com/api/?name=User"} 
             alt="Profile" 
-            className="w-10 h-10 rounded-full cursor-pointer border-2 border-[#cd1c18] hover:opacity-80 transition-opacity ml-4 object-cover" 
+            className="w-10 h-10 rounded-full cursor-pointer border-2 border-[var(--accent)] hover:opacity-80 transition-opacity ml-4 object-cover" 
           />
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 flex-col lg:flex-row overflow-hidden">
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-[#24272e]">
+        <div className="flex-1 flex flex-col min-w-0 border-r-0 lg:border-r border-[#24272e] min-h-0 bg-[radial-gradient(circle_at_top,rgba(255,77,79,0.08),transparent_35%),linear-gradient(180deg,rgba(255,255,255,0.01),transparent)]">
         
         {/* Chat Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-[#24272e] flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-[#86868b] text-lg font-light">#</span>
-            <span className="font-semibold">Lobby</span>
+        <div className="min-h-14 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-3 border-b border-[#24272e] flex-shrink-0 bg-[#0f1115]/80 backdrop-blur-sm">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[var(--accent)] text-lg font-light">#</span>
+            <span className="font-semibold truncate">Lobby</span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.24em] text-[#86868b] ml-2">
+              <Sparkles className="w-3 h-3 text-[var(--accent)]" /> Live feed
+            </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#cd1c18]"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></div>
               <span className="text-xs font-bold text-[#86868b]">{onlineMembers.length} ONLINE</span>
             </div>
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-[rgba(205,28,24,0.1)] text-[#cd1c18] rounded border border-[rgba(205,28,24,0.2)] text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setShowMembersPanel((value) => !value)}
+              className="lg:hidden px-3 py-1.5 rounded border border-[rgba(255,77,79,0.22)] bg-[var(--accent-bg)] text-[var(--accent)] text-xs font-bold"
+            >
+              Members
+            </button>
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-[var(--accent-bg)] text-[var(--accent)] rounded border border-[rgba(255,77,79,0.22)] text-xs font-bold">
               <Volume2 className="w-3.5 h-3.5" />
               SOUND
-              <div className="w-6 h-3.5 bg-[#cd1c18] rounded-full relative ml-1">
+              <div className="w-6 h-3.5 bg-[var(--accent)] rounded-full relative ml-1">
                 <div className="absolute right-0.5 top-0.5 w-2.5 h-2.5 bg-white rounded-full"></div>
               </div>
             </button>
@@ -229,14 +274,30 @@ export default function GlobalChatView({ user, onSignIn }) {
         </div>
 
         {/* Messages List */}
-        <div className="flex-1 overflow-y-auto p-6 scroll-smooth">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth min-h-0">
+          {loadError && (
+            <div className="mb-4 rounded-2xl border border-[rgba(255,77,79,0.2)] bg-[var(--accent-bg)] px-4 py-3 text-sm text-[#ffe9e9]">
+              {loadError}
+            </div>
+          )}
           {isLoading ? (
-            <div className="h-full flex items-center justify-center text-[#86868b]">
-              Connecting to global chat...
+            <div className="h-full min-h-[320px] flex items-center justify-center text-[#86868b]">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <Loader2 className="w-7 h-7 animate-spin text-[var(--accent)]" />
+                <span className="text-xs uppercase tracking-[0.28em]">Connecting to live feed...</span>
+              </div>
             </div>
           ) : messages.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-[#86868b]">
-              No messages yet. Be the first to say hi!
+            <div className="h-full min-h-[240px] flex items-center justify-center text-[#86868b]">
+              <div className="max-w-md w-full rounded-[2rem] border border-[#24272e] bg-[#15181f] px-6 py-8 text-center shadow-2xl">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-bg)] text-[var(--accent)]">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-2">The room is quiet</h2>
+                <p className="text-sm leading-6 text-[#a7a7ad]">
+                  Start the conversation. Messages are cached so the live feed stays visible even if the connection drops.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-1 max-w-4xl mx-auto w-full">
@@ -248,7 +309,7 @@ export default function GlobalChatView({ user, onSignIn }) {
                 const marginClass = isSameUser ? 'mt-0.5' : 'mt-5';
 
                 return (
-                  <div key={msg.id} className={`flex items-start gap-4 ${marginClass} group hover:bg-[rgba(255,255,255,0.02)] -mx-4 px-4 py-1 rounded transition-colors`}>
+                  <div key={msg.id} className={`flex items-start gap-4 ${marginClass} group hover:bg-[rgba(255,255,255,0.02)] -mx-4 px-4 py-1 rounded-2xl transition-colors`}>
                     
                     {/* Avatar Gutter */}
                     <div className="w-10 flex-shrink-0 flex justify-center pt-0.5">
@@ -269,7 +330,7 @@ export default function GlobalChatView({ user, onSignIn }) {
                     <div className="flex-1 min-w-0">
                       {!isSameUser && (
                         <div className="flex items-baseline gap-2 mb-0.5">
-                          <span className="font-semibold text-gray-200 cursor-pointer hover:underline text-[15px]">{msg.displayName || 'Anonymous'}</span>
+                          <span className="font-semibold text-white cursor-pointer hover:underline text-[15px]">{msg.displayName || 'Anonymous'}</span>
                           <span className="text-xs text-[#86868b] font-medium">{formatTime(msg.createdAt)}</span>
                         </div>
                       )}
@@ -288,8 +349,8 @@ export default function GlobalChatView({ user, onSignIn }) {
         </div>
 
         {/* Chat Input */}
-        <div className="p-6 pt-2">
-          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto w-full relative flex items-end bg-[#1c1f26] border border-[#32363e] rounded-lg shadow-inner overflow-hidden focus-within:border-[#cd1c18] transition-colors">
+        <div className="p-4 sm:p-6 pt-2 sticky bottom-0 bg-[#0f1115]/90 backdrop-blur-md border-t border-[#24272e]">
+          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto w-full relative flex items-end bg-[#1c1f26] border border-[#32363e] rounded-2xl shadow-inner overflow-hidden focus-within:border-[var(--accent)] transition-colors">
             
             <input
               type="text"
@@ -309,7 +370,7 @@ export default function GlobalChatView({ user, onSignIn }) {
               </button>
               <button 
                 type="submit" 
-                className="p-1.5 text-[#86868b] hover:text-[#cd1c18] transition-colors disabled:opacity-30"
+                className="p-1.5 text-[#86868b] hover:text-[var(--accent)] transition-colors disabled:opacity-30"
                 disabled={!inputText.trim()}
               >
                 <Send className="w-5 h-5" />
@@ -321,7 +382,7 @@ export default function GlobalChatView({ user, onSignIn }) {
       </div>
 
       {/* Members Sidebar */}
-      <div className="w-[280px] flex-shrink-0 flex flex-col bg-[#121418]">
+      <aside className={`w-full lg:w-[280px] flex-shrink-0 flex-col bg-[#121418] border-t lg:border-t-0 lg:border-l border-[#24272e] min-h-0 ${showMembersPanel ? 'flex fixed inset-x-0 bottom-0 top-[110px] z-40 lg:static lg:inset-auto' : 'hidden lg:flex'}`}>
         
         {/* Members Header */}
         <div className="h-14 flex items-center px-4 border-b border-[#24272e] flex-shrink-0">
@@ -346,7 +407,7 @@ export default function GlobalChatView({ user, onSignIn }) {
         </div>
 
         {/* Members List */}
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar min-h-0">
           {renderMembers(onlineMembers, 'ONLINE')}
           {renderMembers(offlineMembers, 'OFFLINE')}
 
@@ -379,9 +440,8 @@ export default function GlobalChatView({ user, onSignIn }) {
             </div>
           )}
         </div>
-
+      </aside>
       </div>
-    </div>
     </div>
   );
 }

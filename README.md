@@ -1,6 +1,6 @@
-# Solith Voice Chat
+# SOLITH.IN Voice Chat
 
-Solith is a real-time, browser-based voice chat app built with React, Express, Socket.IO, and Daily.co.
+SOLITH.IN is a real-time, browser-based voice chat app built with React, Express, Socket.IO, and LiveKit.
 
 ## Deployment Guide
 
@@ -17,8 +17,9 @@ The backend needs to be deployed first so you can get the API URL for the fronte
 2. Go to your Render Dashboard and click **New+** -> **Blueprint**.
 3. Select this GitHub repository. Render will automatically read the `render.yaml` file included in this repo.
 4. Render will prompt you to fill in the missing Environment Variables (`sync: false`). Fill them in as follows:
-   - `DAILY_API_KEY`: *(Optional)* Your production API Key from the Daily.co dashboard.
-   - `DAILY_DOMAIN`: *(Optional)* Your domain name from Daily.co (e.g., `solith-demo`). Do not include `.daily.co`.
+   - `LIVEKIT_API_KEY`: *(Optional)* Your production API Key from the LiveKit dashboard.
+   - `LIVEKIT_API_SECRET`: *(Optional)* Your LiveKit API secret.
+   - `LIVEKIT_URL`: *(Optional)* Your LiveKit WebSocket URL (for example, `wss://your-project.livekit.cloud`).
    - `ALLOWED_ORIGIN`: Leave this blank or put `*` for now (you will come back and change this after deploying the frontend).
 5. Click **Apply**.
 6. Wait for the deploy to finish. Once it says "Live", click on your Web Service (`solith-backend`). 
@@ -56,6 +57,6 @@ It will automatically fall back into **Demo Mode**. Real users visiting your Ver
 - Use real-time text chat using the Socket.IO backend
 - Interact with mock participants and the moderation UI (Kick, Mute, Report)
 
-However, they will **not** be able to hear or transmit real voice audio until you add your Daily.co keys to the Render dashboard.
+However, they will **not** be able to hear or transmit real voice audio until you add your LiveKit credentials to the Render dashboard.
 
 Open to Contribute

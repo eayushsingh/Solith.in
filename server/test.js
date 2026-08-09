@@ -54,14 +54,14 @@ async function runTests() {
     const roomData = await roomRes.json();
     console.log(`[POST /api/rooms] Response:`, roomData);
 
-    if (roomData.dailyUrl) {
-      if (roomData.dailyUrl.includes('mock') || roomData.dailyUrl.includes('demo')) {
-        console.error('❌ Room creation failed. Returned a mock/demo URL:', roomData.dailyUrl);
+    if (roomData.livekitUrl) {
+      if (roomData.livekitUrl.includes('mock') || roomData.livekitUrl.includes('demo')) {
+        console.error('❌ Room creation failed. Returned a mock/demo URL:', roomData.livekitUrl);
       } else {
-        console.log('✅ Room creation passed. Returned a real Daily.co URL:', roomData.dailyUrl);
+        console.log('✅ Room creation passed. Returned a LiveKit URL:', roomData.livekitUrl);
       }
     } else {
-      console.error('❌ Room creation failed. No dailyUrl in response.');
+      console.error('❌ Room creation failed. No livekitUrl in response.');
     }
   } catch (err) {
     console.error('❌ Room creation error:', err.message);

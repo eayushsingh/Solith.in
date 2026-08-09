@@ -22,19 +22,14 @@ const DB_PATH = path.join(__dirname, 'db.json');
 const app = express();
 const server = createServer(app);
 
-// CORS configuration - Fail safely in production if no ALLOWED_ORIGIN is set
+// CORS configuration - allow only explicit origins in production
 let corsOptions;
 if (process.env.NODE_ENV === 'production') {
-  const allowedOrigins = process.env.ALLOWED_ORIGIN 
-    ? process.env.ALLOWED_ORIGIN.split(',').map(o => o.trim()) 
-    : [];
-  
-  // Allow the specific Vercel preview deployment mentioned in the error
-  allowedOrigins.push('https://talk2me-sigma.vercel.app');
-  
-  if (allowedOrigins.length === 0) {
-    console.warn("⚠ WARNING: ALLOWED_ORIGIN is not set in production. Falling back to strict same-origin to prevent leaks.");
-  }
+  const allowedOrigins = (process.env.ALLOWED_ORIGIN || '')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
+
   corsOptions = { origin: allowedOrigins.length > 0 ? allowedOrigins : false };
 } else {
   corsOptions = { origin: '*' };
@@ -256,7 +251,7 @@ function isJunkText(str) {
 // Strict rate limiting for Room Creation (15 reqs / 15 mins)
 const roomCreationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1500,
+  max: 15,
   message: { error: 'Too many rooms created from this IP, please try again after 15 minutes.' }
 });
 
