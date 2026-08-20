@@ -6,7 +6,7 @@ import puppeteer from 'puppeteer';
   
   page.on('console', msg => {
     if (msg.type() === 'error') {
-      console.log('PAGE ERROR LOG:', msg.text());
+      console.log('PAGE ERROR LOG Try Later:', msg.text());
     }
   });
   
