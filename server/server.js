@@ -832,15 +832,30 @@ io.on('connection', (socket) => {
   socket.on('join-room', (roomId) => {
     socket.join(roomId);
     
-    // Send existing message history to the user joining
+    // Send existing message history and shared YouTube video to the user joining
     const room = rooms.find(r => r.id === roomId);
-    if (room && room.messages) {
-      socket.emit('chat-history', room.messages);
+    if (room) {
+      if (room.messages) {
+        socket.emit('chat-history', room.messages);
+      }
+      if (room.ytVideoId) {
+        socket.emit('yt-share', { videoId: room.ytVideoId, sharingUser: room.ytSharingUser });
+      }
     }
   });
 
   socket.on('leave-room', (roomId) => {
     socket.leave(roomId);
+  });
+
+  socket.on('yt-share', (data) => {
+    const { roomId, videoId, sharingUser } = data;
+    const room = rooms.find(r => r.id === roomId);
+    if (room) {
+      room.ytVideoId = videoId;
+      room.ytSharingUser = sharingUser;
+    }
+    io.in(roomId).emit('yt-share', { videoId, sharingUser });
   });
 
   socket.on('chat-message', (data) => {
