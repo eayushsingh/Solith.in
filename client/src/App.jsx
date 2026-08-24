@@ -2036,62 +2036,138 @@ export default function App() {
              </button>
 
              {/* Center - Mute Button (Always available in Free4Talk) */}
-             <button onClick={toggleMute} className={`p-2 rounded-xl transition-colors ${isMuted ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`}>
+             <button onClick={toggleMute} className={`p-2 rounded-xl transition-colors ${isMuted ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`} title={isMuted ? "Unmute Mic" : "Mute Mic"}>
                  {isMuted ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
              </button>
-             <button onClick={() => setShowSettingsModal(true)} className="p-2 rounded-xl bg-[#2a2d36] text-text-primary hover:bg-white/20 transition-colors"><Settings className="w-4 h-4"/></button>
-             <button onClick={leaveVoiceRoom} className="p-2 rounded-xl bg-accent-secondary text-text-primary hover:bg-accent-secondary-hover transition-colors ml-2"><LogOut className="w-4 h-4"/></button>
+             <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-colors ${isScreenSharing ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`} title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}>
+                 <Monitor className="w-4 h-4"/>
+             </button>
+             <button onClick={() => setShowSettingsModal(true)} className="p-2 rounded-xl bg-[#2a2d36] text-text-primary hover:bg-white/20 transition-colors" title="Settings"><Settings className="w-4 h-4"/></button>
+             <button onClick={leaveVoiceRoom} className="p-2 rounded-xl bg-accent-secondary text-text-primary hover:bg-accent-secondary-hover transition-colors ml-2" title="Leave Room"><LogOut className="w-4 h-4"/></button>
           </div>
 
-          {/* Full-Screen Participant Grid */}
-          <div className="flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 overflow-y-auto overflow-x-hidden hide-scrollbar flex items-center justify-center">
-             <div className="flex flex-wrap gap-4 md:gap-6 w-full max-w-6xl mx-auto items-center justify-center">
-                {participants.map(p => {
-                    const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                    const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
-                    const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
-                    const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
-                    const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
-                    const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
-                    const targetRole = getRole(p.id);
-                    
-                    let canModTarget = false;
-                    if (myRole === 'owner' && targetRole !== 'owner') canModTarget = true;
-                    if (myRole === 'co-owner' && (targetRole === 'elder' || targetRole === 'member' || targetRole === 'guest')) canModTarget = true;
-                    const canPromote = myRole === 'owner';
+          {/* Participant Grid / Presenter View */}
+          {(() => {
+            const screenSharingParticipant = participants.find(p => p.isScreenSharing);
+            
+            if (screenSharingParticipant) {
+              return (
+                <div className="flex flex-col lg:flex-row flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 gap-6 overflow-hidden">
+                  {/* Large Screen Share Viewer */}
+                  <div className="flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px]">
+                    <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
+                      <Monitor className="w-3.5 h-3.5 text-[var(--accent-primary)] animate-pulse" />
+                      <span>{screenSharingParticipant.isLocal ? 'Your Screen' : `${screenSharingParticipant.name}'s Screen`}</span>
+                    </div>
+                    <div className="flex-1 w-full h-full flex items-center justify-center p-2 bg-black">
+                      {isRealCall ? (
+                        screenSharingParticipant.screenShareTrack ? (
+                          <VideoTrack track={screenSharingParticipant.screenShareTrack} />
+                        ) : (
+                          <div className="text-text-primary/40 text-sm flex flex-col items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-accent-secondary animate-ping"></span>
+                            Connecting screen share stream...
+                          </div>
+                        )
+                      ) : (
+                        <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain rounded-2xl bg-black" />
+                      )}
+                    </div>
+                  </div>
+                  {/* Side Participant Grid */}
+                  <div className="w-full lg:w-[240px] flex lg:flex-col gap-4 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
+                    {participants.map(p => {
+                        const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
+                        const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                        const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
+                        const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
+                        const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
+                        const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
+                        const targetRole = getRole(p.id);
+                        
+                        return (
+                            <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[100px] h-[100px] lg:w-[160px] lg:h-[160px] rounded-2xl overflow-hidden bg-bg-surface border-2 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_15px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
+                               {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-3xl lg:text-5xl">{pEmoji}</span>}
+                               
+                               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-4 pb-1 px-2 text-center">
+                                  <span className="text-text-primary text-[10px] lg:text-xs font-bold drop-shadow-md truncate block">{pName}</span>
+                               </div>
 
-                    return (
-                        <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-bg-surface border-4 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_25px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
-                           {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-6xl">{pEmoji}</span>}
-                           
-                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-2 px-3 text-center">
-                              <span className="text-text-primary text-xs font-bold drop-shadow-md truncate block">{pName}</span>
-                              {targetRole === 'owner' && <span className="text-[9px] text-[var(--accent-primary)] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
-                           </div>
+                               {p.muted && (
+                                  <div className="absolute top-2 right-2 w-5 h-5 lg:w-7 lg:h-7 bg-bg-base/60 backdrop-blur-md rounded-full flex items-center justify-center">
+                                    <MicOff className="w-2.5 h-2.5 lg:w-3.5 lg:h-3.5 text-red-400" />
+                                  </div>
+                                )}
 
-                           {p.muted && (
-                              <div className="absolute top-3 right-3 w-7 h-7 bg-bg-base/60 backdrop-blur-md rounded-full flex items-center justify-center">
-                                <MicOff className="w-3.5 h-3.5 text-red-400" />
-                              </div>
-                           )}
+                               {selectedParticipant === p.id && !p.isLocal && (
+                                    <div className="absolute inset-0 bg-bg-base/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-2 lg:p-4 text-[10px] lg:text-xs animate-fade-in gap-1 lg:gap-2">
+                                      <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-center py-1 lg:py-2 bg-white/10 hover:bg-white/20 text-text-primary rounded-xl transition-colors">Profile</button>
+                                      {canPromote && targetRole !== 'owner' && (
+                                        <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-center py-1 lg:py-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 rounded-xl transition-colors">Make Co-Owner</button>
+                                      )}
+                                      {canModTarget && (
+                                        <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-center py-1 lg:py-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-xl transition-colors">Mute</button>
+                                      )}
+                                    </div>
+                               )}
+                            </div>
+                        );
+                    })}
+                  </div>
+                </div>
+              );
+            }
 
-                           {/* Moderation Dropdown */}
-                           {selectedParticipant === p.id && !p.isLocal && (
-                                <div className="absolute inset-0 bg-bg-base/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 text-xs animate-fade-in gap-2">
-                                  <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-white/10 hover:bg-white/20 text-text-primary rounded-xl transition-colors">Profile</button>
-                                  {canPromote && targetRole !== 'owner' && (
-                                    <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 rounded-xl transition-colors">Make Co-Owner</button>
-                                  )}
-                                  {canModTarget && (
-                                    <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-xl transition-colors">Mute</button>
-                                  )}
-                                </div>
-                           )}
-                        </div>
-                    )
-                })}
-             </div>
-          </div>
+            return (
+              <div className="flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 overflow-y-auto overflow-x-hidden hide-scrollbar flex items-center justify-center">
+                 <div className="flex flex-wrap gap-4 md:gap-6 w-full max-w-6xl mx-auto items-center justify-center">
+                    {participants.map(p => {
+                        const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
+                        const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                        const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
+                        const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
+                        const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
+                        const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
+                        const targetRole = getRole(p.id);
+                        
+                        let canModTarget = false;
+                        if (myRole === 'owner' && targetRole !== 'owner') canModTarget = true;
+                        if (myRole === 'co-owner' && (targetRole === 'elder' || targetRole === 'member' || targetRole === 'guest')) canModTarget = true;
+                        const canPromote = myRole === 'owner';
+
+                        return (
+                            <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-bg-surface border-4 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_25px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
+                               {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-6xl">{pEmoji}</span>}
+                               
+                               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-2 px-3 text-center">
+                                  <span className="text-text-primary text-xs font-bold drop-shadow-md truncate block">{pName}</span>
+                                  {targetRole === 'owner' && <span className="text-[9px] text-[var(--accent-primary)] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
+                               </div>
+
+                               {p.muted && (
+                                  <div className="absolute top-3 right-3 w-7 h-7 bg-bg-base/60 backdrop-blur-md rounded-full flex items-center justify-center">
+                                    <MicOff className="w-3.5 h-3.5 text-red-400" />
+                                  </div>
+                               )}
+
+                               {selectedParticipant === p.id && !p.isLocal && (
+                                    <div className="absolute inset-0 bg-bg-base/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 text-xs animate-fade-in gap-2">
+                                      <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-white/10 hover:bg-white/20 text-text-primary rounded-xl transition-colors">Profile</button>
+                                      {canPromote && targetRole !== 'owner' && (
+                                        <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 rounded-xl transition-colors">Make Co-Owner</button>
+                                      )}
+                                      {canModTarget && (
+                                        <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-xl transition-colors">Mute</button>
+                                      )}
+                                    </div>
+                               )}
+                            </div>
+                        );
+                    })}
+                 </div>
+              </div>
+            );
+          })()}
 
           {/* Chat Overlay (Hidden by Default) */}
           {isChatOpen && (

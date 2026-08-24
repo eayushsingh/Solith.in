@@ -29,6 +29,7 @@ export const LiveKitService = {
 
   localUserMock: null,
   isMutedMock: true,
+  isScreenSharingMock: false,
   triggerMockParticipantsList: () => {
     const local = LiveKitService.localUserMock || { id: 'local', name: 'You', photoUrl: '', color: '#ff4d4d', emoji: '👤' };
     participantCallback?.([
@@ -37,6 +38,7 @@ export const LiveKitService = {
         name: local.name, 
         isLocal: true, 
         muted: LiveKitService.isMutedMock, 
+        isScreenSharing: LiveKitService.isScreenSharingMock,
         photoUrl: local.photoUrl || '', 
         color: local.color || '#0d94a8', 
         emoji: local.emoji || '👤' 
@@ -128,6 +130,14 @@ export const LiveKitService = {
       });
 
       roomObject.on(RoomEvent.LocalTrackUnpublished, () => {
+        updateParticipantsList();
+      });
+
+      roomObject.on(RoomEvent.TrackPublished, () => {
+        updateParticipantsList();
+      });
+
+      roomObject.on(RoomEvent.TrackUnpublished, () => {
         updateParticipantsList();
       });
 
@@ -226,6 +236,27 @@ export const LiveKitService = {
       return muted;
     }
     return true;
+  },
+
+  setLocalScreenShare: async (enabled, isReal) => {
+    if (!isReal) {
+      console.log(`LiveKitService: Set mock screen share to ${enabled}`);
+      LiveKitService.isScreenSharingMock = enabled;
+      LiveKitService.triggerMockParticipantsList();
+      return enabled;
+    }
+
+    if (roomObject) {
+      try {
+        await roomObject.localParticipant.setScreenShareEnabled(enabled);
+        updateParticipantsList();
+        return enabled;
+      } catch (err) {
+        console.error('Failed to set screen share state:', err);
+        throw err;
+      }
+    }
+    return false;
   }
 };
 
@@ -240,6 +271,9 @@ function updateParticipantsList() {
   // Add local participant
   if (roomObject.localParticipant) {
     const isMuted = !roomObject.localParticipant.isMicrophoneEnabled;
+    const isScreenSharing = roomObject.localParticipant.isScreenShareEnabled;
+    const screenShareTrack = Array.from(roomObject.localParticipant.videoTracks.values())
+      .find(pub => pub.source === Track.Source.ScreenShare)?.track;
     let meta = {};
     try { if (roomObject.localParticipant.metadata) meta = JSON.parse(roomObject.localParticipant.metadata); } catch(e){}
     list.push({
@@ -247,6 +281,8 @@ function updateParticipantsList() {
       name: roomObject.localParticipant.name || 'Local User',
       isLocal: true,
       muted: isMuted,
+      isScreenSharing: isScreenSharing,
+      screenShareTrack: screenShareTrack,
       photoUrl: meta.photoUrl || '',
       color: meta.color || '#ff4d4d',
       emoji: meta.emoji || '👤'
@@ -257,6 +293,9 @@ function updateParticipantsList() {
   if (roomObject.remoteParticipants) {
     roomObject.remoteParticipants.forEach(p => {
       const isMuted = !p.isMicrophoneEnabled;
+      const isScreenSharing = p.isScreenShareEnabled;
+      const screenShareTrack = Array.from(p.videoTracks.values())
+        .find(pub => pub.source === Track.Source.ScreenShare)?.track;
       let meta = {};
       try { if (p.metadata) meta = JSON.parse(p.metadata); } catch(e){}
       list.push({
@@ -264,6 +303,8 @@ function updateParticipantsList() {
         name: p.name || 'Guest Practicer',
         isLocal: false,
         muted: isMuted,
+        isScreenSharing: isScreenSharing,
+        screenShareTrack: screenShareTrack,
         photoUrl: meta.photoUrl || '',
         color: meta.color || '#ff4d4d',
         emoji: meta.emoji || '👤'

@@ -1,6 +1,15 @@
 node_modules/
+client/node_modules/
+server/node_modules/
 server/firebase-service-account.json
 test-results/
 server/test-results/
 client/test-results/
 .env
+client/.env
+server/.env
+.DS_Store
+*.zip
+*.dmg
+dist/
+client/dist/
