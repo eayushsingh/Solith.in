@@ -60,8 +60,24 @@ let runtimeConfig = {
 // Rooms Database State
 let rooms = [];
 
-// Load rooms from db.json if exists
-const loadDB = () => {
+// Load rooms from Firestore or fallback to db.json if exists
+const loadDB = async () => {
+  const adminInstance = initFirebaseAdmin();
+  if (adminInstance) {
+    try {
+      const db = adminInstance.firestore();
+      const snapshot = await db.collection('rooms').get();
+      rooms = snapshot.docs.map(doc => doc.data());
+      console.log(`✓ Loaded ${rooms.length} rooms from Firestore.`);
+      return;
+    } catch (err) {
+      console.error('Error loading rooms from Firestore, fallback to local DB:', err);
+    }
+  }
+  loadLocalDB();
+};
+
+const loadLocalDB = () => {
   try {
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, 'utf8');
@@ -73,15 +89,35 @@ const loadDB = () => {
     console.error('Error loading DB, initializing empty rooms list:', err);
     rooms = [];
   }
-
-
 };
 
-const saveDB = () => {
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(rooms, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Error writing to DB:', err);
+const saveDB = async () => {
+  const adminInstance = initFirebaseAdmin();
+  if (adminInstance) {
+    try {
+      const db = adminInstance.firestore();
+      const roomsCol = db.collection('rooms');
+      const currentIds = rooms.map(r => r.id);
+      
+      const snapshot = await roomsCol.get();
+      const deletePromises = [];
+      snapshot.docs.forEach(doc => {
+        if (!currentIds.includes(doc.id)) {
+          deletePromises.push(roomsCol.doc(doc.id).delete());
+        }
+      });
+
+      const savePromises = rooms.map(room => roomsCol.doc(room.id).set(room));
+      await Promise.all([...deletePromises, ...savePromises]);
+    } catch (err) {
+      console.error('Error syncing rooms to Firestore:', err);
+    }
+  } else {
+    try {
+      fs.writeFileSync(DB_PATH, JSON.stringify(rooms, null, 2), 'utf8');
+    } catch (err) {
+      console.error('Error writing to DB:', err);
+    }
   }
 };
 
