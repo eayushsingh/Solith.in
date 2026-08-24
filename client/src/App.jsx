@@ -13,7 +13,7 @@ import StaticModals from './components/StaticModals';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
-  Monitor
+  Monitor, Youtube
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
 import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence, getCountFromServer, onSnapshot } from './firebase';
@@ -21,7 +21,13 @@ import socket from './socket';
 
 const getAvatarUrl = (photoUrl, uid) => {
   if (photoUrl && photoUrl.trim() !== '') return photoUrl;
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid || 'default')}`;
+  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(uid || 'default')}`;
+};
+
+const getYoutubeId = (url) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
 };
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -130,6 +136,10 @@ export default function App() {
   const [callState, setCallState] = useState('left'); // left, joining, joined, error
   const [isMuted, setIsMuted] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [ytVideoId, setYtVideoId] = useState(null);
+  const [ytSharingUser, setYtSharingUser] = useState(null);
+  const [showYtModal, setShowYtModal] = useState(false);
+  const [ytUrlInput, setYtUrlInput] = useState('');
   const [participants, setParticipants] = useState([]);
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
@@ -186,7 +196,7 @@ export default function App() {
           // 1. Instantly get the token (cached by Firebase, very fast)
           const token = await currentUser.getIdToken();
           
-          const defaultAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(currentUser.uid)}`;
+          const defaultAvatar = `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(currentUser.uid)}`;
 
           // 2. OPTIMISTIC UI UPDATE for lightning-fast perceived performance
           setUser(prev => {
@@ -454,12 +464,19 @@ export default function App() {
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     };
 
+    const handleYtShare = ({ videoId, sharingUser }) => {
+      setYtVideoId(videoId);
+      setYtSharingUser(sharingUser);
+    };
+
     socket.on('chat-history', handleChatHistory);
     socket.on('chat-message', handleChatMessage);
+    socket.on('yt-share', handleYtShare);
 
     return () => {
       socket.off('chat-history', handleChatHistory);
       socket.off('chat-message', handleChatMessage);
+      socket.off('yt-share', handleYtShare);
     };
   }, []);
 
@@ -768,6 +785,10 @@ export default function App() {
       setAudioLevels({});
       setChatMessages([]);
       setIsScreenSharing(false);
+      setYtVideoId(null);
+      setYtSharingUser(null);
+      setShowYtModal(false);
+      setYtUrlInput('');
       fetchRooms();
     }
   };
@@ -1043,6 +1064,71 @@ export default function App() {
       </div>
       
       {/* MODALS MOVED HERE FOR GLOBAL ACCESS */}
+      {/* YOUTUBE SHARING MODAL */}
+      {showYtModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4">
+          <div className="w-full max-w-md rounded-3xl p-8 animate-fade-in relative bg-bg-base border border-border-color shadow-xl">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl md:text-2xl font-bold text-text-primary flex items-center gap-3">
+                <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
+                  <Youtube className="w-5 h-5 text-red-500" />
+                </div>
+                Co-Watch YouTube
+              </h3>
+              <button 
+                onClick={() => setShowYtModal(false)}
+                className="text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-2"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-red-400 mb-2 drop-shadow-sm">YouTube Video Link</label>
+                <input 
+                  type="text" 
+                  placeholder="https://www.youtube.com/watch?v=..." 
+                  value={ytUrlInput}
+                  onChange={(e) => setYtUrlInput(e.target.value)}
+                  className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary placeholder-white/30 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all shadow-inner"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    const id = getYoutubeId(ytUrlInput);
+                    if (id) {
+                      socket.emit('yt-share', { roomId: activeRoom.id, videoId: id, sharingUser: user.name });
+                      setShowYtModal(false);
+                      setYtUrlInput('');
+                    } else {
+                      alert('Invalid YouTube URL. Please paste a valid link.');
+                    }
+                  }}
+                  className="flex-1 py-3 px-4 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg active:scale-[0.98]"
+                >
+                  Share Video
+                </button>
+                {ytVideoId && (
+                  <button
+                    onClick={() => {
+                      socket.emit('yt-share', { roomId: activeRoom.id, videoId: null, sharingUser: null });
+                      setShowYtModal(false);
+                      setYtUrlInput('');
+                    }}
+                    className="py-3 px-4 rounded-xl text-sm font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                  >
+                    Stop Video
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CREATE ROOM MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4">
@@ -2067,6 +2153,9 @@ export default function App() {
              <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-colors ${isScreenSharing ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`} title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}>
                  <Monitor className="w-4 h-4"/>
              </button>
+             <button onClick={() => setShowYtModal(true)} className={`p-2 rounded-xl transition-colors ${ytVideoId ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`} title={ytVideoId ? "Change/Stop YouTube" : "Play YouTube Video"}>
+                 <Youtube className="w-4 h-4"/>
+             </button>
              <button onClick={() => setShowSettingsModal(true)} className="p-2 rounded-xl bg-[#2a2d36] text-text-primary hover:bg-white/20 transition-colors" title="Settings"><Settings className="w-4 h-4"/></button>
              <button onClick={leaveVoiceRoom} className="p-2 rounded-xl bg-accent-secondary text-text-primary hover:bg-accent-secondary-hover transition-colors ml-2" title="Leave Room"><LogOut className="w-4 h-4"/></button>
           </div>
@@ -2074,30 +2163,51 @@ export default function App() {
           {/* Participant Grid / Presenter View */}
           {(() => {
             const screenSharingParticipant = participants.find(p => p.isScreenSharing);
+            const hasPresenterContent = screenSharingParticipant || ytVideoId;
             
-            if (screenSharingParticipant) {
+            if (hasPresenterContent) {
               return (
                 <div className="flex flex-col lg:flex-row flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 gap-6 overflow-hidden">
-                  {/* Large Screen Share Viewer */}
+                  {/* Large Screen Share / YouTube Viewer */}
                   <div className="flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px]">
-                    <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
-                      <Monitor className="w-3.5 h-3.5 text-[var(--accent-primary)] animate-pulse" />
-                      <span>{screenSharingParticipant.isLocal ? 'Your Screen' : `${screenSharingParticipant.name}'s Screen`}</span>
-                    </div>
-                    <div className="flex-1 w-full h-full flex items-center justify-center p-2 bg-black">
-                      {isRealCall ? (
-                        screenSharingParticipant.screenShareTrack ? (
-                          <VideoTrack track={screenSharingParticipant.screenShareTrack} />
-                        ) : (
-                          <div className="text-text-primary/40 text-sm flex flex-col items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-accent-secondary animate-ping"></span>
-                            Connecting screen share stream...
-                          </div>
-                        )
-                      ) : (
-                        <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain rounded-2xl bg-black" />
-                      )}
-                    </div>
+                    {screenSharingParticipant ? (
+                      <>
+                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
+                          <Monitor className="w-3.5 h-3.5 text-[var(--accent-primary)] animate-pulse" />
+                          <span>{screenSharingParticipant.isLocal ? 'Your Screen' : `${screenSharingParticipant.name}'s Screen`}</span>
+                        </div>
+                        <div className="flex-1 w-full h-full flex items-center justify-center p-2 bg-black">
+                          {isRealCall ? (
+                            screenSharingParticipant.screenShareTrack ? (
+                              <VideoTrack track={screenSharingParticipant.screenShareTrack} />
+                            ) : (
+                              <div className="text-text-primary/40 text-sm flex flex-col items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-accent-secondary animate-ping"></span>
+                                Connecting screen share stream...
+                              </div>
+                            )
+                          ) : (
+                            <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain rounded-2xl bg-black" />
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
+                          <Youtube className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                          <span>Shared YouTube Video (Shared by {ytSharingUser})</span>
+                          <button onClick={() => socket.emit('yt-share', { roomId: activeRoom.id, videoId: null, sharingUser: null })} className="ml-2 px-2 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg transition-colors text-[10px] font-bold">Stop</button>
+                        </div>
+                        <div className="flex-1 w-full h-full bg-black">
+                          <iframe 
+                            src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&enablejsapi=1`}
+                            className="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                   {/* Side Participant Grid */}
                   <div className="w-full lg:w-[240px] flex lg:flex-col gap-4 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
@@ -2110,6 +2220,11 @@ export default function App() {
                         const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
                         const targetRole = getRole(p.id);
                         
+                        let canModTarget = false;
+                        if (myRole === 'owner' && targetRole !== 'owner') canModTarget = true;
+                        if (myRole === 'co-owner' && (targetRole === 'elder' || targetRole === 'member' || targetRole === 'guest')) canModTarget = true;
+                        const canPromote = myRole === 'owner';
+
                         return (
                             <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[100px] h-[100px] lg:w-[160px] lg:h-[160px] rounded-2xl overflow-hidden bg-bg-surface border-2 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_15px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
                                {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-3xl lg:text-5xl">{pEmoji}</span>}
@@ -2173,7 +2288,7 @@ export default function App() {
                                   <div className="absolute top-3 right-3 w-7 h-7 bg-bg-base/60 backdrop-blur-md rounded-full flex items-center justify-center">
                                     <MicOff className="w-3.5 h-3.5 text-red-400" />
                                   </div>
-                               )}
+                                )}
 
                                {selectedParticipant === p.id && !p.isLocal && (
                                     <div className="absolute inset-0 bg-bg-base/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 text-xs animate-fade-in gap-2">
