@@ -1,3 +1,4 @@
+// Solith.in - Premium Language Learning Platform
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import RoomCard from './components/RoomCard';
 import Guidelines from './components/Guidelines';
