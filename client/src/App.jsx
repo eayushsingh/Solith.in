@@ -12,7 +12,8 @@ import Sidebar from './components/Sidebar';
 import StaticModals from './components/StaticModals';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
-  Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy
+  Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
+  Monitor
 } from 'lucide-react';
 import { LiveKitService } from './livekit';
 import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence, getCountFromServer, onSnapshot } from './firebase';
@@ -42,7 +43,18 @@ const getLevelInfo = (xp) => {
 
 const ADMIN_EMAILS = ['ayushfun01@gmail.com', 'hacksejeet@gmail.com', 'ayush.singh.something@klh.edu.in'];
 
-
+const VideoTrack = ({ track }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (track && ref.current) {
+      track.attach(ref.current);
+      return () => {
+        track.detach(ref.current);
+      };
+    }
+  }, [track]);
+  return <video ref={ref} autoPlay playsInline className="w-full h-full object-contain rounded-2xl bg-black" />;
+};
 
 export default function App() {
   // Navigation / Layout state
@@ -117,6 +129,7 @@ export default function App() {
   const [activeRoom, setActiveRoom] = useState(null);
   const [callState, setCallState] = useState('left'); // left, joining, joined, error
   const [isMuted, setIsMuted] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [participants, setParticipants] = useState([]);
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
@@ -754,6 +767,7 @@ export default function App() {
       setParticipants([]);
       setAudioLevels({});
       setChatMessages([]);
+      setIsScreenSharing(false);
       fetchRooms();
     }
   };
@@ -767,6 +781,17 @@ export default function App() {
     setParticipants(prev => 
       prev.map(p => p.isLocal ? { ...p, muted: resolved } : p)
     );
+  };
+
+  const toggleScreenShare = async () => {
+    try {
+      const nextScreenShare = !isScreenSharing;
+      const resolved = await LiveKitService.setLocalScreenShare(nextScreenShare, isRealCall);
+      setIsScreenSharing(resolved);
+    } catch (err) {
+      console.error('Failed to set screen share:', err);
+      alert('Could not start screen sharing: ' + err.message);
+    }
   };
 
   const raiseHand = async () => {

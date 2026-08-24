@@ -271,9 +271,10 @@ function updateParticipantsList() {
   // Add local participant
   if (roomObject.localParticipant) {
     const isMuted = !roomObject.localParticipant.isMicrophoneEnabled;
-    const isScreenSharing = roomObject.localParticipant.isScreenShareEnabled;
-    const screenShareTrack = Array.from(roomObject.localParticipant.videoTracks.values())
-      .find(pub => pub.source === Track.Source.ScreenShare)?.track;
+    const videoPubs = roomObject.localParticipant.videoTrackPublications;
+    const screenSharePub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.ScreenShare) : null;
+    const isScreenSharing = !!screenSharePub;
+    const screenShareTrack = screenSharePub?.track;
     let meta = {};
     try { if (roomObject.localParticipant.metadata) meta = JSON.parse(roomObject.localParticipant.metadata); } catch(e){}
     list.push({
@@ -293,9 +294,10 @@ function updateParticipantsList() {
   if (roomObject.remoteParticipants) {
     roomObject.remoteParticipants.forEach(p => {
       const isMuted = !p.isMicrophoneEnabled;
-      const isScreenSharing = p.isScreenShareEnabled;
-      const screenShareTrack = Array.from(p.videoTracks.values())
-        .find(pub => pub.source === Track.Source.ScreenShare)?.track;
+      const videoPubs = p.videoTrackPublications;
+      const screenSharePub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.ScreenShare) : null;
+      const isScreenSharing = !!screenSharePub;
+      const screenShareTrack = screenSharePub?.track;
       let meta = {};
       try { if (p.metadata) meta = JSON.parse(p.metadata); } catch(e){}
       list.push({
