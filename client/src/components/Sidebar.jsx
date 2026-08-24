@@ -1,9 +1,9 @@
-import React from 'react';
-import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee } from 'lucide-react';
+import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee, Users } from 'lucide-react';
 
 export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, isAdmin }) {
   const navItems = [
     { id: 'lobby', icon: Home, title: 'Home' },
+    { id: 'feed', icon: Users, title: 'Community' },
     { id: 'messages', icon: MessageSquare, title: 'Global Chat' },
     { id: 'leaderboard', icon: Award, title: 'Leaderboard' },
     { id: 'guidelines', icon: BookOpen, title: 'Guidelines' },

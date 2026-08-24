@@ -8,6 +8,7 @@ import MessagesView from './components/MessagesView';
 import DirectMessage from './components/DirectMessage';
 import Leaderboard from './components/Leaderboard';
 import Sidebar from './components/Sidebar';
+import CommunityFeed from './components/CommunityFeed';
 
 import StaticModals from './components/StaticModals';
 import { 
@@ -72,8 +73,8 @@ export default function App() {
     const path = window.location.pathname.replace('/', '');
     const hasSeenLanding = localStorage.getItem('seenLanding');
     
-    if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(hash)) return hash;
-    if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(path)) return path;
+    if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed'].includes(hash)) return hash;
+    if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed'].includes(path)) return path;
     return hasSeenLanding ? 'lobby' : 'landing';
   }); 
   const [activeDm, setActiveDm] = useState(null); // { id: string, profile: object }
@@ -155,9 +156,9 @@ export default function App() {
       const hash = window.location.hash.replace('#', '');
       const path = window.location.pathname.replace('/', '');
       
-      if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(hash)) {
+      if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed'].includes(hash)) {
         setView(hash);
-      } else if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing'].includes(path)) {
+      } else if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed'].includes(path)) {
         setView(path);
       }
     };
@@ -1716,6 +1717,18 @@ export default function App() {
             )}
           </div>
         </div>
+      )
+    );
+  }
+
+  if (view === 'feed') {
+    return (
+      renderAppLayout(
+        <CommunityFeed 
+          user={user} 
+          openUserProfile={openUserProfile}
+          onBack={() => { setView('lobby'); window.history.pushState({}, '', '/'); }}
+        />
       )
     );
   }
