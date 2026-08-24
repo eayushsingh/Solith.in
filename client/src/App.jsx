@@ -142,6 +142,8 @@ export default function App() {
   const [showYtModal, setShowYtModal] = useState(false);
   const [ytUrlInput, setYtUrlInput] = useState('');
   const [participants, setParticipants] = useState([]);
+  const [activeActionUser, setActiveActionUser] = useState(null);
+  const [kickModalInfo, setKickModalInfo] = useState({ kicked: false, by: '' });
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
@@ -470,14 +472,44 @@ export default function App() {
       setYtSharingUser(sharingUser);
     };
 
+    const handleParticipantKicked = ({ userId, by }) => {
+      if (userId === user?.id) {
+        teardownVoiceRoom();
+        setKickModalInfo({ kicked: true, by });
+      } else {
+        fetchRooms();
+      }
+    };
+
+    const handleParticipantMuted = ({ userId }) => {
+      if (userId === user?.id) {
+        LiveKitService.setLocalAudio(true, isRealCall);
+        setIsMuted(true);
+        setParticipants(prev => prev.map(p => p.isLocal ? { ...p, muted: true } : p));
+        alert('A moderator has muted you.');
+      } else {
+        fetchRooms();
+      }
+    };
+
+    const handleOwnerTransferred = () => {
+      fetchRooms();
+    };
+
     socket.on('chat-history', handleChatHistory);
     socket.on('chat-message', handleChatMessage);
     socket.on('yt-share', handleYtShare);
+    socket.on('participant-kicked', handleParticipantKicked);
+    socket.on('participant-muted', handleParticipantMuted);
+    socket.on('owner-transferred', handleOwnerTransferred);
 
     return () => {
       socket.off('chat-history', handleChatHistory);
       socket.off('chat-message', handleChatMessage);
       socket.off('yt-share', handleYtShare);
+      socket.off('participant-kicked', handleParticipantKicked);
+      socket.off('participant-muted', handleParticipantMuted);
+      socket.off('owner-transferred', handleOwnerTransferred);
     };
   }, []);
 
@@ -762,16 +794,30 @@ export default function App() {
     }
   };
 
+  const teardownVoiceRoom = () => {
+    LiveKitService.leave(isRealCall);
+    if (activeRoom) {
+      socket.emit('leave-room', activeRoom.id);
+    }
+    setActiveRoom(null);
+    setCallState('left');
+    setParticipants([]);
+    setAudioLevels({});
+    setChatMessages([]);
+    setIsScreenSharing(false);
+    setYtVideoId(null);
+    setYtSharingUser(null);
+    setShowYtModal(false);
+    setYtUrlInput('');
+    setActiveActionUser(null);
+    fetchRooms();
+  };
+
   // Leave Voice Room trigger
   const leaveVoiceRoom = async () => {
     if (!activeRoom) return;
 
     try {
-      await LiveKitService.leave(isRealCall);
-      
-      // Leave Socket.IO room
-      socket.emit('leave-room', activeRoom.id);
-
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -780,17 +826,7 @@ export default function App() {
     } catch (err) {
       console.warn('Error while cleanly leaving backend room:', err);
     } finally {
-      setActiveRoom(null);
-      setCallState('left');
-      setParticipants([]);
-      setAudioLevels({});
-      setChatMessages([]);
-      setIsScreenSharing(false);
-      setYtVideoId(null);
-      setYtSharingUser(null);
-      setShowYtModal(false);
-      setYtUrlInput('');
-      fetchRooms();
+      teardownVoiceRoom();
     }
   };
 
@@ -813,6 +849,15 @@ export default function App() {
     } catch (err) {
       console.error('Failed to set screen share:', err);
       alert('Could not start screen sharing: ' + err.message);
+    }
+  };
+
+  const handleStartDM = async (targetId, targetName) => {
+    const snap = await getDoc(doc(db, 'users', targetId));
+    if (snap.exists()) {
+      setActiveDm({ id: targetId, profile: { id: targetId, ...snap.data() } });
+      setMsgTab('direct');
+      setView('messages');
     }
   };
 
@@ -1065,6 +1110,257 @@ export default function App() {
       </div>
       
       {/* MODALS MOVED HERE FOR GLOBAL ACCESS */}
+      {/* PARTICIPANT ACTION CARD MODAL */}
+      {activeActionUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4" onClick={() => setActiveActionUser(null)}>
+          <div className="w-full max-w-sm rounded-[2rem] p-6 animate-fade-in relative bg-[#13151b] border border-white/10 backdrop-blur-2xl shadow-2xl text-text-primary" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setActiveActionUser(null)} className="absolute top-4 right-4 text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20">
+              <X className="w-4 h-4" />
+            </button>
+            
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/10" style={{ backgroundColor: activeActionUser.color || '#333' }}>
+                {activeActionUser.photoUrl ? (
+                  <img src={activeActionUser.photoUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl">{activeActionUser.emoji || '👤'}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-white text-lg truncate">{activeActionUser.name}</span>
+                </div>
+                <span className="text-[10px] text-[var(--accent-primary)] font-black uppercase tracking-wider mt-0.5 block">
+                  {getRole(activeActionUser.id) || 'guest'}
+                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] text-white/30 font-mono truncate max-w-[120px]">ID: {activeActionUser.id}</span>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(activeActionUser.id);
+                      alert('Copied User ID!');
+                    }} 
+                    className="text-[9px] text-[var(--accent-primary)] font-bold hover:underline"
+                  >
+                    Copy ID
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button onClick={() => { alert('User Blocked'); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all">Block</button>
+              <button onClick={() => { setShowReportModal(activeActionUser.id); setActiveActionUser(null); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all">Report</button>
+              <button onClick={() => { handleStartDM(activeActionUser.id, activeActionUser.name); setActiveActionUser(null); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all">PM</button>
+              <button 
+                onClick={async () => {
+                  const isFollowing = user.following?.includes(activeActionUser.id);
+                  const targetProfileSnap = await getDoc(doc(db, 'users', activeActionUser.id));
+                  if (targetProfileSnap.exists()) {
+                    setTargetProfile({ id: activeActionUser.id, ...targetProfileSnap.data() });
+                    toggleFollow();
+                  }
+                }} 
+                className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all"
+              >
+                {user.following?.includes(activeActionUser.id) ? 'Unfollow' : 'Follow'}
+              </button>
+              <button onClick={() => { alert('Reconnected audio link'); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all col-span-2">Reconnect</button>
+            </div>
+
+            {(() => {
+              const myRole = getRole(user.id);
+              const targetRole = getRole(activeActionUser.id);
+              const isOwner = myRole === 'owner';
+              const isCoOwner = myRole === 'co-owner';
+              const canModerate = isOwner || (isCoOwner && targetRole !== 'owner' && targetRole !== 'co-owner');
+
+              if (!canModerate) return null;
+
+              return (
+                <div className="border-t border-white/5 pt-4 space-y-2">
+                  <div className="text-[10px] text-white/30 font-bold uppercase tracking-widest mb-2">Room Moderation</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await fetch(`${API_URL}/api/rooms/${activeRoom.id}/mute`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${user.token}`
+                            },
+                            body: JSON.stringify({ targetUserId: activeActionUser.id })
+                          });
+                          alert('Muted participant in room');
+                          setActiveActionUser(null);
+                        } catch (err) {
+                          alert(err.message);
+                        }
+                      }} 
+                      className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold rounded-xl transition-all"
+                    >
+                      Mute
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        try {
+                          await fetch(`${API_URL}/api/rooms/${activeRoom.id}/kick`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${user.token}`
+                            },
+                            body: JSON.stringify({ targetUserId: activeActionUser.id })
+                          });
+                          alert('Kicked participant from room');
+                          setActiveActionUser(null);
+                        } catch (err) {
+                          alert(err.message);
+                        }
+                      }} 
+                      className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold rounded-xl transition-all"
+                    >
+                      Kick
+                    </button>
+                    <button onClick={() => { setChatMessages([]); alert('Cleared room chat'); }} className="py-2.5 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-xl transition-all col-span-2">Clear Chat</button>
+                    
+                    {isOwner && (
+                      <>
+                        <button 
+                          onClick={async () => {
+                            const newRole = targetRole === 'co-owner' ? 'member' : 'co-owner';
+                            try {
+                              await fetch(`${API_URL}/api/rooms/${activeRoom.id}/promote`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${user.token}`
+                                },
+                                body: JSON.stringify({ targetUserId: activeActionUser.id, role: newRole })
+                              });
+                              alert(`Set role to ${newRole === 'co-owner' ? 'Co-Owner' : 'Guest'}`);
+                              setActiveActionUser(null);
+                              fetchRooms();
+                            } catch (err) { alert(err.message); }
+                          }}
+                          className="py-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-bold rounded-xl transition-all"
+                        >
+                          {targetRole === 'co-owner' ? 'Set Guest' : 'Set Co-Owner'}
+                        </button>
+                        <button 
+                          onClick={async () => {
+                            if (!window.confirm(`Are you sure you want to transfer room ownership to ${activeActionUser.name}? You will become Co-Owner.`)) return;
+                            try {
+                              await fetch(`${API_URL}/api/rooms/${activeRoom.id}/transfer-owner`, {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${user.token}`
+                                },
+                                body: JSON.stringify({ targetUserId: activeActionUser.id })
+                              });
+                              alert('Transferred room ownership!');
+                              setActiveActionUser(null);
+                              fetchRooms();
+                            } catch (err) { alert(err.message); }
+                          }}
+                          className="py-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-bold rounded-xl transition-all"
+                        >
+                          Transfer Group
+                        </button>
+                      </>
+                    )}
+                    
+                    {(activeRoom.speakingQueue || []).includes(activeActionUser.id) && (
+                      <button 
+                        onClick={async () => {
+                          try {
+                            await fetch(`${API_URL}/api/rooms/${activeRoom.id}/lower-hand-mod`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${user.token}`
+                              },
+                              body: JSON.stringify({ targetUserId: activeActionUser.id })
+                            });
+                            alert('Lowered participant hand');
+                            setActiveActionUser(null);
+                          } catch (err) { alert(err.message); }
+                        }}
+                        className="py-2.5 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-xl transition-all col-span-2"
+                      >
+                        Lower Hand
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <div className="flex items-center justify-between text-[10px] text-white/30 font-bold uppercase tracking-widest mb-2">
+                <span>Volume Control</span>
+                <span>{Math.round((activeActionUser.volume || 1) * 100)}%</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Volume2 className="w-4 h-4 text-white/40" />
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="1" 
+                  step="0.05"
+                  value={activeActionUser.volume !== undefined ? activeActionUser.volume : 1}
+                  onChange={(e) => {
+                    const newVol = parseFloat(e.target.value);
+                    setParticipants(prev => prev.map(p => p.id === activeActionUser.id ? { ...p, volume: newVol } : p));
+                    setActiveActionUser(prev => ({ ...prev, volume: newVol }));
+                    
+                    if (isRealCall) {
+                      const participant = LiveKitService.getRoom()?.remoteParticipants.get(activeActionUser.id);
+                      if (participant) {
+                        participant.audioTrackPublications.forEach(pub => {
+                          if (pub.track) pub.track.setVolume(newVol);
+                        });
+                      }
+                    }
+                  }}
+                  className="flex-1 accent-[var(--accent-primary)] bg-white/10 h-1.5 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KICKED OVERLAY */}
+      {kickModalInfo.kicked && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0B0D12]/95 backdrop-blur-lg p-6 text-center animate-fade-in">
+          <div className="w-20 h-20 rounded-full bg-red-500/10 border-2 border-red-500 flex items-center justify-center mb-8">
+            <X className="w-10 h-10 text-red-500 animate-pulse" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-6">
+            <span className="text-yellow-500 font-extrabold">{kickModalInfo.by}</span> has kicked you out.
+          </h2>
+          <div className="space-y-2 text-sm text-yellow-500/80 mb-8 max-w-sm font-medium">
+            <p>You have been kicked out 1 time in the last 15 minutes.</p>
+            <p>If you get kicked out 4 more times, you will be banned for 15 minutes.</p>
+          </div>
+          <p className="text-xs text-white/40 mb-2 leading-relaxed italic max-w-xs">
+            Kicking without any reasons is allowed on Free4Talk. So, don't be mad, dear!
+          </p>
+          <p className="text-[11px] text-[var(--accent-primary)] font-bold mb-10">
+            Tip: You can create your own room to prevent being kicked.
+          </p>
+          <button
+            onClick={() => setKickModalInfo({ kicked: false, by: '' })}
+            className="px-8 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-bold rounded-2xl transition-all shadow-xl active:scale-[0.98]"
+          >
+            Close
+          </button>
+        </div>
+      )}
+
       {/* YOUTUBE SHARING MODAL */}
       {showYtModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4">
@@ -2239,7 +2535,7 @@ export default function App() {
                         const canPromote = myRole === 'owner';
 
                         return (
-                            <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[100px] h-[100px] lg:w-[160px] lg:h-[160px] rounded-2xl overflow-hidden bg-bg-surface border-2 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_15px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
+                            <div key={p.id} onClick={() => !p.isLocal && setActiveActionUser(p)} className={`relative flex flex-col items-center justify-center aspect-square w-[100px] h-[100px] lg:w-[160px] lg:h-[160px] rounded-2xl overflow-hidden bg-bg-surface border-2 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_15px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
                                {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-3xl lg:text-5xl">{pEmoji}</span>}
                                
                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-4 pb-1 px-2 text-center">
@@ -2251,18 +2547,6 @@ export default function App() {
                                     <MicOff className="w-2.5 h-2.5 lg:w-3.5 lg:h-3.5 text-red-400" />
                                   </div>
                                 )}
-
-                               {selectedParticipant === p.id && !p.isLocal && (
-                                    <div className="absolute inset-0 bg-bg-base/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-2 lg:p-4 text-[10px] lg:text-xs animate-fade-in gap-1 lg:gap-2">
-                                      <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-center py-1 lg:py-2 bg-white/10 hover:bg-white/20 text-text-primary rounded-xl transition-colors">Profile</button>
-                                      {canPromote && targetRole !== 'owner' && (
-                                        <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-center py-1 lg:py-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 rounded-xl transition-colors">Make Co-Owner</button>
-                                      )}
-                                      {canModTarget && (
-                                        <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-center py-1 lg:py-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-xl transition-colors">Mute</button>
-                                      )}
-                                    </div>
-                               )}
                             </div>
                         );
                     })}
@@ -2282,37 +2566,20 @@ export default function App() {
                         const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
                         const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
                         const targetRole = getRole(p.id);
-                        
-                        let canModTarget = false;
-                        if (myRole === 'owner' && targetRole !== 'owner') canModTarget = true;
-                        if (myRole === 'co-owner' && (targetRole === 'elder' || targetRole === 'member' || targetRole === 'guest')) canModTarget = true;
-                        const canPromote = myRole === 'owner';
 
                         return (
-                            <div key={p.id} onClick={() => !p.isLocal && setSelectedParticipant(selectedParticipant === p.id ? null : p.id)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-bg-surface border-4 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_25px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
+                            <div key={p.id} onClick={() => !p.isLocal && setActiveActionUser(p)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-bg-surface border-4 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_25px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
                                {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-6xl">{pEmoji}</span>}
                                
                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-2 px-3 text-center">
                                   <span className="text-text-primary text-xs font-bold drop-shadow-md truncate block">{pName}</span>
                                   {targetRole === 'owner' && <span className="text-[9px] text-[var(--accent-primary)] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
-                               </div>
+                                </div>
 
                                {p.muted && (
                                   <div className="absolute top-3 right-3 w-7 h-7 bg-bg-base/60 backdrop-blur-md rounded-full flex items-center justify-center">
                                     <MicOff className="w-3.5 h-3.5 text-red-400" />
                                   </div>
-                                )}
-
-                               {selectedParticipant === p.id && !p.isLocal && (
-                                    <div className="absolute inset-0 bg-bg-base/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 text-xs animate-fade-in gap-2">
-                                      <button onClick={(e) => { e.stopPropagation(); openUserProfile(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-white/10 hover:bg-white/20 text-text-primary rounded-xl transition-colors">Profile</button>
-                                      {canPromote && targetRole !== 'owner' && (
-                                        <button onClick={(e) => { e.stopPropagation(); promoteUser(p.id, 'co-owner'); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 rounded-xl transition-colors">Make Co-Owner</button>
-                                      )}
-                                      {canModTarget && (
-                                        <button onClick={(e) => { e.stopPropagation(); muteUser(p.id); setSelectedParticipant(null); }} className="w-full text-center py-2 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-xl transition-colors">Mute</button>
-                                      )}
-                                    </div>
                                )}
                             </div>
                         );
