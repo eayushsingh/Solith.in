@@ -2454,10 +2454,7 @@ export default function App() {
           
           {/* Top Floating Control Bar */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-1rem)] flex-wrap items-center justify-center gap-2 bg-bg-surface/90 backdrop-blur-md rounded-2xl p-2 border border-white/5 shadow-2xl">
-             <div className="px-3 border-r border-white/10 flex items-center gap-2 text-text-primary/50 text-xs font-mono">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent-secondary animate-pulse"></span>
-                12:47
-             </div>
+
              {/* Left - Raise Hand Button (Optional for everyone) */}
              <button onClick={hasRaisedHand ? lowerHand : raiseHand} className="p-2 bg-[var(--accent-primary)]/10 hover:bg-[var(--accent-primary)]/20 rounded-xl flex items-center gap-2 text-xs font-bold text-[var(--accent-primary)] transition-colors">
                <Hand className="w-4 h-4"/> {hasRaisedHand ? 'Lower' : 'Raise'}
