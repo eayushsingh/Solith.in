@@ -14,12 +14,17 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
       setLoading(true);
       setError('');
       try {
-        // Fetch all users — sort/filter client-side to avoid Firestore index requirements
-        const snapshot = await getDocs(collection(db, 'users'));
+        // Fetch all users with a 4-second timeout protection in case Cloud Firestore API is disabled
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Firebase connection timeout. Please make sure the Cloud Firestore API is enabled in your Firebase Console project (solith-df915).")), 4000)
+        );
+        const snapshot = await Promise.race([
+          getDocs(collection(db, 'users')),
+          timeoutPromise
+        ]);
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         const now = new Date();
-        // ISO week calculation
         const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
         const dayNum = d.getUTCDay() || 7;
         d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -28,25 +33,30 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
         const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
         const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
 
-        let validLeaders;
+        // Map users to have explicit XP scores for active scopes (defaulting to 0) so we rank everyone
+        const mappedLeaders = data.map(u => {
+          const isWeeklyCurrent = u.weeklyXpId === currentWeekId;
+          const isMonthlyCurrent = u.monthlyXpId === currentMonthId;
+          return {
+            ...u,
+            weeklyXpVal: isWeeklyCurrent ? (u.weeklyXp || 0) : 0,
+            monthlyXpVal: isMonthlyCurrent ? (u.monthlyXp || 0) : 0,
+            allTimeXpVal: u.xp || 0
+          };
+        });
+
         if (activeTab === 'weekly') {
-          validLeaders = data
-            .filter(u => u.weeklyXpId === currentWeekId && (u.weeklyXp || 0) > 0)
-            .sort((a, b) => (b.weeklyXp || 0) - (a.weeklyXp || 0));
+          mappedLeaders.sort((a, b) => b.weeklyXpVal - a.weeklyXpVal || b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
         } else if (activeTab === 'monthly') {
-          validLeaders = data
-            .filter(u => u.monthlyXpId === currentMonthId && (u.monthlyXp || 0) > 0)
-            .sort((a, b) => (b.monthlyXp || 0) - (a.monthlyXp || 0));
+          mappedLeaders.sort((a, b) => b.monthlyXpVal - a.monthlyXpVal || b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
         } else {
-          validLeaders = data
-            .filter(u => (u.xp || 0) > 0)
-            .sort((a, b) => (b.xp || 0) - (a.xp || 0));
+          mappedLeaders.sort((a, b) => b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
         }
 
-        setLeaders(validLeaders.slice(0, 50));
+        setLeaders(mappedLeaders.slice(0, 50));
       } catch (err) {
         console.error('Failed to fetch leaderboard:', err);
-        setError('Failed to load leaderboard. Check your connection.');
+        setError(err.message || 'Failed to load leaderboard. Check your connection.');
       } finally {
         setLoading(false);
       }
@@ -185,7 +195,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                     
                     <div className="text-right flex flex-col items-end justify-center">
                       <div className="font-black text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm leading-none mb-1">
-                        {activeTab === 'weekly' ? leader.weeklyXp : (activeTab === 'monthly' ? leader.monthlyXp : leader.xp)}
+                        {activeTab === 'weekly' ? leader.weeklyXpVal : (activeTab === 'monthly' ? leader.monthlyXpVal : leader.allTimeXpVal)}
                       </div>
                       <div className="text-[11px] text-[var(--accent-primary)] font-extrabold uppercase tracking-[0.2em]">XP</div>
                     </div>

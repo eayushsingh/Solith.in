@@ -10,10 +10,17 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    // 4-second timeout protection in case Cloud Firestore API is disabled in Firebase Console
+    let timeout = setTimeout(() => {
+      setLoading(false);
+      console.warn("Firebase connection timeout in CommunityFeed. Please make sure the Cloud Firestore API is enabled in your Firebase project.");
+    }, 4000);
+
     // Listen to the last 100 posts in real-time
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      clearTimeout(timeout);
       const list = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -21,11 +28,15 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
       setPosts(list);
       setLoading(false);
     }, (error) => {
+      clearTimeout(timeout);
       console.error("Failed to load community feed:", error);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   const handleCreatePost = async (e) => {
