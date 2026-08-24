@@ -602,7 +602,7 @@ app.post('/api/rooms/:id/kick', verifyToken, (req, res) => {
 
   room.participants = room.participants.filter(p => p.id !== targetUserId);
   saveDB();
-  io.to(id).emit('participant-kicked', { userId: targetUserId });
+  io.to(id).emit('participant-kicked', { userId: targetUserId, by: req.user.name || 'Moderator' });
   res.json({ success: true });
 });
 
@@ -627,6 +627,46 @@ app.post('/api/rooms/:id/mute', verifyToken, (req, res) => {
   }
 
   io.to(id).emit('participant-muted', { userId: targetUserId });
+  res.json({ success: true });
+});
+
+app.post('/api/rooms/:id/transfer-owner', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { targetUserId } = req.body;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  if (!room.roles) room.roles = {};
+
+  if (room.roles[req.user.uid] !== 'owner') {
+    return res.status(403).json({ error: 'Only the owner can transfer room ownership' });
+  }
+
+  // Swap roles
+  room.roles[req.user.uid] = 'co-owner';
+  room.roles[targetUserId] = 'owner';
+  
+  saveDB();
+  io.to(id).emit('owner-transferred', { from: req.user.uid, to: targetUserId });
+  res.json({ success: true, roles: room.roles });
+});
+
+app.post('/api/rooms/:id/lower-hand-mod', verifyToken, (req, res) => {
+  const { id } = req.params;
+  const { targetUserId } = req.body;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+
+  const requesterRole = room.roles ? room.roles[req.user.uid] : 'guest';
+  if (requesterRole !== 'owner' && requesterRole !== 'co-owner') {
+    return res.status(403).json({ error: 'Not authorized to lower other participant hands' });
+  }
+
+  if (room.speakingQueue) {
+    room.speakingQueue = room.speakingQueue.filter(uid => uid !== targetUserId);
+  }
+  
+  saveDB();
+  io.to(id).emit('queue-updated', room.speakingQueue || []);
   res.json({ success: true });
 });
 
