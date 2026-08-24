@@ -902,8 +902,35 @@ if (fs.existsSync(clientDistPath)) {
 }
 
 // Socket.IO Logic
+let totalUserCount = 0;
+const broadcastOnlineStats = async () => {
+  const adminInstance = initFirebaseAdmin();
+  if (adminInstance) {
+    try {
+      const db = adminInstance.firestore();
+      const snapshot = await db.collection('users').get();
+      totalUserCount = snapshot.size;
+    } catch (err) {
+      console.warn('Failed to query total user count from Firestore:', err.message);
+    }
+  } else {
+    totalUserCount = 1;
+  }
+
+  io.emit('online-stats', {
+    online: io.engine.clientsCount || 1,
+    total: Math.max(totalUserCount, io.engine.clientsCount, 1)
+  });
+};
+
+// Periodically update total user count and broadcast stats
+setInterval(async () => {
+  await broadcastOnlineStats();
+}, 15000);
+
 io.on('connection', (socket) => {
   console.log(chalk.green(`✓ Socket connected: ${socket.id}`));
+  broadcastOnlineStats();
 
   socket.on('join-room', (roomId) => {
     socket.join(roomId);
@@ -956,6 +983,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
+    broadcastOnlineStats();
   });
 });
 

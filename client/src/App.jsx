@@ -144,6 +144,7 @@ export default function App() {
   const [participants, setParticipants] = useState([]);
   const [activeActionUser, setActiveActionUser] = useState(null);
   const [kickModalInfo, setKickModalInfo] = useState({ kicked: false, by: '' });
+  const [onlineStats, setOnlineStats] = useState({ online: 1, total: 1 });
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
@@ -496,12 +497,17 @@ export default function App() {
       fetchRooms();
     };
 
+    const handleOnlineStats = (stats) => {
+      setOnlineStats(stats);
+    };
+
     socket.on('chat-history', handleChatHistory);
     socket.on('chat-message', handleChatMessage);
     socket.on('yt-share', handleYtShare);
     socket.on('participant-kicked', handleParticipantKicked);
     socket.on('participant-muted', handleParticipantMuted);
     socket.on('owner-transferred', handleOwnerTransferred);
+    socket.on('online-stats', handleOnlineStats);
 
     return () => {
       socket.off('chat-history', handleChatHistory);
@@ -510,6 +516,7 @@ export default function App() {
       socket.off('participant-kicked', handleParticipantKicked);
       socket.off('participant-muted', handleParticipantMuted);
       socket.off('owner-transferred', handleOwnerTransferred);
+      socket.off('online-stats', handleOnlineStats);
     };
   }, []);
 
@@ -1098,7 +1105,8 @@ export default function App() {
     onAuthClick: () => setShowAuthModal(true),
     onSettingsClick: () => setShowProfileModal(true),
     onLogoutClick: () => signOut(auth),
-    isAdmin
+    isAdmin,
+    onlineStats
   };
 
     const renderAppLayout = (children) => (
