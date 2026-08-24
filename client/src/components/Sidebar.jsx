@@ -1,6 +1,6 @@
 import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee, Users } from 'lucide-react';
 
-export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, isAdmin }) {
+export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, isAdmin, onlineStats }) {
   const navItems = [
     { id: 'lobby', icon: Home, title: 'Home' },
     { id: 'feed', icon: Users, title: 'Community' },
@@ -15,7 +15,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
       {/* Logo Area */}
       <div 
         onClick={() => setView('lobby')}
-        className="hidden md:flex w-11 h-11 rounded-full overflow-hidden cursor-pointer mb-8 ring-2 ring-[var(--accent-primary)] ring-offset-2 ring-offset-bg-base shadow-[0_0_20px_var(--accent-primary-glow)] transition-all hover:scale-110 hover:ring-4 hover:shadow-[0_0_30px_var(--accent-primary-glow)] relative"
+        className="hidden md:flex w-11 h-11 rounded-full overflow-hidden cursor-pointer mb-2 ring-2 ring-[var(--accent-primary)] ring-offset-2 ring-offset-bg-base shadow-[0_0_20px_var(--accent-primary-glow)] transition-all hover:scale-110 hover:ring-4 hover:shadow-[0_0_30px_var(--accent-primary-glow)] relative"
         title="solith.in Home"
       >
         <video 
@@ -27,6 +27,19 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
           className="w-full h-full object-cover"
         />
       </div>
+
+      {/* Online Stats Indicator - Desktop Only */}
+      {onlineStats && (
+        <div className="hidden md:flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl bg-white/[0.03] border border-white/5 mb-6 shadow-inner animate-fade-in select-none">
+          <span className="text-[8px] font-black text-[var(--accent-primary)] tracking-widest uppercase animate-pulse flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full inline-block"></span>
+            LIVE
+          </span>
+          <span className="text-[10px] font-mono font-bold text-white/60 mt-0.5">
+            {onlineStats.online || 1}/{onlineStats.total || 1}
+          </span>
+        </div>
+      )}
 
       {/* Main Navigation */}
       <div className="flex flex-row md:flex-col gap-1 md:gap-4 w-full items-center justify-center flex-1">
