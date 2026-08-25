@@ -17,13 +17,15 @@ export default function ChessGame({ activeGame, socket, roomId, currentUser }) {
       }
     }
     setGame(newGame);
-    
+  }, []);
+
+  useEffect(() => {
     // Determine player color based on join order (first = white, second = black)
-    const pIndex = activeGame.players.findIndex(p => p.id === currentUser.id);
+    const pIndex = activeGame.players?.findIndex(p => p.id === currentUser.id) ?? -1;
     if (pIndex === 0) setPlayerColor('white');
     else if (pIndex === 1) setPlayerColor('black');
     else setPlayerColor('spectator');
-  }, []);
+  }, [activeGame.players, currentUser.id]);
 
   // Listen for moves from other players
   useEffect(() => {
@@ -80,10 +82,8 @@ export default function ChessGame({ activeGame, socket, roomId, currentUser }) {
   }
 
   const joinGame = () => {
-    // If there's room, we can join
-    if (activeGame.players.length < 2) {
-      // Actually we'd need to sync players, but for now we'll just emit an action to update players
-      // In a robust implementation, the server should handle `join-game` explicitly.
+    if (activeGame.players?.length < 2) {
+      socket.emit('game-join', { roomId, player: currentUser });
     }
   };
 
@@ -109,8 +109,16 @@ export default function ChessGame({ activeGame, socket, roomId, currentUser }) {
           )}
         </div>
         
-        <div className="text-xs text-text-secondary">
-          You are: {playerColor.toUpperCase()}
+        <div className="text-xs text-text-secondary flex flex-col items-center gap-3">
+          <span>You are: {playerColor.toUpperCase()}</span>
+          {playerColor === 'spectator' && activeGame.players?.length < 2 && (
+            <button 
+              onClick={joinGame}
+              className="px-6 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-bold rounded-lg transition-colors shadow-lg"
+            >
+              Join Game as Black
+            </button>
+          )}
         </div>
       </div>
     </div>

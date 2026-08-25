@@ -29,11 +29,7 @@ export default function UnoGame({ activeGame, socket, roomId, currentUser }) {
 
   // Initialize
   useEffect(() => {
-    let pIndex = activeGame.players.findIndex(p => p.id === currentUser.id);
-    if (pIndex === -1 && activeGame.players.length < 4) {
-      // Not strictly safe without server sync, but works for UI demo
-      pIndex = activeGame.players.length; 
-    }
+    let pIndex = activeGame.players?.findIndex(p => p.id === currentUser.id) ?? -1;
     setPlayerIndex(pIndex);
 
     if (activeGame.state === 'start' && pIndex === 0) {
@@ -63,11 +59,16 @@ export default function UnoGame({ activeGame, socket, roomId, currentUser }) {
       };
       
       setGameState(initialState);
-      socket.emit('game-action', { roomId, state: initialState, player: currentUser });
+      
+      socket.emit('game-action', {
+        roomId,
+        state: initialState,
+        player: currentUser
+      });
     } else if (activeGame.state && activeGame.state !== 'start') {
       setGameState(activeGame.state);
     }
-  }, []);
+  }, [activeGame.players, currentUser.id, activeGame.state]);
 
   useEffect(() => {
     const handleGameAction = (data) => {
@@ -221,6 +222,20 @@ export default function UnoGame({ activeGame, socket, roomId, currentUser }) {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Join Game Button */}
+      {!me && activeGame.players?.length < 4 && (
+        <div className="mt-8 text-center">
+          <button 
+            onClick={() => {
+              socket.emit('game-join', { roomId, player: currentUser });
+            }}
+            className="px-6 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            Join Game
+          </button>
         </div>
       )}
     </div>

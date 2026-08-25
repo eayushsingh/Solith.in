@@ -12,10 +12,13 @@ export default function Connect4({ activeGame, socket, roomId, currentUser }) {
 
   useEffect(() => {
     // Determine player color based on join order
-    const pIndex = activeGame.players.findIndex(p => p.id === currentUser.id);
+    const pIndex = activeGame.players?.findIndex(p => p.id === currentUser.id) ?? -1;
     if (pIndex === 0) setPlayerColor('red');
     else if (pIndex === 1) setPlayerColor('yellow');
+    else setPlayerColor('spectator');
+  }, [activeGame.players, currentUser.id]);
 
+  useEffect(() => {
     if (activeGame.state && typeof activeGame.state === 'object') {
       setBoard(activeGame.state.board || Array.from({ length: COLS }, () => []));
       setRedIsNext(activeGame.state.redIsNext ?? true);
@@ -114,8 +117,19 @@ export default function Connect4({ activeGame, socket, roomId, currentUser }) {
         </div>
       </div>
 
-      <div className="mt-8 text-xs text-text-secondary font-mono tracking-widest uppercase">
-        You are: <span className={`font-bold ${playerColor === 'red' ? 'text-red-500' : playerColor === 'yellow' ? 'text-yellow-400' : 'text-text-primary'}`}>{playerColor}</span>
+      <div className="mt-8 text-xs text-text-secondary font-mono tracking-widest uppercase flex flex-col items-center gap-3">
+        <span>You are: <span className={`font-bold ${playerColor === 'red' ? 'text-red-500' : playerColor === 'yellow' ? 'text-yellow-400' : 'text-text-primary'}`}>{playerColor}</span></span>
+        
+        {playerColor === 'spectator' && activeGame.players?.length < 2 && (
+          <button 
+            onClick={() => {
+              socket.emit('game-join', { roomId, player: currentUser });
+            }}
+            className="px-6 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            Join Game as Yellow
+          </button>
+        )}
       </div>
     </div>
   );
