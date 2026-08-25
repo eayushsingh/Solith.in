@@ -147,7 +147,7 @@ export default function PremiumSubscription({ onBack, user }) {
               <Search className="w-4 h-4" /> View Subscription Plans
             </button>
           </div>
-        ) : status === 'VIEW_PLANS' || !status || status === 'PENDING' ? (
+        ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-start">
             
             {/* Left Col: Hero & Features */}
