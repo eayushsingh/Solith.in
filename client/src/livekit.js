@@ -101,6 +101,11 @@ export const LiveKitService = {
         dynacast: false,
         publishDefaults: {
           audioBitrate: 32_000,
+        },
+        audioCaptureDefaults: {
+          autoGainControl: false, // Fix for "voice is not loud" (prevents browser from aggressively lowering mic volume)
+          echoCancellation: true,
+          noiseSuppression: true,
         }
       });
 

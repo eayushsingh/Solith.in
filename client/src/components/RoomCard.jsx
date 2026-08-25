@@ -55,7 +55,7 @@ export default function RoomCard({ room, onJoin }) {
           const participant = displayParticipants[slotIdx];
           
           if (participant) {
-            const isPremiumUser = isPremium && slotIdx === 0;
+            const isPremiumUser = isPremium && room.roles && room.roles[participant.id] === 'owner';
 
             return (
               <div key={participant.id || slotIdx} className="flex flex-col items-center group/avatar relative">
