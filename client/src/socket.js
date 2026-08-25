@@ -14,4 +14,14 @@ if (!globalThis[globalSocketKey]) {
 
 const socket = globalThis[globalSocketKey];
 
+// Handle Vite HMR to prevent multiple socket connections
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    if (globalThis[globalSocketKey]) {
+      globalThis[globalSocketKey].disconnect();
+      globalThis[globalSocketKey] = null;
+    }
+  });
+}
+
 export default socket;
