@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCircle, RefreshCw, Crown } from 'lucide-react';
+import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCircle, RefreshCw, Crown, Activity } from 'lucide-react';
 import { db, collection, getDocs } from '../firebase';
 import { Meteors } from './Meteors';
 
 export default function Leaderboard({ onBack, user, openUserProfile }) {
-  const [activeTab, setActiveTab] = useState('weekly');
+  const [activeTab, setActiveTab] = useState('daily');
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,20 +32,24 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
         const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
         const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
         const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+        const currentDayId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
 
-        // Map users to have explicit XP scores for active scopes (defaulting to 0) so we rank everyone
         const mappedLeaders = data.map(u => {
+          const isDailyCurrent = u.dailyXpId === currentDayId;
           const isWeeklyCurrent = u.weeklyXpId === currentWeekId;
           const isMonthlyCurrent = u.monthlyXpId === currentMonthId;
           return {
             ...u,
+            dailyXpVal: isDailyCurrent ? (u.dailyXp || 0) : 0,
             weeklyXpVal: isWeeklyCurrent ? (u.weeklyXp || 0) : 0,
             monthlyXpVal: isMonthlyCurrent ? (u.monthlyXp || 0) : 0,
             allTimeXpVal: u.xp || 0
           };
         });
 
-        if (activeTab === 'weekly') {
+        if (activeTab === 'daily') {
+          mappedLeaders.sort((a, b) => b.dailyXpVal - a.dailyXpVal || b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
+        } else if (activeTab === 'weekly') {
           mappedLeaders.sort((a, b) => b.weeklyXpVal - a.weeklyXpVal || b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
         } else if (activeTab === 'monthly') {
           mappedLeaders.sort((a, b) => b.monthlyXpVal - a.monthlyXpVal || b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
@@ -103,6 +107,12 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
           </div>
 
           <div className="flex flex-wrap justify-center bg-white/[0.03] border border-white/10 rounded-2xl p-1.5 backdrop-blur-xl gap-1 shadow-2xl">
+            <button 
+              onClick={() => setActiveTab('daily')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'daily' ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_20px_rgba(24,119,242,0.4)]' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
+            >
+              <Activity className="w-4 h-4" /> Daily
+            </button>
             <button 
               onClick={() => setActiveTab('weekly')}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'weekly' ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_20px_rgba(24,119,242,0.4)]' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
@@ -165,7 +175,9 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                   </div>
                   <h3 className="text-xl font-bold text-white/60">No rankings yet</h3>
                   <p className="text-white/30 text-sm max-w-xs leading-relaxed">
-                    {activeTab === 'weekly'
+                    {activeTab === 'daily'
+                      ? 'No time spent today yet. Join a voice room to be first on the daily board!'
+                      : activeTab === 'weekly'
                       ? 'No one has earned XP this week. Join a voice room to be first on the weekly board!'
                       : activeTab === 'monthly'
                       ? 'No XP earned this month yet. Start practicing to claim the #1 spot!'
@@ -211,9 +223,9 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                     
                     <div className="text-right flex flex-col items-end justify-center">
                       <div className="font-black text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm leading-none mb-1">
-                        {activeTab === 'weekly' ? leader.weeklyXpVal : (activeTab === 'monthly' ? leader.monthlyXpVal : leader.allTimeXpVal)}
+                        {activeTab === 'daily' ? leader.dailyXpVal : (activeTab === 'weekly' ? leader.weeklyXpVal : (activeTab === 'monthly' ? leader.monthlyXpVal : leader.allTimeXpVal))}
                       </div>
-                      <div className="text-[11px] text-[var(--accent-primary)] font-extrabold uppercase tracking-[0.2em]">XP</div>
+                      <div className="text-[11px] text-[var(--accent-primary)] font-extrabold uppercase tracking-[0.2em]">{activeTab === 'daily' ? 'MINS' : 'XP'}</div>
                     </div>
                   </div>
                 ))
