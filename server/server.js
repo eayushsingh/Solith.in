@@ -322,6 +322,21 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     return res.status(500).json({ error: 'LiveKit configuration is missing. Cannot create real rooms.' });
   }
 
+  let ownerIsPremium = false;
+  const adminInstance = initFirebaseAdmin();
+  if (adminInstance && req.user) {
+    try {
+      const db = adminInstance.firestore();
+      const userDoc = await db.collection('users').doc(req.user.uid).get();
+      if (userDoc.exists) {
+        const data = userDoc.data();
+        ownerIsPremium = !!data.isPremium && (!data.premiumExpiresAt || data.premiumExpiresAt.toDate().getTime() > Date.now());
+      }
+    } catch (e) {
+      console.error('Failed to fetch user premium status:', e);
+    }
+  }
+
   const newRoom = {
     id: roomId,
     name,
@@ -334,6 +349,7 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     allowedSpeakers: [],
     participants: [],
     roles: req.user ? { [req.user.uid]: 'owner' } : {},
+    ownerIsPremium,
     messages: [],
     emptySince: Date.now(),
     livekitUrl,
@@ -1022,6 +1038,117 @@ io.on('connection', (socket) => {
     console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
     broadcastOnlineStats();
   });
+});
+
+// Global Public Settings Endpoint
+app.get('/api/settings/public', async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) {
+    return res.json({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: "/qr-placeholder.png", premiumVisibilityBoost: true });
+  }
+  
+  try {
+    const db = adminInstance.firestore();
+    const doc = await db.collection('settings').doc('global').get();
+    if (!doc.exists) {
+      return res.json({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: "/qr-placeholder.png", premiumVisibilityBoost: true });
+    }
+    const data = doc.data();
+    res.json({
+      premiumPrice: data.premiumPrice || 99,
+      premiumDurationDays: data.premiumDurationDays || 30,
+      qrCodeUrl: data.qrCodeUrl || "/qr-placeholder.png",
+      premiumVisibilityBoost: data.premiumVisibilityBoost ?? true
+    });
+  } catch (error) {
+    console.error('Error fetching public settings:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
+// Premium Payment Endpoints
+app.post('/api/payments/submit', verifyToken, async (req, res) => {
+  const { utr } = req.body;
+  if (!utr || typeof utr !== 'string' || utr.trim().length < 6) {
+    return res.status(400).json({ error: 'Valid UTR is required.' });
+  }
+
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) return res.status(500).json({ error: 'Database connection error' });
+
+  try {
+    const db = adminInstance.firestore();
+    
+    // Check if user already has a pending request
+    const pendingSnap = await db.collection('payment_requests')
+      .where('userId', '==', req.user.uid)
+      .where('status', '==', 'PENDING')
+      .get();
+      
+    if (!pendingSnap.empty) {
+      return res.status(400).json({ error: 'You already have a pending payment request.' });
+    }
+
+    // Check if this UTR was already submitted (prevent duplicates)
+    const utrSnap = await db.collection('payment_requests')
+      .where('utr', '==', utr.trim())
+      .get();
+      
+    if (!utrSnap.empty) {
+      return res.status(400).json({ error: 'This UTR has already been submitted.' });
+    }
+
+    // Get current price from settings
+    const settingsDoc = await db.collection('settings').doc('global').get();
+    const settings = settingsDoc.exists ? settingsDoc.data() : { premiumPrice: 99 };
+    const currentPrice = Number(settings.premiumPrice) || 99;
+
+    const docRef = await db.collection('payment_requests').add({
+      userId: req.user.uid,
+      amount: currentPrice,
+      currency: 'INR',
+      utr: utr.trim(),
+      status: 'PENDING',
+      submittedAt: adminInstance.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.json({ success: true, requestId: docRef.id });
+  } catch (error) {
+    console.error('Error submitting payment:', error);
+    res.status(500).json({ error: 'Failed to submit payment.' });
+  }
+});
+
+app.get('/api/payments/status', verifyToken, async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) return res.status(500).json({ error: 'Database connection error' });
+
+  try {
+    const db = adminInstance.firestore();
+    const requestsSnap = await db.collection('payment_requests')
+      .where('userId', '==', req.user.uid)
+      .orderBy('submittedAt', 'desc')
+      .limit(1)
+      .get();
+      
+    if (requestsSnap.empty) {
+      return res.json({ hasRequest: false });
+    }
+    
+    const requestData = requestsSnap.docs[0].data();
+    res.json({
+      hasRequest: true,
+      request: {
+        id: requestsSnap.docs[0].id,
+        status: requestData.status,
+        utr: requestData.utr,
+        submittedAt: requestData.submittedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching payment status:', error);
+    res.status(500).json({ error: 'Failed to fetch status.' });
+  }
 });
 
 // Start Server

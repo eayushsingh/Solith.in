@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ShieldAlert, Check, X, AlertCircle, Users, LayoutDashboard, Flag, Activity, Trash2, Shield, Search, Award } from 'lucide-react';
+import { ArrowLeft, ShieldAlert, Check, X, AlertCircle, Users, LayoutDashboard, Flag, Activity, Trash2, Shield, Search, Award, Settings } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -28,6 +28,8 @@ export default function AdminPanel({ onBack, user }) {
   const [reports, setReports] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [platformSettings, setPlatformSettings] = useState(null);
   
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', action: null });
 
@@ -60,9 +62,17 @@ export default function AdminPanel({ onBack, user }) {
       } else if (tab === 'rooms') {
         const data = await fetchWithToken('/api/admin/rooms');
         setRooms(data.rooms || []);
+      } else if (tab === 'subscriptions') {
+        const userData = await fetchWithToken('/api/admin/users');
+        setUsersList(userData.users || []);
+        const payData = await fetchWithToken('/api/admin/payments');
+        setPayments(payData.payments || []);
       } else if (tab === 'logs') {
         const data = await fetchWithToken('/api/admin/logs');
         setLogs(data.logs || []);
+      } else if (tab === 'settings') {
+        const data = await fetchWithToken('/api/admin/settings');
+        setPlatformSettings(data);
       }
     } catch (err) {
       console.error("Failed to load admin data:", err);
@@ -117,7 +127,19 @@ export default function AdminPanel({ onBack, user }) {
         method: 'POST',
         body: JSON.stringify({ action })
       });
-      loadData('users'); // reload users list to update premium status
+      loadData('subscriptions'); // reload users list to update premium status
+    } catch (e) {
+      alert("Action failed");
+    }
+  };
+
+  const handlePaymentAction = async (paymentId, action, reason = '') => {
+    try {
+      await fetchWithToken(`/api/admin/payments/${paymentId}/${action}`, {
+        method: 'POST',
+        body: JSON.stringify({ reason })
+      });
+      loadData('subscriptions'); // reload
     } catch (e) {
       alert("Action failed");
     }
@@ -158,6 +180,7 @@ export default function AdminPanel({ onBack, user }) {
             { id: 'rooms', icon: Activity, label: 'Active Rooms' },
             { id: 'subscriptions', icon: Award, label: 'Subscriptions' },
             { id: 'logs', icon: Shield, label: 'Activity Log' },
+            { id: 'settings', icon: Settings, label: 'Settings' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -280,11 +303,71 @@ export default function AdminPanel({ onBack, user }) {
 
               {/* SUBSCRIPTIONS TAB */}
               {activeTab === 'subscriptions' && (
-                <div>
-                  <h2 className="text-2xl font-bold text-text-primary mb-6">Manage Subscriptions</h2>
-                  <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
-                    <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm min-w-[640px]">
+                <div className="space-y-12">
+                  {/* Payment Verifications */}
+                  <div>
+                    <h2 className="text-2xl font-bold text-text-primary mb-6 text-amber-400">Pending Payments (₹99)</h2>
+                    <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden mb-8">
+                      <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm min-w-[760px]">
+                        <thead className="bg-[#222] text-text-secondary uppercase text-xs">
+                          <tr>
+                            <th className="px-6 py-4">User ID</th>
+                            <th className="px-6 py-4">UTR</th>
+                            <th className="px-6 py-4">Date</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800">
+                          {payments.filter(p => p.status === 'PENDING').length === 0 ? (
+                            <tr>
+                              <td colSpan="5" className="px-6 py-8 text-center text-gray-500 font-medium">No pending payment verifications.</td>
+                            </tr>
+                          ) : (
+                            payments.filter(p => p.status === 'PENDING').map(p => (
+                              <tr key={p.id} className="hover:bg-[#1a1a1a]">
+                                <td className="px-6 py-4 font-mono text-xs text-gray-400">{p.userId}</td>
+                                <td className="px-6 py-4">
+                                  <span className="font-mono text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-400/20">{p.utr}</span>
+                                </td>
+                                <td className="px-6 py-4 text-gray-500 text-xs">
+                                  {new Date(p.submittedAt?.seconds * 1000 || Date.now()).toLocaleString()}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-500 rounded font-bold">PENDING</span>
+                                </td>
+                                <td className="px-6 py-4 space-x-2">
+                                  <button 
+                                    onClick={() => requestConfirm("Verify Payment?", `Have you manually checked your bank/UPI app and confirmed the receipt of ₹99 with UTR: ${p.utr}?`, () => handlePaymentAction(p.id, 'approve'))}
+                                    className="text-xs px-3 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded transition-colors"
+                                  >
+                                    Verify & Approve
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      const reason = prompt("Enter rejection reason:");
+                                      if (reason !== null) handlePaymentAction(p.id, 'reject', reason);
+                                    }}
+                                    className="text-xs px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded transition-colors"
+                                  >
+                                    Reject
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-2xl font-bold text-text-primary mb-6">Manage Subscriptions</h2>
+                    <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden">
+                      <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm min-w-[640px]">
                       <thead className="bg-[#222] text-text-secondary uppercase text-xs">
                         <tr>
                           <th className="px-6 py-4">User</th>
@@ -457,6 +540,56 @@ export default function AdminPanel({ onBack, user }) {
                       </tbody>
                     </table>
                     </div>
+                  </div>
+                </div>
+              )}
+              {/* SETTINGS TAB */}
+              {activeTab === 'settings' && platformSettings && (
+                <div>
+                  <h2 className="text-2xl font-bold text-text-primary mb-6">Platform Settings</h2>
+                  <div className="bg-[#151515] rounded-2xl border border-gray-800 p-6 max-w-2xl">
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.target);
+                        const updates = Object.fromEntries(formData);
+                        updates.premiumVisibilityBoost = formData.get('premiumVisibilityBoost') === 'true';
+                        try {
+                          await fetchWithToken('/api/admin/settings', {
+                            method: 'POST',
+                            body: JSON.stringify(updates)
+                          });
+                          alert("Settings saved successfully!");
+                        } catch (err) {
+                          alert("Failed to save settings");
+                        }
+                      }}
+                      className="space-y-6"
+                    >
+                      <div>
+                        <label className="block text-sm font-bold text-text-secondary mb-2">Premium Price (₹)</label>
+                        <input type="number" name="premiumPrice" defaultValue={platformSettings.premiumPrice} className="w-full bg-[#222] border border-gray-700 rounded-xl px-4 py-2 text-text-primary focus:border-[var(--accent-primary)] focus:outline-none" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-text-secondary mb-2">Premium Duration (Days)</label>
+                        <input type="number" name="premiumDurationDays" defaultValue={platformSettings.premiumDurationDays} className="w-full bg-[#222] border border-gray-700 rounded-xl px-4 py-2 text-text-primary focus:border-[var(--accent-primary)] focus:outline-none" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-text-secondary mb-2">UPI QR Code Image URL</label>
+                        <input type="text" name="qrCodeUrl" defaultValue={platformSettings.qrCodeUrl} className="w-full bg-[#222] border border-gray-700 rounded-xl px-4 py-2 text-text-primary focus:border-[var(--accent-primary)] focus:outline-none" required />
+                        <p className="text-xs text-gray-500 mt-1">Relative path (e.g. /qr-placeholder.png) or full URL.</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-text-secondary mb-2">Premium Visibility Boost</label>
+                        <select name="premiumVisibilityBoost" defaultValue={platformSettings.premiumVisibilityBoost?.toString()} className="w-full bg-[#222] border border-gray-700 rounded-xl px-4 py-2 text-text-primary focus:border-[var(--accent-primary)] focus:outline-none">
+                          <option value="true">Enabled (Boost premium rooms to top)</option>
+                          <option value="false">Disabled (Standard sorting)</option>
+                        </select>
+                      </div>
+                      <div className="pt-4 border-t border-gray-800">
+                        <button type="submit" className="w-full py-3 rounded-xl bg-[var(--accent-primary)] hover:bg-opacity-90 text-bg-base font-bold transition-all">Save Settings</button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}

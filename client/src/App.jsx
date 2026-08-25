@@ -10,13 +10,15 @@ import DirectMessage from './components/DirectMessage';
 import Leaderboard from './components/Leaderboard';
 import Sidebar from './components/Sidebar';
 import CommunityFeed from './components/CommunityFeed';
+import PremiumSubscription from './components/PremiumSubscription';
 
 import StaticModals from './components/StaticModals';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
-  Monitor, Youtube
+  Monitor, Youtube, Gamepad2
 } from 'lucide-react';
+import GameContainer from './components/games/GameContainer';
 import { LiveKitService } from './livekit';
 import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence, getCountFromServer, onSnapshot } from './firebase';
 import socket from './socket';
@@ -74,8 +76,8 @@ export default function App() {
     const path = window.location.pathname.replace('/', '');
     const hasSeenLanding = localStorage.getItem('seenLanding');
     
-    if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed'].includes(hash)) return hash;
-    if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed'].includes(path)) return path;
+    if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(hash)) return hash;
+    if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(path)) return path;
     return hasSeenLanding ? 'lobby' : 'landing';
   }); 
   const [activeDm, setActiveDm] = useState(null); // { id: string, profile: object }
@@ -97,6 +99,14 @@ export default function App() {
 
   const [authLoading, setAuthLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [platformSettings, setPlatformSettings] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/settings/public`)
+      .then(res => res.json())
+      .then(data => setPlatformSettings(data))
+      .catch(err => console.error('Failed to fetch settings:', err));
+  }, []);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [targetProfile, setTargetProfile] = useState(null);
   const [showTargetProfileModal, setShowTargetProfileModal] = useState(false);
@@ -153,6 +163,8 @@ export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isRealCall, setIsRealCall] = useState(false);
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
+  const [activeGame, setActiveGame] = useState(null);
+  const [showGameSelector, setShowGameSelector] = useState(false);
 
   const chatEndRef = useRef(null);
 
@@ -511,6 +523,11 @@ export default function App() {
     socket.on('owner-transferred', handleOwnerTransferred);
     socket.on('online-stats', handleOnlineStats);
 
+    const handleGameState = (state) => setActiveGame(state);
+    const handleGameEnded = () => setActiveGame(null);
+    socket.on('game-state', handleGameState);
+    socket.on('game-ended', handleGameEnded);
+
     return () => {
       socket.off('chat-history', handleChatHistory);
       socket.off('chat-message', handleChatMessage);
@@ -519,6 +536,8 @@ export default function App() {
       socket.off('participant-muted', handleParticipantMuted);
       socket.off('owner-transferred', handleOwnerTransferred);
       socket.off('online-stats', handleOnlineStats);
+      socket.off('game-state', handleGameState);
+      socket.off('game-ended', handleGameEnded);
     };
   }, []);
 
@@ -830,10 +849,23 @@ export default function App() {
     setIsScreenSharing(false);
     setYtVideoId(null);
     setYtSharingUser(null);
+    setActiveGame(null);
+    setShowGameSelector(false);
     setShowYtModal(false);
     setYtUrlInput('');
     setActiveActionUser(null);
     fetchRooms();
+  };
+
+  const startGame = (type) => {
+    if (!activeRoom || !user) return;
+    socket.emit('game-start', { 
+      roomId: activeRoom.id, 
+      gameType: type, 
+      initialState: {}, // Base state, games handle their own initial state
+      player: { id: user.id, name: user.name, photoUrl: user.photoUrl, color: user.color } 
+    });
+    setShowGameSelector(false);
   };
 
   // Leave Voice Room trigger
@@ -1107,6 +1139,12 @@ export default function App() {
                         room.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
                         room.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchLang && matchSearch;
+  }).sort((a, b) => {
+    if (platformSettings?.premiumVisibilityBoost !== false) {
+      if (a.ownerIsPremium && !b.ownerIsPremium) return -1;
+      if (!a.ownerIsPremium && b.ownerIsPremium) return 1;
+    }
+    return (b.participants?.length || 0) - (a.participants?.length || 0);
   });
 
   const totalListeners = rooms.reduce((sum, r) => sum + r.participants.length, 0);
@@ -2491,6 +2529,27 @@ export default function App() {
              <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-colors ${isScreenSharing ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`} title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}>
                  <Monitor className="w-4 h-4"/>
              </button>
+             <button onClick={() => setShowGameSelector(!showGameSelector)} className={`relative p-2 rounded-xl transition-colors ${activeGame || showGameSelector ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`} title="Games">
+                 <Gamepad2 className="w-4 h-4"/>
+                 {/* Game Selector Dropdown */}
+                 {showGameSelector && (
+                    <div className="absolute top-[120%] left-1/2 -translate-x-1/2 bg-bg-surface border border-border-color rounded-xl p-2 flex flex-col gap-1 shadow-2xl min-w-[160px] animate-fade-in z-[100]">
+                       <div className="text-[10px] font-bold text-text-secondary uppercase px-2 py-1 tracking-wider mb-1">Select a Game</div>
+                       {['chess', 'uno', 'connect4', 'tictactoe'].map(game => (
+                         <button 
+                           key={game} 
+                           onClick={(e) => { e.stopPropagation(); startGame(game); }}
+                           className="text-left px-3 py-2 text-sm text-text-primary hover:bg-white/10 rounded-lg capitalize font-medium flex items-center gap-2"
+                         >
+                           {game === 'chess' && '♟️ Chess'}
+                           {game === 'uno' && '🃏 UNO'}
+                           {game === 'connect4' && '🔴 Connect 4'}
+                           {game === 'tictactoe' && '❌ Tic-Tac-Toe'}
+                         </button>
+                       ))}
+                    </div>
+                 )}
+             </button>
              <button onClick={() => setShowYtModal(true)} className={`p-2 rounded-xl transition-colors ${ytVideoId ? 'bg-accent-secondary text-text-primary' : 'bg-[#2a2d36] text-text-primary hover:bg-white/20'}`} title={ytVideoId ? "Change/Stop YouTube" : "Play YouTube Video"}>
                  <Youtube className="w-4 h-4"/>
              </button>
@@ -2501,14 +2560,16 @@ export default function App() {
           {/* Participant Grid / Presenter View */}
           {(() => {
             const screenSharingParticipant = participants.find(p => p.isScreenSharing);
-            const hasPresenterContent = screenSharingParticipant || ytVideoId;
+            const hasPresenterContent = screenSharingParticipant || ytVideoId || activeGame;
             
             if (hasPresenterContent) {
               return (
                 <div className="flex flex-col lg:flex-row flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 gap-6 overflow-hidden">
-                  {/* Large Screen Share / YouTube Viewer */}
+                  {/* Large Screen Share / YouTube Viewer / Game */}
                   <div className="flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px]">
-                    {screenSharingParticipant ? (
+                    {activeGame ? (
+                      <GameContainer activeGame={activeGame} socket={socket} roomId={activeRoom.id} currentUser={user} />
+                    ) : screenSharingParticipant ? (
                       <>
                         <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
                           <Monitor className="w-3.5 h-3.5 text-[var(--accent-primary)] animate-pulse" />

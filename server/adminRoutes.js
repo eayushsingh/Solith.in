@@ -271,5 +271,144 @@ export default function setupAdminRoutes(app, rooms, saveDB, io) {
     }
   });
 
+  // 9. GET /api/admin/payments
+  router.get('/payments', async (req, res) => {
+    const adminInstance = initFirebaseAdmin();
+    if (!adminInstance) {
+      return res.json({ payments: [] });
+    }
+    try {
+      const db = adminInstance.firestore();
+      const paymentsSnap = await db.collection('payment_requests').orderBy('submittedAt', 'desc').limit(100).get();
+      const payments = [];
+      paymentsSnap.forEach(doc => payments.push({ id: doc.id, ...doc.data() }));
+      res.json({ payments });
+    } catch (error) {
+      console.error('Error fetching admin payments:', error);
+      res.status(500).json({ error: 'Failed to fetch payments' });
+    }
+  });
+
+  // 10. POST /api/admin/payments/:id/approve
+  router.post('/payments/:id/approve', async (req, res) => {
+    const adminInstance = initFirebaseAdmin();
+    if (!adminInstance) return res.status(500).json({ error: 'No DB access' });
+    
+    const { id } = req.params;
+    try {
+      const db = adminInstance.firestore();
+      const paymentRef = db.collection('payment_requests').doc(id);
+      
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(paymentRef);
+        if (!doc.exists) throw new Error('Payment request not found');
+        
+        const data = doc.data();
+        if (data.status !== 'PENDING') throw new Error('Payment is not pending');
+
+        const settingsDoc = await transaction.get(db.collection('settings').doc('global'));
+        const settings = settingsDoc.exists ? settingsDoc.data() : { premiumDurationDays: 30 };
+        const durationDays = parseInt(settings.premiumDurationDays, 10) || 30;
+
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + (durationDays * 24 * 60 * 60 * 1000));
+        
+        // Mark payment as approved
+        transaction.update(paymentRef, {
+          status: 'APPROVED',
+          reviewedAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+          reviewedBy: req.adminData.email
+        });
+
+        // Update user to premium
+        const userRef = db.collection('users').doc(data.userId);
+        transaction.update(userRef, {
+          isPremium: true,
+          premiumPlan: 'PREMIUM',
+          premiumExpiresAt: expiresAt
+        });
+        
+        logAdminAction(db, req.adminData.id, req.adminData.email, 'payment_approve', id, `Approved payment ${id} for user ${data.userId}`);
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error approving payment:', error);
+      res.status(500).json({ error: error.message || 'Approval failed' });
+    }
+  });
+
+  // 11. POST /api/admin/payments/:id/reject
+  router.post('/payments/:id/reject', async (req, res) => {
+    const adminInstance = initFirebaseAdmin();
+    if (!adminInstance) return res.status(500).json({ error: 'No DB access' });
+    
+    const { id } = req.params;
+    const { reason } = req.body;
+    try {
+      const db = adminInstance.firestore();
+      const paymentRef = db.collection('payment_requests').doc(id);
+      
+      await paymentRef.update({
+        status: 'REJECTED',
+        rejectionReason: reason || 'Payment could not be verified.',
+        reviewedAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+        reviewedBy: req.adminData.email
+      });
+
+      await logAdminAction(db, req.adminData.id, req.adminData.email, 'payment_reject', id, `Rejected payment ${id} (Reason: ${reason})`);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error rejecting payment:', error);
+      res.status(500).json({ error: 'Rejection failed' });
+    }
+  });
+
+  // 12. GET /api/admin/settings
+  router.get('/settings', async (req, res) => {
+    const adminInstance = initFirebaseAdmin();
+    if (!adminInstance) return res.json({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: "/qr-placeholder.png", premiumVisibilityBoost: true });
+    
+    try {
+      const db = adminInstance.firestore();
+      const doc = await db.collection('settings').doc('global').get();
+      if (!doc.exists) {
+        return res.json({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: "/qr-placeholder.png", premiumVisibilityBoost: true });
+      }
+      res.json(doc.data());
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+  });
+
+  // 13. POST /api/admin/settings
+  router.post('/settings', async (req, res) => {
+    const adminInstance = initFirebaseAdmin();
+    if (!adminInstance) return res.status(500).json({ error: 'No DB access' });
+    
+    const { premiumPrice, premiumDurationDays, qrCodeUrl, premiumVisibilityBoost } = req.body;
+    try {
+      const db = adminInstance.firestore();
+      const settingsRef = db.collection('settings').doc('global');
+      
+      const newSettings = {
+        premiumPrice: Number(premiumPrice) || 99,
+        premiumDurationDays: Number(premiumDurationDays) || 30,
+        qrCodeUrl: qrCodeUrl || "/qr-placeholder.png",
+        premiumVisibilityBoost: !!premiumVisibilityBoost
+      };
+      
+      await settingsRef.set(newSettings, { merge: true });
+      await logAdminAction(db, req.adminData.id, req.adminData.email, 'update_settings', 'global', `Updated platform settings`);
+      
+      res.json({ success: true, settings: newSettings });
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      res.status(500).json({ error: 'Failed to update settings' });
+    }
+  });
+
   app.use('/api/admin', router);
 }

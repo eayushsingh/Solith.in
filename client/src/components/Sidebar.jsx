@@ -7,6 +7,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
     { id: 'messages', icon: MessageSquare, title: 'Global Chat' },
     { id: 'leaderboard', icon: Award, title: 'Leaderboard' },
     { id: 'guidelines', icon: BookOpen, title: 'Guidelines' },
+    { id: 'premium', icon: Crown, title: 'Premium' },
     ...(isAdmin ? [{ id: 'admin', icon: Shield, title: 'Admin' }] : []),
   ];
 
