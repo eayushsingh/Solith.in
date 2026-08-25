@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import axios from 'axios';
-import { AccessToken } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient } from 'livekit-server-sdk';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { initFirebaseAdmin, verifyToken, verifyAdmin } from './firebaseAdmin.js';
@@ -248,22 +248,50 @@ app.post('/api/config', verifyToken, verifyAdmin, (req, res) => {
 // API Endpoint: List Rooms
 app.get('/api/rooms', async (req, res) => {
   const adminInstance = initFirebaseAdmin();
+  let dbRooms = rooms;
+
   if (adminInstance) {
     try {
       const db = adminInstance.firestore();
       const snapshot = await db.collection('rooms').get();
-      const dbRooms = snapshot.docs.map(doc => doc.data());
-      // Update in-memory cache as well
+      dbRooms = snapshot.docs.map(doc => doc.data());
+      
+      // Async sync with LiveKit to clear ghost participants
+      if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
+        const roomService = new RoomServiceClient(runtimeConfig.livekitUrl, runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret);
+        
+        // Non-blocking background sync
+        Promise.all(dbRooms.map(async (room) => {
+          try {
+            const lkParticipants = await roomService.listParticipants(room.id);
+            const activeIds = new Set(lkParticipants.map(p => p.identity));
+            
+            let changed = false;
+            const validParticipants = room.participants.filter(p => {
+              if (activeIds.has(p.id)) return true;
+              changed = true;
+              return false;
+            });
+
+            if (changed) {
+              await db.collection('rooms').doc(room.id).update({ participants: validParticipants });
+            }
+          } catch (err) {
+            // Room might not exist in LiveKit if empty, that's fine
+            if (room.participants.length > 0) {
+              await db.collection('rooms').doc(room.id).update({ participants: [] });
+            }
+          }
+        })).catch(console.error);
+      }
+      
       rooms = dbRooms;
-      const publicAndFriendsRooms = dbRooms.filter(r => r.accessType !== 'invite');
-      return res.json(publicAndFriendsRooms);
     } catch (err) {
       console.error('Error fetching rooms from Firestore:', err);
     }
   }
   
-  // Fallback to in-memory
-  const publicAndFriendsRooms = rooms.filter(r => r.accessType !== 'invite');
+  const publicAndFriendsRooms = dbRooms.filter(r => r.accessType !== 'invite');
   res.json(publicAndFriendsRooms);
 });
 

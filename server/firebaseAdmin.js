@@ -54,7 +54,7 @@ export const initFirebaseAdmin = () => {
 
 export async function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
-  const idToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split('Bearer ')[1] : null;
+  const idToken = (authHeader && authHeader.startsWith('Bearer ')) ? authHeader.split('Bearer ')[1] : req.query.token;
   const adminInstance = initFirebaseAdmin();
 
   if (!adminInstance) {

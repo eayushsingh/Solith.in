@@ -607,13 +607,21 @@ export default function App() {
       });
     }, 10000); // every 10 seconds
 
-
+    // Add robust tab close cleanup to prevent ghost participants
+    const handleBeforeUnload = () => {
+      if (activeRoom && user && user.token) {
+        // Use sendBeacon for reliable delivery during page unload
+        navigator.sendBeacon(`${API_URL}/api/rooms/${activeRoom.id}/leave?token=${user.token}`);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       clearInterval(pingInterval);
       clearInterval(xpInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [callState, activeRoom, isMuted, participants, isRealCall]);
+  }, [callState, activeRoom, isMuted, participants, isRealCall, user]);
 
   // Scroll chat to bottom on new messages
   useEffect(() => {
@@ -2377,9 +2385,9 @@ export default function App() {
                 {/* Level / XP */}
                 <div className="hidden lg:flex items-center gap-2 text-[13px] font-semibold text-text-secondary bg-bg-surface border border-white/5 px-3 py-1.5 rounded-full" title="Your current Level and XP">
                   <div className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_8px_var(--accent-primary-glow)]"></div>
-                  <span className="text-text-primary">Lvl {levelInfo ? levelInfo.level : 11}</span>
+                  <span className="text-text-primary">Lvl {levelInfo ? levelInfo.level : 1}</span>
                   <span className="text-white/30">•</span>
-                  <span>{user.xp ? user.xp.toLocaleString() : '6,470'} XP</span>
+                  <span>{(user?.xp || 0).toLocaleString()} XP</span>
                 </div>
 
                 {/* Streak */}
