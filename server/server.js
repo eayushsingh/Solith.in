@@ -944,6 +944,9 @@ io.on('connection', (socket) => {
       if (room.ytVideoId) {
         socket.emit('yt-share', { videoId: room.ytVideoId, sharingUser: room.ytSharingUser });
       }
+      if (room.activeGame) {
+        socket.emit('game-state', room.activeGame);
+      }
     }
   });
 
@@ -980,6 +983,40 @@ io.on('connection', (socket) => {
       saveDB();
     }
   });
+
+  // --- MULTIPLAYER GAMES SYNC ---
+  socket.on('game-start', (data) => {
+    const { roomId, gameType, initialState } = data;
+    const room = rooms.find(r => r.id === roomId);
+    if (room) {
+      room.activeGame = {
+        type: gameType,
+        state: initialState,
+        players: [data.player],
+        startedAt: Date.now()
+      };
+      io.in(roomId).emit('game-state', room.activeGame);
+    }
+  });
+
+  socket.on('game-action', (data) => {
+    const { roomId, state, lastAction } = data;
+    const room = rooms.find(r => r.id === roomId);
+    if (room && room.activeGame) {
+      room.activeGame.state = state; // Update persistent state
+      socket.to(roomId).emit('game-action', { state, lastAction, player: data.player });
+    }
+  });
+
+  socket.on('game-end', (data) => {
+    const { roomId } = data;
+    const room = rooms.find(r => r.id === roomId);
+    if (room) {
+      room.activeGame = null;
+      io.in(roomId).emit('game-ended');
+    }
+  });
+
 
   socket.on('disconnect', () => {
     console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
