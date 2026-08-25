@@ -19,48 +19,67 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
       where('participants', 'array-contains', currentUser.id)
     );
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      let convos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Sort client-side to avoid needing a Firestore composite index
-      convos.sort((a, b) => {
-        const t1 = a.lastMessageAt?.seconds || 0;
-        const t2 = b.lastMessageAt?.seconds || 0;
-        return t2 - t1;
-      });
-      
-      // Filter out blocked users
-      const blocked = currentUser.blockedUsers || [];
-      const validConvos = convos.filter(c => {
-        const otherId = c.participants.find(p => p !== currentUser.id);
-        return !blocked.includes(otherId);
-      });
-
-      setConversations(validConvos);
-
-      // Fetch profiles for the other participants
-      const missingProfileIds = validConvos
-        .map(c => c.participants.find(p => p !== currentUser.id))
-        .filter(id => id && !profiles[id]);
-
-      if (missingProfileIds.length > 0) {
+    const unsubscribe = onSnapshot(
+      q,
+      async (snapshot) => {
         try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-          const res = await fetch(`${API_URL}/api/users/profiles?ids=${[...new Set(missingProfileIds)].join(',')}`);
-          if (res.ok) {
-            const data = await res.json();
-            const fetchedProfiles = {};
-            (data.profiles || []).forEach(p => { fetchedProfiles[p.id] = p; });
-            setProfiles(prev => ({ ...prev, ...fetchedProfiles }));
+          let convos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          
+          // Sort client-side to avoid needing a Firestore composite index
+          convos.sort((a, b) => {
+            const t1 = a.lastMessageAt?.seconds || 0;
+            const t2 = b.lastMessageAt?.seconds || 0;
+            return t2 - t1;
+          });
+          
+          // Filter out blocked users
+          const blocked = currentUser?.blockedUsers || [];
+          const validConvos = convos.filter(c => {
+            if (!c.participants || !Array.isArray(c.participants)) return false;
+            const otherId = c.participants.find(p => p !== currentUser.id);
+            return !blocked.includes(otherId);
+          });
+
+          setConversations(validConvos);
+
+          // Fetch profiles for the other participants
+          const missingProfileIds = validConvos
+            .map(c => c.participants.find(p => p !== currentUser.id))
+            .filter(id => id && !profiles[id]);
+
+          // Do not block UI loading on profile fetch
+          setLoading(false);
+
+          if (missingProfileIds.length > 0) {
+            // Run fetch asynchronously without blocking
+            (async () => {
+              try {
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+                const res = await fetch(`${API_URL}/api/users/profiles?ids=${[...new Set(missingProfileIds)].join(',')}`);
+                if (res.ok) {
+                  const data = await res.json();
+                  const fetchedProfiles = {};
+                  (data.profiles || []).forEach(p => { fetchedProfiles[p.id] = p; });
+                  setProfiles(prev => ({ ...prev, ...fetchedProfiles }));
+                }
+              } catch (err) {
+                console.error("Failed to fetch profiles for inbox", err);
+                setError('Unable to load some conversation profiles.');
+              }
+            })();
           }
         } catch (err) {
-          console.error("Failed to fetch profiles for inbox", err);
-          setError('Unable to load some conversation profiles.');
+          console.error("Error processing messages snapshot:", err);
+          setError("An error occurred while loading conversations.");
+          setLoading(false);
         }
+      },
+      (error) => {
+        console.error("Firestore onSnapshot error:", error);
+        setError(`Failed to load messages: ${error.message}`);
+        setLoading(false);
       }
-      
-      setLoading(false);
-    });
+    );
 
     return () => unsubscribe();
   }, [currentUser]);
