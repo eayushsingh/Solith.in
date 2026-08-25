@@ -14,7 +14,7 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
     let timeout = setTimeout(() => {
       setLoading(false);
       console.warn("Firebase connection timeout in CommunityFeed. Please make sure the Cloud Firestore API is enabled in your Firebase project.");
-    }, 4000);
+    }, 15000);
 
     // Listen to the last 100 posts in real-time
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
