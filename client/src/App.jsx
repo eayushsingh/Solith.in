@@ -165,8 +165,36 @@ export default function App() {
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
   const [activeGame, setActiveGame] = useState(null);
   const [showGameSelector, setShowGameSelector] = useState(false);
+  
+  // Custom Toast State (replaces window.alert)
+  const [toastMessage, setToastMessage] = useState(null);
 
   const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    let timeoutId;
+    const originalAlert = window.alert;
+    window.alert = (msg) => {
+      const message = typeof msg === 'string' ? msg : JSON.stringify(msg);
+      
+      if (message.includes('Invalid token') || message.includes('Unauthorized') || message.includes('banned')) {
+         signOut(auth).catch(console.error);
+         setToastMessage(message.includes('banned') ? "Account banned for violating guidelines." : "Session expired. Please sign in again.");
+      } else {
+         setToastMessage(message);
+      }
+      
+      if(timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setToastMessage(null);
+      }, 5000);
+    };
+    
+    return () => {
+      window.alert = originalAlert;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, []);
 
   useEffect(() => {
     const syncViewFromHash = () => {
@@ -2751,6 +2779,20 @@ export default function App() {
 
         </div>
         );      })()}
+
+      {/* Custom Global Toast */}
+      {toastMessage && (
+        <div className="fixed top-6 md:top-20 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in pointer-events-none">
+          <div className="bg-[#111] backdrop-blur-xl border border-white/10 text-white px-6 py-3.5 rounded-full shadow-2xl flex items-center gap-3 max-w-sm md:max-w-md text-left mx-4 w-max">
+             <span className="text-[var(--accent-primary)] flex-shrink-0">
+               <AlertCircle className="w-5 h-5" />
+             </span>
+             <span className="text-sm font-bold truncate leading-tight max-w-[280px]">
+               {typeof toastMessage === 'string' ? toastMessage : JSON.stringify(toastMessage)}
+             </span>
+          </div>
+        </div>
+      )}
       </>
 )
   );
