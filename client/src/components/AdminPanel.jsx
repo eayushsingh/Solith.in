@@ -414,6 +414,7 @@ export default function AdminPanel({ onBack, user }) {
                       </tbody>
                     </table>
                     </div>
+                    </div>
                   </div>
                 </div>
               )}
