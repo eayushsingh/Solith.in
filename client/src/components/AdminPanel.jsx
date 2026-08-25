@@ -240,6 +240,7 @@ export default function AdminPanel({ onBack, user }) {
                           <th className="px-6 py-4">Name / Email</th>
                           <th className="px-6 py-4">Status</th>
                           <th className="px-6 py-4">Warnings</th>
+                          <th className="px-6 py-4">Daily Time (Mins)</th>
                           <th className="px-6 py-4">Actions</th>
                         </tr>
                       </thead>
@@ -260,10 +261,11 @@ export default function AdminPanel({ onBack, user }) {
                               ) : u.isRestricted ? (
                                 <span className="text-orange-500 font-bold">Restricted</span>
                               ) : (
-                                <span className="text-red-500">Active</span>
+                                <span className="text-green-500">Active</span>
                               )}
                             </td>
                             <td className="px-6 py-4 text-text-secondary">{u.warningCount || 0}</td>
+                            <td className="px-6 py-4 text-blue-400 font-bold">{u.dailyXp || 0} mins</td>
                             <td className="px-6 py-4 space-x-2">
                               {u.isBanned || u.isRestricted ? (
                                 <button onClick={() => handleUserAction(u.id, 'reinstate')} className="text-xs px-3 py-1 bg-bg-surface hover:bg-gray-700 rounded text-text-primary transition-colors">Reinstate</button>

@@ -164,12 +164,20 @@ const awardUserXP = async (userId, durationMs) => {
         newMonthlyXp = data.monthlyXp + xpEarned;
       }
 
+      const currentDayId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
+      let newDailyXp = xpEarned;
+      if (data.dailyXpId === currentDayId && typeof data.dailyXp === 'number') {
+        newDailyXp = data.dailyXp + xpEarned;
+      }
+
       transaction.update(userRef, {
         xp: adminInstance.firestore.FieldValue.increment(xpEarned),
         weeklyXp: newWeeklyXp,
         weeklyXpId: currentWeekId,
         monthlyXp: newMonthlyXp,
-        monthlyXpId: currentMonthId
+        monthlyXpId: currentMonthId,
+        dailyXp: newDailyXp,
+        dailyXpId: currentDayId
       });
     });
 
