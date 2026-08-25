@@ -58,8 +58,9 @@ export default function PremiumSubscription({ onBack, user }) {
     e.preventDefault();
     setError('');
     
-    if (utr.length < 6) {
-      setError('Please enter a valid UTR / Transaction ID.');
+    const utrStr = utr ? utr.trim() : '';
+    if (!/^\d{12}$/.test(utrStr)) {
+      setError('Please enter a valid 12-digit UTR / Transaction ID.');
       return;
     }
 
