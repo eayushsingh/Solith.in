@@ -136,6 +136,7 @@ export default function App() {
   // Active Voice Call States
   const [activeRoom, setActiveRoom] = useState(null);
   const [callState, setCallState] = useState('left'); // left, joining, joined, error
+  const [roomJoinTime, setRoomJoinTime] = useState(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [ytVideoId, setYtVideoId] = useState(null);
@@ -552,10 +553,7 @@ export default function App() {
         setXpFloater({ amount: xpEarned, key: Date.now() });
 
         if (nextLevel > prevLevel) {
-          // Sparkle visual Level up alert!
-          setTimeout(() => {
-            alert(`🎉 Level Up! You reached Level ${nextLevel} (${getLevelInfo(nextXp).title})! Keep speaking!`);
-          }, 100);
+          console.log(`🎉 Level Up! You reached Level ${nextLevel} (${getLevelInfo(nextXp).title})! Keep speaking!`);
         }
 
         return { ...prev, xp: nextXp };
@@ -706,9 +704,9 @@ export default function App() {
       setRooms(prev => [...prev, newRoom]);
       setShowCreateModal(false);
       
-      // Auto-join newly created room in a new tab
-      window.open(`${window.location.origin}/?room=${newRoom.id}`, '_blank', 'noopener,noreferrer');
-
+      // Join newly created room in current tab and update URL for easy sharing
+      window.history.pushState({}, '', `/?room=${newRoom.id}`);
+      joinVoiceRoom(newRoom);
       // Reset form
       setNewRoomName('');
       setNewRoomTopic('');
@@ -791,7 +789,8 @@ export default function App() {
 
       // Connect via LiveKit helper
       await LiveKitService.join(data.livekitUrl, data.token, data.isRealConnection, user);
-
+      
+      setRoomJoinTime(Date.now());
       fetchRooms(); // refresh listing UI
     } catch (err) {
       console.error('Error joining call room:', err);
@@ -799,6 +798,7 @@ export default function App() {
       setIsMuted(true);
       setActiveRoom(null);
       setCallState('left');
+      setRoomJoinTime(null);
     }
   };
 
@@ -806,9 +806,24 @@ export default function App() {
     LiveKitService.leave(isRealCall);
     if (activeRoom) {
       socket.emit('leave-room', activeRoom.id);
+      
+      // Calculate and save time spent
+      if (roomJoinTime && user && user.id) {
+        const timeSpentMinutes = Math.floor((Date.now() - roomJoinTime) / 60000);
+        if (timeSpentMinutes > 0) {
+          try {
+            updateDoc(doc(db, 'users', user.id), {
+              totalTimeSpent: (user.totalTimeSpent || 0) + timeSpentMinutes
+            }).catch(console.error);
+          } catch (err) {
+            console.error("Failed to update time spent", err);
+          }
+        }
+      }
     }
     setActiveRoom(null);
     setCallState('left');
+    setRoomJoinTime(null);
     setParticipants([]);
     setAudioLevels({});
     setChatMessages([]);
@@ -2283,11 +2298,17 @@ export default function App() {
             {user ? (
               <>
                 {/* Level / XP */}
-                <div className="hidden lg:flex items-center gap-2 text-[15px] font-mono text-text-secondary">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]"></div>
-                  <span className="text-text-primary font-bold">{levelInfo ? levelInfo.level : 11}</span>
-                  <span>/</span>
-                  <span>{user.xp ? user.xp.toLocaleString() : '6,470'}</span>
+                <div className="hidden lg:flex items-center gap-2 text-[13px] font-semibold text-text-secondary bg-bg-surface border border-white/5 px-3 py-1.5 rounded-full" title="Your current Level and XP">
+                  <div className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_8px_var(--accent-primary-glow)]"></div>
+                  <span className="text-text-primary">Lvl {levelInfo ? levelInfo.level : 11}</span>
+                  <span className="text-white/30">•</span>
+                  <span>{user.xp ? user.xp.toLocaleString() : '6,470'} XP</span>
+                </div>
+
+                {/* Streak */}
+                <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full" title={`${user.streak || 1} Day Streak`}>
+                  <span className="animate-pulse">🔥</span>
+                  <span>{user.streak || 1}</span>
                 </div>
                 
                 {/* Inbox Icon */}
