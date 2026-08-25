@@ -39,7 +39,7 @@ const io = new Server(server, { cors: corsOptions });
 
 app.use(helmet()); // Set basic HTTP security headers
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Apply global rate limiting (100 reqs / 15 mins per IP)
 const globalLimiter = rateLimit({
@@ -1033,6 +1033,19 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('game-join', (data) => {
+    const { roomId, player } = data;
+    const room = rooms.find(r => r.id === roomId);
+    if (room && room.activeGame) {
+      // Add player if they aren't already in the game and there's room
+      const exists = room.activeGame.players.some(p => p.id === player.id);
+      if (!exists && room.activeGame.players.length < 4) { // Max 4 for Uno, 2 for Chess/TicTacToe/Connect4
+        room.activeGame.players.push(player);
+        io.in(roomId).emit('game-state', room.activeGame);
+      }
+    }
+  });
+
 
   socket.on('disconnect', () => {
     console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
@@ -1068,7 +1081,7 @@ app.get('/api/settings/public', async (req, res) => {
 
 // Premium Payment Endpoints
 app.post('/api/payments/submit', verifyToken, async (req, res) => {
-  const { utr } = req.body;
+  const { utr, plan, screenshot } = req.body;
   if (!utr || typeof utr !== 'string' || utr.trim().length < 6) {
     return res.status(400).json({ error: 'Valid UTR is required.' });
   }
@@ -1101,13 +1114,17 @@ app.post('/api/payments/submit', verifyToken, async (req, res) => {
     // Get current price from settings
     const settingsDoc = await db.collection('settings').doc('global').get();
     const settings = settingsDoc.exists ? settingsDoc.data() : { premiumPrice: 99 };
-    const currentPrice = Number(settings.premiumPrice) || 99;
+    
+    const selectedPlan = plan === 'OWNER' ? 'OWNER' : 'STANDARD';
+    const currentPrice = selectedPlan === 'OWNER' ? 499 : (Number(settings.premiumPrice) || 99);
 
     const docRef = await db.collection('payment_requests').add({
       userId: req.user.uid,
       amount: currentPrice,
+      plan: selectedPlan,
       currency: 'INR',
       utr: utr.trim(),
+      screenshot: screenshot || null,
       status: 'PENDING',
       submittedAt: adminInstance.firestore.FieldValue.serverTimestamp()
     });
