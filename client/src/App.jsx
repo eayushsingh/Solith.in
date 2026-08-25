@@ -2355,7 +2355,7 @@ export default function App() {
               loop 
               muted 
               playsInline 
-              className="w-full h-[220px] sm:h-[320px] lg:h-[400px] object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+              className="w-full h-[180px] sm:h-[240px] lg:h-[300px] object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-[var(--bg-base)]/10 to-transparent pointer-events-none"></div>
             <div className="absolute bottom-6 left-0 right-0 text-center z-10 px-4 pointer-events-none">
@@ -2368,14 +2368,16 @@ export default function App() {
 
           {/* Full Width Search Row */}
           <div className="w-full flex flex-row items-center gap-2 md:gap-4 bg-bg-base/60 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-2xl overflow-hidden focus-within:border-[var(--accent-primary)] focus-within:bg-bg-base transition-all">
-            <div className="relative flex-1 min-w-0 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors" />
+            <div className="relative flex-1 min-w-0 group flex items-center">
+              <div className="absolute left-5 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors pointer-events-none z-10 flex items-center justify-center">
+                <Search className="w-5 h-5" />
+              </div>
               <input 
                 type="text" 
                 placeholder="Search rooms or languages..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-3 md:py-4 pl-12 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium"
+                className="w-full py-3 md:py-4 pl-14 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium relative z-0"
               />
             </div>
             {searchQuery && (
