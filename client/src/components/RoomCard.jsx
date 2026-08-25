@@ -1,14 +1,22 @@
 import React from 'react';
 import { Settings, Heart, Phone } from 'lucide-react';
+import PremiumBadge from './PremiumBadge';
 
 export default function RoomCard({ room, onJoin }) {
   // Free4Talk style Room Card
   
+  const isPremium = room.ownerIsPremium || false;
+  
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden flex flex-col p-5 bg-gradient-to-br from-bg-surface to-bg-base border border-accent-primary/20 shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all duration-300 hover:scale-[1.02] hover:border-accent-primary/50 hover:shadow-[0_8px_40px_rgba(108,92,231,0.15)] group">
+    <div className={`relative w-full rounded-2xl overflow-hidden flex flex-col p-5 bg-gradient-to-br from-bg-surface to-bg-base border shadow-[0_8px_30px_rgb(0,0,0,0.4)] transition-all duration-300 hover:scale-[1.02] group
+      ${isPremium ? 'border-amber-400/50 shadow-[0_0_20px_rgba(251,191,36,0.15)] hover:border-amber-400 hover:shadow-[0_0_30px_rgba(251,191,36,0.25)]' : 'border-accent-primary/20 hover:border-accent-primary/50 hover:shadow-[0_8px_40px_rgba(108,92,231,0.15)]'}
+    `}>
+      {isPremium && (
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 pointer-events-none group-hover:via-amber-500/10 transition-colors duration-500"></div>
+      )}
       
       {/* Top Header Row */}
-      <div className="flex items-center justify-between w-full mb-3">
+      <div className="flex items-center justify-between w-full mb-3 relative z-10">
         <div className="flex items-center gap-2">
           {/* Faux logo circle */}
           <div className="w-5 h-5 rounded-full border-2 border-accent-primary flex items-center justify-center">
@@ -28,9 +36,12 @@ export default function RoomCard({ room, onJoin }) {
       </div>
 
       {/* Topic Title */}
-      <h3 className="text-accent-primary text-[13px] font-bold uppercase tracking-wide mb-6 line-clamp-1">
-        {room.name || 'PRACTICE ENGLISH HERE'}
-      </h3>
+      <div className="mb-6 line-clamp-2">
+        {isPremium && <PremiumBadge showText={false} className="mr-2 mb-1 inline-flex align-middle" />}
+        <h3 className={`inline text-[13px] font-bold uppercase tracking-wide ${isPremium ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : 'text-accent-primary'}`}>
+          {room.name || 'PRACTICE ENGLISH HERE'}
+        </h3>
+      </div>
 
       {/* Central Avatars with Likes */}
       <div className="flex items-center justify-center gap-6 mb-8 flex-1">
