@@ -1078,8 +1078,9 @@ app.get('/api/settings/public', async (req, res) => {
 // Premium Payment Endpoints
 app.post('/api/payments/submit', verifyToken, async (req, res) => {
   const { utr, plan, screenshot } = req.body;
-  if (!utr || typeof utr !== 'string' || utr.trim().length < 6) {
-    return res.status(400).json({ error: 'Valid UTR is required.' });
+  const utrStr = utr ? utr.trim() : '';
+  if (!/^\d{12}$/.test(utrStr)) {
+    return res.status(400).json({ error: 'Valid 12-digit UTR number is required.' });
   }
 
   const adminInstance = initFirebaseAdmin();
@@ -1119,10 +1120,10 @@ app.post('/api/payments/submit', verifyToken, async (req, res) => {
       amount: currentPrice,
       plan: selectedPlan,
       currency: 'INR',
-      utr: utr.trim(),
+      utr: utrStr,
       screenshot: screenshot || null,
       status: 'PENDING',
-      submittedAt: adminInstance.firestore.FieldValue.serverTimestamp()
+      submittedAt: Date.now()
     });
 
     res.json({ success: true, requestId: docRef.id });
