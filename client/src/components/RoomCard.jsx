@@ -55,23 +55,55 @@ export default function RoomCard({ room, onJoin }) {
           const participant = displayParticipants[slotIdx];
           
           if (participant) {
+            const isPremiumUser = isPremium && slotIdx === 0;
+
             return (
               <div key={participant.id || slotIdx} className="flex flex-col items-center group/avatar relative">
-                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[3px] overflow-hidden mb-2 relative transition-transform duration-300 group-hover/avatar:scale-110 ${isPremium ? 'border-amber-400/50' : 'border-[var(--accent-primary)]'}`}>
-                  {participant.photoUrl ? (
-                    <img src={participant.photoUrl} alt={participant.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-[#2a2d36] flex items-center justify-center text-2xl font-bold text-white">
-                      {participant.name ? participant.name.charAt(0).toUpperCase() : '?'}
-                    </div>
+                {/* Premium Avatar Container */}
+                <div className={`relative mb-2 transition-transform duration-300 group-hover/avatar:scale-110 ${isPremiumUser ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-16 h-16 sm:w-20 sm:h-20'}`}>
+                  
+                  {/* Premium Animated Border and Decorations */}
+                  {isPremiumUser && (
+                    <>
+                      {/* Rotating Gradient Border */}
+                      <div className="absolute inset-[-4px] rounded-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 animate-[spin_3s_linear_infinite] z-0 blur-[2px]"></div>
+                      <div className="absolute inset-[-4px] rounded-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 animate-[spin_3s_linear_infinite] z-0"></div>
+                      
+                      {/* Premium Floating Elements (Simulating the 8-bit vibe) */}
+                      <div className="absolute -top-3 -left-3 z-30 animate-bounce">
+                        <div className="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] flex items-center gap-0.5 transform -rotate-12">
+                          ❤️ <span className="font-mono">x3</span>
+                        </div>
+                      </div>
+                      
+                      {/* Crown/Star */}
+                      <div className="absolute -bottom-2 -right-2 z-30 animate-pulse">
+                        <div className="bg-yellow-400 text-white text-[12px] p-1 rounded-full border-2 border-yellow-600 shadow-lg">
+                          ⭐
+                        </div>
+                      </div>
+                    </>
                   )}
+
+                  {/* Actual Avatar Image */}
+                  <div className={`w-full h-full rounded-full overflow-hidden relative z-10 ${isPremiumUser ? 'border-[3px] border-[#1a1d24]' : 'border-[3px] border-[var(--accent-primary)]'}`}>
+                    {participant.photoUrl ? (
+                      <img src={participant.photoUrl} alt={participant.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-[#2a2d36] flex items-center justify-center text-2xl font-bold text-white">
+                        {participant.name ? participant.name.charAt(0).toUpperCase() : '?'}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 text-text-secondary text-[10px] font-bold bg-black/40 px-2 py-0.5 rounded-full border border-white/5">
+
+                <div className="flex items-center gap-1 text-text-secondary text-[10px] font-bold bg-black/40 px-2 py-0.5 rounded-full border border-white/5 relative z-20">
                   <Heart className="w-2.5 h-2.5 fill-red-500 text-red-500" />
                   <span>{participant.followersCount || 0}</span>
                 </div>
+                
                 {/* Tooltip */}
-                <div className="absolute -bottom-8 opacity-0 group-hover/avatar:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-20">
+                <div className="absolute -bottom-8 opacity-0 group-hover/avatar:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-30 shadow-lg">
                   {participant.name}
                 </div>
               </div>
