@@ -14,9 +14,9 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
       setLoading(true);
       setError('');
       try {
-        // Fetch all users with a 4-second timeout protection in case Cloud Firestore API is disabled
+        // Fetch all users with a 15-second timeout protection in case Cloud Firestore API is disabled
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Firebase connection timeout. Please make sure the Cloud Firestore API is enabled in your Firebase Console project (solith-df915).")), 4000)
+          setTimeout(() => reject(new Error("Firebase connection timeout. Please make sure the Cloud Firestore API is enabled in your Firebase Console project (solith-df915).")), 15000)
         );
         const snapshot = await Promise.race([
           getDocs(collection(db, 'users')),

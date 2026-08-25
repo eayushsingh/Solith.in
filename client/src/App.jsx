@@ -201,9 +201,9 @@ export default function App() {
       const hash = window.location.hash.replace('#', '');
       const path = window.location.pathname.replace('/', '');
       
-      if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed'].includes(hash)) {
+      if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(hash)) {
         setView(hash);
-      } else if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed'].includes(path)) {
+      } else if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(path)) {
         setView(path);
       }
     };
@@ -2119,6 +2119,17 @@ export default function App() {
     );
   }
 
+  if (view === 'premium') {
+    return (
+      renderAppLayout(
+        <PremiumSubscription 
+          user={user} 
+          onBack={() => { setView('lobby'); window.history.pushState({}, '', '/'); }} 
+        />
+      )
+    );
+  }
+
   if (view === 'leaderboard') {
     return (
       renderAppLayout(
@@ -2314,12 +2325,12 @@ export default function App() {
               <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
             </button>
             <button 
-              onClick={() => window.open('https://buymeacoffee.com', '_blank')}
-              className="hidden lg:flex px-3.5 py-2 bg-[#FFDD00]/10 border border-[#FFDD00]/30 text-[#FFDD00] font-bold rounded-xl text-[13px] items-center gap-2 hover:bg-[#FFDD00]/20 transition-all hover:scale-105 whitespace-nowrap"
-              title="Buy me a coffee"
+              onClick={() => { setView('premium'); window.location.hash = 'premium'; }}
+              className="hidden lg:flex px-3.5 py-2 bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-400/30 text-amber-400 font-bold rounded-xl text-[13px] items-center gap-2 hover:bg-amber-500/20 hover:scale-105 transition-all whitespace-nowrap shadow-[0_0_15px_rgba(251,191,36,0.15)]"
+              title="Get Premium"
             >
-              <Coffee className="w-4 h-4 text-[#FFDD00]" />
-              Buy Coffee
+              <Crown className="w-4 h-4 text-amber-400" />
+              Go Premium
             </button>
           </div>
 
