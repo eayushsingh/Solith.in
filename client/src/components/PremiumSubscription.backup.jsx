@@ -12,9 +12,7 @@ export default function PremiumSubscription({ onBack, user }) {
   const [status, setStatus] = useState(null); // null, 'PENDING', 'APPROVED', 'REJECTED'
   const [rejectionReason, setRejectionReason] = useState('');
   const [error, setError] = useState('');
-  const [settings, setSettings] = useState({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: '/qr.png' });
-  const [selectedPlan, setSelectedPlan] = useState('STANDARD');
-  const [screenshot, setScreenshot] = useState(null);
+  const [settings, setSettings] = useState({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: '/qr-placeholder.png' });
 
   const isPremiumActive = user?.isPremium && (!user.premiumExpiresAt || user.premiumExpiresAt > Date.now());
 
@@ -27,7 +25,7 @@ export default function PremiumSubscription({ onBack, user }) {
     try {
       const res = await fetch(`${API_URL}/api/settings/public`);
       const data = await res.json();
-      setSettings({ ...data, qrCodeUrl: '/qr.png' }); // User wants to use local qr.png
+      setSettings(data);
     } catch (err) {
       console.error('Failed to fetch settings', err);
     }
@@ -71,7 +69,7 @@ export default function PremiumSubscription({ onBack, user }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`
         },
-        body: JSON.stringify({ utr: utr.trim(), plan: selectedPlan })
+        body: JSON.stringify({ utr: utr.trim() })
       });
 
       const data = await res.json();
@@ -203,29 +201,14 @@ export default function PremiumSubscription({ onBack, user }) {
                     </div>
                   ) : (
                     <>
-                      <div className="mb-6">
-                        <h3 className="text-xl font-black text-white mb-4 tracking-tight">Select your plan</h3>
-                        <div className="grid grid-cols-2 gap-3 mb-2">
-                          <button 
-                            type="button"
-                            onClick={() => setSelectedPlan('STANDARD')}
-                            className={`p-3 rounded-xl border text-left transition-all ${selectedPlan === 'STANDARD' ? 'bg-amber-500/10 border-amber-500 shadow-[0_0_15px_rgba(251,191,36,0.15)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
-                          >
-                            <div className="text-white font-bold text-sm mb-1">Standard</div>
-                            <div className="text-amber-400 font-black text-lg">₹{settings.premiumPrice}</div>
-                            <div className="text-white/40 text-[10px] mt-1 leading-tight">All premium benefits</div>
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => setSelectedPlan('OWNER')}
-                            className={`p-3 rounded-xl border text-left transition-all ${selectedPlan === 'OWNER' ? 'bg-amber-500/10 border-amber-500 shadow-[0_0_15px_rgba(251,191,36,0.15)]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
-                          >
-                            <div className="text-white font-bold text-sm mb-1">Owner Pro</div>
-                            <div className="text-amber-400 font-black text-lg">₹499</div>
-                            <div className="text-white/40 text-[10px] mt-1 leading-tight">1-on-1 with owner, custom changes</div>
-                          </button>
+                      <div className="flex justify-between items-start mb-8">
+                        <div>
+                          <h3 className="text-2xl font-black text-white mb-1 tracking-tight">Premium Plan</h3>
+                          <p className="text-white/40 text-sm font-medium">{settings.premiumDurationDays} days of premium benefits</p>
                         </div>
-                        <p className="text-white/40 text-[11px] font-medium text-center">{settings.premiumDurationDays} days of premium benefits</p>
+                        <div className="text-right">
+                          <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-amber-300 to-amber-500 drop-shadow-sm">₹{settings.premiumPrice}</div>
+                        </div>
                       </div>
 
                       {status === 'REJECTED' && (
@@ -246,7 +229,7 @@ export default function PremiumSubscription({ onBack, user }) {
                           </div>
                         </div>
                         <p className="text-white/60 text-sm font-medium text-center">
-                          Scan with any UPI app to pay exactly <strong className="text-white">₹{selectedPlan === 'OWNER' ? 499 : settings.premiumPrice}</strong>
+                          Scan with any UPI app to pay exactly <strong className="text-white">₹{settings.premiumPrice}</strong>
                         </p>
                       </div>
 
@@ -265,29 +248,10 @@ export default function PremiumSubscription({ onBack, user }) {
                             required
                           />
                         </div>
-
-                        <div>
-                          <label className="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 px-1">Payment Screenshot</label>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => setScreenshot(reader.result);
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                            className="w-full bg-[#15171a] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-all text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-amber-500/10 file:text-amber-400 hover:file:bg-amber-500/20 cursor-pointer"
-                            required
-                          />
-                          {screenshot && <div className="mt-2 text-xs text-green-400 font-medium px-1 flex items-center gap-1"><Check className="w-3 h-3"/> Screenshot attached</div>}
-                        </div>
                         
                         <button
                           type="submit"
-                          disabled={submitting || !utr.trim() || !screenshot}
+                          disabled={submitting || !utr.trim()}
                           className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-lg py-4 rounded-xl shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:transform-none flex items-center justify-center gap-2"
                         >
                           {submitting ? 'Submitting...' : 'Submit Payment for Verification'}
@@ -296,7 +260,7 @@ export default function PremiumSubscription({ onBack, user }) {
                       
                       <div className="mt-6 flex items-start gap-3 text-white/30 text-xs leading-relaxed">
                         <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                        <p>Payments are manually verified by administrators. Please ensure you have transferred exactly ₹{selectedPlan === 'OWNER' ? 499 : settings.premiumPrice} to the displayed UPI before submitting your UTR.</p>
+                        <p>Payments are manually verified by administrators. Please ensure you have transferred exactly ₹{settings.premiumPrice} to the displayed UPI before submitting your UTR.</p>
                       </div>
                     </>
                   )}

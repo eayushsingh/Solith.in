@@ -309,56 +309,72 @@ export default function AdminPanel({ onBack, user }) {
                     <h2 className="text-2xl font-bold text-text-primary mb-6 text-amber-400">Pending Payments (₹99)</h2>
                     <div className="bg-[#151515] rounded-2xl border border-gray-800 overflow-hidden mb-8">
                       <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm min-w-[760px]">
-                        <thead className="bg-[#222] text-text-secondary uppercase text-xs">
-                          <tr>
-                            <th className="px-6 py-4">User ID</th>
-                            <th className="px-6 py-4">UTR</th>
-                            <th className="px-6 py-4">Date</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-800">
-                          {payments.filter(p => p.status === 'PENDING').length === 0 ? (
+                        <table className="w-full text-sm text-left">
+                          <thead className="text-left text-xs uppercase tracking-wider text-gray-500 bg-[#1a1a1a]">
                             <tr>
-                              <td colSpan="5" className="px-6 py-8 text-center text-gray-500 font-medium">No pending payment verifications.</td>
+                              <th className="px-6 py-4">User ID</th>
+                              <th className="px-6 py-4">Amount / Plan</th>
+                              <th className="px-6 py-4">UTR</th>
+                              <th className="px-6 py-4">Submitted</th>
+                              <th className="px-6 py-4">Status</th>
+                              <th className="px-6 py-4">Actions</th>
                             </tr>
-                          ) : (
-                            payments.filter(p => p.status === 'PENDING').map(p => (
-                              <tr key={p.id} className="hover:bg-[#1a1a1a]">
-                                <td className="px-6 py-4 font-mono text-xs text-gray-400">{p.userId}</td>
-                                <td className="px-6 py-4">
-                                  <span className="font-mono text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-400/20">{p.utr}</span>
-                                </td>
-                                <td className="px-6 py-4 text-gray-500 text-xs">
-                                  {new Date(p.submittedAt?.seconds * 1000 || Date.now()).toLocaleString()}
-                                </td>
-                                <td className="px-6 py-4">
-                                  <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-500 rounded font-bold">PENDING</span>
-                                </td>
-                                <td className="px-6 py-4 space-x-2">
-                                  <button 
-                                    onClick={() => requestConfirm("Verify Payment?", `Have you manually checked your bank/UPI app and confirmed the receipt of ₹99 with UTR: ${p.utr}?`, () => handlePaymentAction(p.id, 'approve'))}
-                                    className="text-xs px-3 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded transition-colors"
-                                  >
-                                    Verify & Approve
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      const reason = prompt("Enter rejection reason:");
-                                      if (reason !== null) handlePaymentAction(p.id, 'reject', reason);
-                                    }}
-                                    className="text-xs px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded transition-colors"
-                                  >
-                                    Reject
-                                  </button>
-                                </td>
+                          </thead>
+                          <tbody className="divide-y divide-gray-800">
+                            {payments.filter(p => p.status === 'PENDING').length === 0 ? (
+                              <tr>
+                                <td colSpan="6" className="px-6 py-8 text-center text-gray-500 font-medium">No pending payment verifications.</td>
                               </tr>
-                            ))
-                          )}
-                        </tbody>
-                      </table>
+                            ) : (
+                              payments.filter(p => p.status === 'PENDING').map(p => (
+                                <tr key={p.id} className="hover:bg-[#1a1a1a]">
+                                  <td className="px-6 py-4 font-mono text-xs text-gray-400">{p.userId}</td>
+                                  <td className="px-6 py-4">
+                                    <span className="font-bold text-white text-sm">₹{p.amount || 99}</span>
+                                    <span className="text-[10px] text-gray-500 block">{p.plan || 'STANDARD'}</span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className="font-mono text-amber-400 bg-amber-400/10 px-2 py-1 rounded border border-amber-400/20 block mb-2 w-max">{p.utr}</span>
+                                    {p.screenshot && (
+                                      <button 
+                                        onClick={() => {
+                                          const w = window.open("");
+                                          w.document.write(`<img src="${p.screenshot}" style="max-width:100%; display:block; margin:auto;" />`);
+                                        }}
+                                        className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded hover:bg-blue-500/30 transition-colors inline-flex items-center"
+                                      >
+                                        View Screenshot
+                                      </button>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4 text-gray-500 text-xs">
+                                    {new Date(p.submittedAt?.seconds * 1000 || Date.now()).toLocaleString()}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-500 rounded font-bold">PENDING</span>
+                                  </td>
+                                  <td className="px-6 py-4 space-x-2">
+                                    <button 
+                                      onClick={() => requestConfirm("Verify Payment?", `Have you manually checked your bank/UPI app and confirmed the receipt of ₹${p.amount || 99} with UTR: ${p.utr}?`, () => handlePaymentAction(p.id, 'approve'))}
+                                      className="text-xs px-3 py-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded transition-colors"
+                                    >
+                                      Verify & Approve
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        const reason = prompt("Enter rejection reason:");
+                                        if (reason !== null) handlePaymentAction(p.id, 'reject', reason);
+                                      }}
+                                      className="text-xs px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded transition-colors"
+                                    >
+                                      Reject
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
