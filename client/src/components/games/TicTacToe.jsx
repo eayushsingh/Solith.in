@@ -8,10 +8,13 @@ export default function TicTacToe({ activeGame, socket, roomId, currentUser }) {
 
   useEffect(() => {
     // Determine player symbol based on join order
-    const pIndex = activeGame.players.findIndex(p => p.id === currentUser.id);
+    const pIndex = activeGame.players?.findIndex(p => p.id === currentUser.id) ?? -1;
     if (pIndex === 0) setPlayerSymbol('X');
     else if (pIndex === 1) setPlayerSymbol('O');
+    else setPlayerSymbol('spectator');
+  }, [activeGame.players, currentUser.id]);
 
+  useEffect(() => {
     if (activeGame.state && typeof activeGame.state === 'object') {
       setBoard(activeGame.state.board || Array(9).fill(null));
       setXIsNext(activeGame.state.xIsNext ?? true);
@@ -87,8 +90,19 @@ export default function TicTacToe({ activeGame, socket, roomId, currentUser }) {
         ))}
       </div>
 
-      <div className="mt-8 text-xs text-text-secondary font-mono tracking-widest uppercase">
-        You are: <span className="font-bold text-text-primary">{playerSymbol}</span>
+      <div className="mt-8 text-xs text-text-secondary font-mono tracking-widest uppercase flex flex-col items-center gap-3">
+        <span>You are: <span className="font-bold text-text-primary">{playerSymbol}</span></span>
+        
+        {playerSymbol === 'spectator' && activeGame.players?.length < 2 && (
+          <button 
+            onClick={() => {
+              socket.emit('game-join', { roomId, player: currentUser });
+            }}
+            className="px-6 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-bold rounded-lg transition-colors shadow-lg hover:shadow-[0_0_15px_var(--accent-primary-glow)]"
+          >
+            Join Game as Player 2
+          </button>
+        )}
       </div>
     </div>
   );
