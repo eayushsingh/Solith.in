@@ -30,13 +30,13 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
 
       {/* Online Stats Indicator - Desktop Only */}
       {onlineStats && (
-        <div className="hidden md:flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl bg-white/[0.03] border border-white/5 mb-6 shadow-inner animate-fade-in select-none">
-          <span className="text-[8px] font-black text-[var(--accent-primary)] tracking-widest uppercase animate-pulse flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full inline-block"></span>
-            LIVE
+        <div className="hidden md:flex flex-col items-center justify-center py-2 px-3 rounded-xl bg-bg-surface-elevated border border-[var(--accent-primary)]/20 mb-6 shadow-[0_0_15px_var(--accent-primary-glow)] animate-fade-in select-none group" title={`${onlineStats.online || 1} Users Online`}>
+          <span className="text-[9px] font-black text-[var(--accent-primary)] tracking-widest uppercase flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full inline-block animate-pulse"></span>
+            ONLINE
           </span>
-          <span className="text-[10px] font-mono font-bold text-white/60 mt-0.5">
-            {onlineStats.online || 1}/{onlineStats.total || 1}
+          <span className="text-xs font-bold text-text-primary mt-1">
+            {onlineStats.online || 1}
           </span>
         </div>
       )}

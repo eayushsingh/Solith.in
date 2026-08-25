@@ -21,9 +21,10 @@ export default function RoomCard({ room, onJoin }) {
             {room.tags && room.tags.length > 0 ? room.tags[0] : 'Any Level'}
           </span>
         </div>
-        <button className="text-accent-primary hover:text-accent-primary-hover transition-colors">
-          <Settings className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-bg-surface-elevated border border-[var(--accent-primary)]/20 shadow-sm text-text-primary text-xs font-bold" title={`${room.participants?.length || 0} participants currently in room`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+          {room.participants?.length || 0} / 25
+        </div>
       </div>
 
       {/* Topic Title */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCircle, RefreshCw } from 'lucide-react';
+import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCircle, RefreshCw, Crown } from 'lucide-react';
 import { db, collection, getDocs } from '../firebase';
 import { Meteors } from './Meteors';
 
@@ -122,6 +122,19 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
               <Globe className="w-4 h-4" /> All-Time
             </button>
           </div>
+          </div>
+        </div>
+
+        {/* Subscription Banner */}
+        <div className="mb-8 w-full bg-gradient-to-r from-amber-500/20 via-amber-400/30 to-amber-500/20 border border-amber-400/30 rounded-2xl p-4 sm:p-5 flex items-center gap-4 sm:gap-6 shadow-[0_0_30px_rgba(251,191,36,0.15)] animate-fade-in relative overflow-hidden group cursor-default">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+          <div className="w-12 h-12 shrink-0 bg-amber-400/20 rounded-full flex items-center justify-center border border-amber-400/30 shadow-inner">
+            <Crown className="w-6 h-6 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)] animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-amber-400 font-extrabold text-lg leading-tight mb-1 tracking-tight">Premium Subscription Reward!</h3>
+            <p className="text-amber-100/70 text-sm font-medium">Rank in the <strong className="text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">Top 3</strong> this month to automatically win a free Premium Subscription!</p>
+          </div>
         </div>
 
       <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl relative min-w-0">
@@ -167,7 +180,11 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                     onClick={() => {
                       if (openUserProfile) openUserProfile(leader.id);
                     }}
-                    className={`flex items-center gap-4 sm:gap-6 px-6 sm:px-8 py-5 transition-all group cursor-pointer ${leader.id === user?.id ? 'bg-[var(--accent-primary)]/10' : 'hover:bg-white/[0.02]'}`}
+                    className={`flex items-center gap-4 sm:gap-6 px-6 sm:px-8 py-5 transition-all group cursor-pointer ${
+                      leader.id === user?.id 
+                        ? 'bg-[var(--accent-primary)]/10' 
+                        : (index < 3 ? 'bg-gradient-to-r from-amber-500/10 to-transparent hover:from-amber-500/20' : 'hover:bg-white/[0.02]')
+                    } ${index < 3 ? 'border-l-4 border-amber-400' : 'border-l-4 border-transparent'}`}
                   >
                     <div className="w-10 flex justify-center flex-shrink-0">
                       {renderRankIcon(index)}

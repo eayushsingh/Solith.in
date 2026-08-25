@@ -16,12 +16,18 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
 
     const q = query(
       collection(db, 'conversations'),
-      where('participants', 'array-contains', currentUser.id),
-      orderBy('lastMessageAt', 'desc')
+      where('participants', 'array-contains', currentUser.id)
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const convos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let convos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Sort client-side to avoid needing a Firestore composite index
+      convos.sort((a, b) => {
+        const t1 = a.lastMessageAt?.seconds || 0;
+        const t2 = b.lastMessageAt?.seconds || 0;
+        return t2 - t1;
+      });
       
       // Filter out blocked users
       const blocked = currentUser.blockedUsers || [];
