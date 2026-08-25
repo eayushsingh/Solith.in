@@ -122,7 +122,6 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
               <Globe className="w-4 h-4" /> All-Time
             </button>
           </div>
-          </div>
         </div>
 
         {/* Subscription Banner */}
