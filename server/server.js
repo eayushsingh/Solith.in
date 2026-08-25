@@ -179,37 +179,17 @@ const awardUserXP = async (userId, durationMs) => {
   }
 };
 
-// Auto-clean stale users and empty rooms
+// Auto-clean empty rooms
 setInterval(() => {
   const now = Date.now();
   let modified = false;
   const initialRoomCount = rooms.length;
 
   rooms = rooms.filter(room => {
-    // Remove real users who haven't pinged in 8 seconds
-    const originalCount = room.participants.length;
-    
-    // Identify who is timing out
-    const keptParticipants = [];
-    room.participants.forEach(p => {
-      if ((now - p.lastPing) < 8000) {
-        keptParticipants.push(p);
-      } else {
-        // Participant timed out, award them XP for their session
-        if (p.joinedAt) {
-          const durationMs = Date.now() - p.joinedAt;
-          awardUserXP(p.id, durationMs); // Async, fire and forget
-        }
-      }
-    });
+    // Rely entirely on LiveKit webhooks for participant cleanup in production
+    // (Vercel Serverless Functions don't reliably route pings to the same instance)
 
-    room.participants = keptParticipants;
-
-    if (room.participants.length !== originalCount) {
-      modified = true;
-    }
-
-    // Phase 3: Auto-delete empty rooms
+    // Auto-delete empty rooms
     if (room.participants.length === 0) {
       if (!room.emptySince) {
         room.emptySince = now;
@@ -236,7 +216,7 @@ setInterval(() => {
   if (modified) {
     saveDB();
   }
-}, 4000);
+}, 30000); // Check every 30 seconds
 
 // GET /api/health - Health check endpoint for Render
 app.get('/api/health', (req, res) => res.status(200).send('OK'));
@@ -266,7 +246,23 @@ app.post('/api/config', verifyToken, verifyAdmin, (req, res) => {
 });
 
 // API Endpoint: List Rooms
-app.get('/api/rooms', (req, res) => {
+app.get('/api/rooms', async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (adminInstance) {
+    try {
+      const db = adminInstance.firestore();
+      const snapshot = await db.collection('rooms').get();
+      const dbRooms = snapshot.docs.map(doc => doc.data());
+      // Update in-memory cache as well
+      rooms = dbRooms;
+      const publicAndFriendsRooms = dbRooms.filter(r => r.accessType !== 'invite');
+      return res.json(publicAndFriendsRooms);
+    } catch (err) {
+      console.error('Error fetching rooms from Firestore:', err);
+    }
+  }
+  
+  // Fallback to in-memory
   const publicAndFriendsRooms = rooms.filter(r => r.accessType !== 'invite');
   res.json(publicAndFriendsRooms);
 });
