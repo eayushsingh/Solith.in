@@ -2609,7 +2609,7 @@ export default function App() {
                     )}
                   </div>
                   {/* Side Participant Grid */}
-                  <div className="w-full lg:w-[240px] flex lg:flex-col gap-4 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
+                  <div className="w-full lg:w-[240px] flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
                     {participants.map(p => {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                         const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
@@ -2619,24 +2619,26 @@ export default function App() {
                         const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
                         const targetRole = getRole(p.id);
                         
-                        let canModTarget = false;
-                        if (myRole === 'owner' && targetRole !== 'owner') canModTarget = true;
-                        if (myRole === 'co-owner' && (targetRole === 'elder' || targetRole === 'member' || targetRole === 'guest')) canModTarget = true;
-                        const canPromote = myRole === 'owner';
-
                         return (
-                            <div key={p.id} onClick={() => !p.isLocal && setActiveActionUser(p)} className={`relative flex flex-col items-center justify-center aspect-square w-[100px] h-[100px] lg:w-[160px] lg:h-[160px] rounded-2xl overflow-hidden bg-bg-surface border-2 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_15px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
-                               {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-3xl lg:text-5xl">{pEmoji}</span>}
-                               
-                               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-4 pb-1 px-2 text-center">
-                                  <span className="text-text-primary text-[10px] lg:text-xs font-bold drop-shadow-md truncate block">{pName}</span>
+                            <div key={p.id} onClick={() => !p.isLocal && setActiveActionUser(p)} className={`relative flex flex-col items-center justify-center w-[120px] h-[100px] lg:w-[200px] lg:h-[130px] rounded-2xl overflow-hidden bg-[#1c1d21] border-2 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_15px_var(--accent-primary-glow)]' : 'border-white/5'} cursor-pointer hover:border-white/20 flex-shrink-0 group`}>
+                               {/* Avatar */}
+                               <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden shadow-lg border border-white/10 group-hover:scale-105 transition-transform" style={{ backgroundColor: pColor }}>
+                                  {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-2xl lg:text-3xl">{pEmoji}</div>}
                                </div>
-
-                               {p.muted && (
-                                  <div className="absolute top-2 right-2 w-5 h-5 lg:w-7 lg:h-7 bg-bg-base/60 backdrop-blur-md rounded-full flex items-center justify-center">
-                                    <MicOff className="w-2.5 h-2.5 lg:w-3.5 lg:h-3.5 text-red-400" />
+                               
+                               {/* Overlay Name & Status */}
+                               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-10">
+                                  <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg max-w-[75%]">
+                                     <span className="text-white text-[10px] lg:text-xs font-semibold truncate">{pName}</span>
+                                     {targetRole === 'owner' && <span className="bg-amber-500/20 text-amber-400 text-[8px] lg:text-[9px] font-bold px-1 rounded uppercase flex-shrink-0">Host</span>}
                                   </div>
-                                )}
+                                  
+                                  {p.muted && (
+                                     <div className="w-6 h-6 bg-red-500/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-red-500/30 flex-shrink-0">
+                                       <MicOff className="w-3 h-3 text-red-400" />
+                                     </div>
+                                  )}
+                               </div>
                             </div>
                         );
                     })}
@@ -2658,19 +2660,25 @@ export default function App() {
                         const targetRole = getRole(p.id);
 
                         return (
-                            <div key={p.id} onClick={() => !p.isLocal && setActiveActionUser(p)} className={`relative flex flex-col items-center justify-center aspect-square w-[160px] h-[160px] md:w-[220px] md:h-[220px] rounded-3xl overflow-hidden bg-bg-surface border-4 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_25px_var(--accent-primary-glow)]' : 'border-transparent'} cursor-pointer hover:scale-[1.02] flex-shrink-0`} style={{ backgroundColor: pColor }}>
-                               {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <span className="text-6xl">{pEmoji}</span>}
+                            <div key={p.id} onClick={() => !p.isLocal && setActiveActionUser(p)} className={`relative flex flex-col items-center justify-center w-[160px] h-[200px] md:w-[280px] md:h-[280px] rounded-3xl overflow-hidden bg-[#1c1d21] border-2 transition-all duration-300 ${isSpeaking ? 'border-[var(--accent-primary)] shadow-[0_0_20px_var(--accent-primary-glow)]' : 'border-white/5'} cursor-pointer hover:border-white/20 flex-shrink-0 group`}>
+                               {/* Avatar */}
+                               <div className="w-20 h-20 md:w-32 md:h-32 rounded-full overflow-hidden shadow-2xl border border-white/10 group-hover:scale-105 transition-transform" style={{ backgroundColor: pColor }}>
+                                  {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-4xl md:text-5xl">{pEmoji}</div>}
+                               </div>
                                
-                               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-2 px-3 text-center">
-                                  <span className="text-text-primary text-xs font-bold drop-shadow-md truncate block">{pName}</span>
-                                  {targetRole === 'owner' && <span className="text-[9px] text-[var(--accent-primary)] font-black uppercase tracking-wider block mt-0.5">Owner</span>}
-                                </div>
-
-                               {p.muted && (
-                                  <div className="absolute top-3 right-3 w-7 h-7 bg-bg-base/60 backdrop-blur-md rounded-full flex items-center justify-center">
-                                    <MicOff className="w-3.5 h-3.5 text-red-400" />
+                               {/* Overlay Name & Status */}
+                               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between z-10">
+                                  <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl max-w-[80%] border border-white/5">
+                                     <span className="text-white text-xs md:text-sm font-semibold truncate">{pName}</span>
+                                     {targetRole === 'owner' && <span className="bg-amber-500/20 text-amber-400 text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded uppercase flex-shrink-0">Host</span>}
                                   </div>
-                               )}
+                                  
+                                  {p.muted && (
+                                     <div className="w-7 h-7 md:w-8 md:h-8 bg-red-500/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-red-500/30 flex-shrink-0">
+                                       <MicOff className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-400" />
+                                     </div>
+                                  )}
+                               </div>
                             </div>
                         );
                     })}
