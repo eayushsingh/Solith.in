@@ -2473,15 +2473,15 @@ export default function App() {
           {/* Full Width Search Row */}
           <div className="w-full flex flex-row items-center gap-2 md:gap-4 bg-bg-base/60 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-2xl overflow-hidden focus-within:border-[var(--accent-primary)] focus-within:bg-bg-base transition-all">
             <div className="relative flex-1 min-w-0 group flex items-center">
-              <div className="absolute left-5 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors pointer-events-none z-10 flex items-center justify-center">
+              <div className="absolute left-3 md:left-4 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors pointer-events-none z-10 flex items-center justify-center">
                 <Search className="w-5 h-5" />
               </div>
               <input 
                 type="text" 
-                placeholder="Search rooms or languages..." 
+                placeholder="Search rooms..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-3 md:py-4 pl-14 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium relative z-0"
+                className="w-full py-3 md:py-4 pl-10 md:pl-12 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium relative z-0"
               />
             </div>
             {searchQuery && (
