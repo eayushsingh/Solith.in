@@ -114,7 +114,7 @@ export default function PremiumSubscription({ onBack, user }) {
           <span className="font-bold tracking-widest text-sm uppercase">Back</span>
         </button>
 
-        {isPremiumActive ? (
+        {isPremiumActive && status !== 'VIEW_PLANS' ? (
           <div className="text-center py-20 flex flex-col items-center">
             <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 p-1 mb-8 shadow-[0_0_50px_rgba(251,191,36,0.3)] animate-bounce-slow">
               <div className="w-full h-full bg-[#0B0D12] rounded-full flex items-center justify-center border-4 border-[#0B0D12]">
@@ -128,15 +128,25 @@ export default function PremiumSubscription({ onBack, user }) {
               You're a Free for Talk Premium member! Enjoy priority group placement, premium badges, and enhanced visibility.
             </p>
             {user.premiumExpiresAt && (
-              <div className="inline-flex flex-col items-center px-6 py-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+              <div className="inline-flex flex-col items-center px-6 py-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md mb-8">
                 <span className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Expires On</span>
                 <span className="text-amber-400 font-bold tracking-wide">
                    {new Date(user.premiumExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                 </span>
               </div>
             )}
+            
+            <button 
+              onClick={() => {
+                // Temporary override for testing or viewing plans
+                setStatus('VIEW_PLANS');
+              }}
+              className="px-6 py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-white font-bold transition-all flex items-center gap-2"
+            >
+              <Search className="w-4 h-4" /> View Subscription Plans
+            </button>
           </div>
-        ) : (
+        ) : status === 'VIEW_PLANS' || !status || status === 'PENDING' ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-start">
             
             {/* Left Col: Hero & Features */}
