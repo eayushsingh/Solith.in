@@ -2622,7 +2622,7 @@ export default function App() {
         const hasRaisedHand = speakingQueue.includes(user?.id);
 
         return (
-        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-bg-base flex flex-col z-50 overflow-hidden">
+        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-col z-50 overflow-hidden">
           
           {/* Top Floating Controls - Pill buttons (Mute, Camera, Signal, Leave) */}
           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3">
