@@ -11,6 +11,7 @@ import Leaderboard from './components/Leaderboard';
 import Sidebar from './components/Sidebar';
 import CommunityFeed from './components/CommunityFeed';
 import PremiumSubscription from './components/PremiumSubscription';
+import RoomPanel from './components/RoomPanel';
 
 import StaticModals from './components/StaticModals';
 import { 
@@ -242,6 +243,33 @@ export default function App() {
     return () => window.removeEventListener('hashchange', syncViewFromHash);
   }, []);
 
+
+  // E2E Test Bot Backdoor Login
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('bot') === 'true') {
+      const loginAsBot = async () => {
+        try {
+          const res = await fetch(`${API_URL}/api/bot-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ secret: 'e2e-test-secret' })
+          });
+          const data = await res.json();
+          if (data.token) {
+            const { signInWithCustomToken, auth } = await import('./firebase');
+            await signInWithCustomToken(auth, data.token);
+            console.log('Bot successfully logged in via custom token!');
+            // Remove the bot param so it doesn't loop
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (err) {
+          console.error('Bot login failed:', err);
+        }
+      };
+      loginAsBot();
+    }
+  }, []);
 
   // Load configuration and room list on mount
   useEffect(() => {
@@ -656,8 +684,12 @@ export default function App() {
 
   // Scroll chat to bottom on new messages
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+    if (isChatOpen) {
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [chatMessages, isChatOpen]);
 
   // Auto-join room from URL parameter if present
   useEffect(() => {
@@ -2723,34 +2755,32 @@ export default function App() {
             );
           })()}
 
-          {/* Chat Overlay (Hidden by Default) */}
-          {isChatOpen && (
-             <div className="absolute bottom-[90px] left-4 right-4 md:left-auto md:right-8 md:w-[380px] h-[400px] max-h-[50vh] bg-bg-base/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl z-40 flex flex-col animate-fade-in">
-                <div className="px-5 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
-                  <span className="font-bold text-sm tracking-widest text-text-primary uppercase">Room Chat</span>
-                  <button onClick={() => setIsChatOpen(false)} className="text-text-primary/50 hover:text-text-primary p-1 rounded-full"><X className="w-4 h-4"/></button>
-                </div>
-                <div className="flex-1 flex flex-col gap-3 p-4 overflow-y-auto" id="chat-container">
-                  {chatMessages.length === 0 && (
-                    <div className="text-center text-text-primary/30 text-xs italic mb-4">Messages are ephemeral and disappear when you leave.</div>
-                  )}
-                  {chatMessages.map(msg => (
-                    <div key={msg.id} className={`flex gap-3 w-full items-end ${msg.senderId === user?.id ? 'justify-end' : 'justify-start'}`}>
-                      {msg.senderId !== user?.id && (
-                         <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-md flex-shrink-0" style={{ backgroundColor: msg.senderColor }}>
-                           {msg.senderEmoji || '👤'}
-                         </div>
-                      )}
-                      <div className={msg.senderId === user?.id ? 'chat-bubble-right bg-[var(--accent-primary-bg)] text-[var(--accent-primary)] rounded-2xl rounded-br-sm px-3 py-2 text-sm max-w-[80%]' : 'chat-bubble-left bg-white/10 text-text-primary rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[80%]'}>
-                        <span className="font-bold block text-[10px] opacity-50 mb-0.5">{msg.senderName}</span>
-                        {msg.text}
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={chatEndRef} />
-                </div>
-             </div>
-          )}
+          {/* Room Sidebar Panel */}
+          <RoomPanel 
+            isChatOpen={isChatOpen}
+            setIsChatOpen={setIsChatOpen}
+            chatMessages={chatMessages}
+            sendChatMessage={(e, customMsg) => {
+              if (customMsg) {
+                setChatMessages(prev => [...prev, customMsg]);
+                setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+              } else {
+                sendChatMessage(e);
+              }
+            }}
+            chatInput={chatInput}
+            setChatInput={setChatInput}
+            chatEndRef={chatEndRef}
+            participants={participants}
+            activeRoom={activeRoom}
+            user={user}
+            setUser={setUser}
+            socket={socket}
+            ytVideoId={ytVideoId}
+            getRole={getRole}
+            API_URL={API_URL}
+            getAvatarUrl={getAvatarUrl}
+          />
 
           {/* Bottom Floating App Bar */}
           <div className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 bg-bg-surface/90 backdrop-blur-md rounded-3xl px-2 py-2 border border-white/5 shadow-2xl flex items-center gap-2 z-50 w-[calc(100%-1rem)] md:w-auto md:min-w-[400px] justify-between md:justify-center">

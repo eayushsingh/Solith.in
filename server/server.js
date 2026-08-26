@@ -283,6 +283,26 @@ app.post('/api/rooms/:id/leave-beacon', express.text(), async (req, res) => {
 
 app.use(express.json({ limit: '10mb' }));
 
+// E2E Test Bot Backdoor (Only available if secret matches)
+app.post('/api/bot-token', async (req, res) => {
+  const { secret } = req.body;
+  if (secret !== 'e2e-test-secret') return res.status(403).json({ error: 'Forbidden' });
+  const adminInstance = initFirebaseAdmin();
+  if (adminInstance) {
+    try {
+      const token = await adminInstance.auth().createCustomToken('test-bot-123', {
+        name: 'Automated Bot',
+        isBot: true
+      });
+      res.json({ token });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  } else {
+    res.json({ token: 'mock-bot-token' });
+  }
+});
+
 const awardUserXP = async (userId, xpEarned) => {
   if (!userId || xpEarned <= 0) return;
 
@@ -1102,6 +1122,118 @@ setInterval(async () => {
   await broadcastOnlineStats();
 }, 15000);
 
+// Helper functions for multiplayer games
+const getSocketByUid = (uid) => {
+  for (const [socketId, identityId] of socketToIdentity.entries()) {
+    if (identityId === uid) {
+      const s = io.sockets.sockets.get(socketId);
+      if (s) return s;
+    }
+  }
+  const sockets = Array.from(io.sockets.sockets.values());
+  return sockets.find(s => s.data && s.data.uid === uid);
+};
+
+const sanitizeGameState = (activeGame) => {
+  if (!activeGame) return null;
+  const sanitized = { ...activeGame };
+  if (activeGame.type === 'uno' && activeGame.hands) {
+    sanitized.state = {
+      ...activeGame.state,
+      players: activeGame.state.players.map(p => ({
+        id: p.id,
+        name: p.name,
+        handSize: activeGame.hands[p.id]?.length || 0
+      }))
+    };
+    // Strip internal backend data
+    const output = { ...sanitized };
+    delete output.hands;
+    delete output.deck;
+    return output;
+  }
+  return sanitized;
+};
+
+const broadcastGameState = (roomId, activeGame) => {
+  if (!activeGame) {
+    io.in(roomId).emit('game-state', null);
+    return;
+  }
+  io.in(roomId).emit('game-state', sanitizeGameState(activeGame));
+};
+
+const sendPrivateUnoHand = (roomId, playerId, hand) => {
+  const socket = getSocketByUid(playerId);
+  if (socket) {
+    socket.emit('uno-hand', hand);
+  }
+};
+
+function generateDeck() {
+  const COLORS = ['red', 'yellow', 'green', 'blue'];
+  const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reverse', '+2'];
+  const deck = [];
+  COLORS.forEach(color => {
+    deck.push({ color, value: '0', id: Math.random().toString() });
+    for (let i = 0; i < 2; i++) {
+      VALUES.slice(1).forEach(value => {
+        deck.push({ color, value, id: Math.random().toString() });
+      });
+    }
+  });
+  for (let i = 0; i < 4; i++) {
+    deck.push({ color: 'black', value: 'wild', id: Math.random().toString() });
+    deck.push({ color: 'black', value: 'wild+4', id: Math.random().toString() });
+  }
+  return deck.sort(() => Math.random() - 0.5);
+}
+
+function calculateTicTacToeWinner(squares) {
+  const lines = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return squares[a];
+    }
+  }
+  return null;
+}
+
+function checkConnect4Winner(board) {
+  const ROWS = 6;
+  const COLS = 7;
+  // Check vertical
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r <= ROWS - 4; r++) {
+      if (board[c][r] && board[c][r] === board[c][r+1] && board[c][r] === board[c][r+2] && board[c][r] === board[c][r+3]) return board[c][r];
+    }
+  }
+  // Check horizontal
+  for (let c = 0; c <= COLS - 4; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      if (board[c][r] && board[c][r] === board[c+1][r] && board[c][r] === board[c+2][r] && board[c][r] === board[c+3][r]) return board[c][r];
+    }
+  }
+  // Check diagonal right
+  for (let c = 0; c <= COLS - 4; c++) {
+    for (let r = 0; r <= ROWS - 4; r++) {
+      if (board[c][r] && board[c][r] === board[c+1][r+1] && board[c][r] === board[c+2][r+2] && board[c][r] === board[c+3][r+3]) return board[c][r];
+    }
+  }
+  // Check diagonal left
+  for (let c = 3; c < COLS; c++) {
+    for (let r = 0; r <= ROWS - 4; r++) {
+      if (board[c][r] && board[c][r] === board[c-1][r+1] && board[c][r] === board[c-2][r+2] && board[c][r] === board[c-3][r+3]) return board[c][r];
+    }
+  }
+  return null;
+}
+
 io.on('connection', (socket) => {
   console.log(chalk.green(`✓ Socket connected: ${socket.id}`));
   broadcastOnlineStats();
@@ -1137,7 +1269,13 @@ io.on('connection', (socket) => {
         socket.emit('yt-share', { videoId: room.ytVideoId, sharingUser: room.ytSharingUser });
       }
       if (room.activeGame) {
-        socket.emit('game-state', room.activeGame);
+        socket.emit('game-state', sanitizeGameState(room.activeGame));
+        if (room.activeGame.type === 'uno' && room.activeGame.hands) {
+          const userId = identity || socket.data.uid;
+          if (userId && room.activeGame.hands[userId]) {
+            socket.emit('uno-hand', room.activeGame.hands[userId]);
+          }
+        }
       }
     }
   });
@@ -1176,30 +1314,125 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('draw-stroke', (data) => {
+    const { roomId } = data;
+    socket.to(roomId).emit('draw-stroke', data);
+  });
+
+  socket.on('clear-canvas', (data) => {
+    const { roomId } = data;
+    socket.to(roomId).emit('clear-canvas', data);
+  });
+
   // --- MULTIPLAYER GAMES SYNC ---
-  socket.on('game-start', (data) => {
-    const { roomId, gameType, initialState } = data;
+  // Socket: game-invite
+  socket.on('game-invite', (data) => {
+    const { roomId, gameType, initiator } = data;
     const room = rooms.find(r => r.id === roomId);
     if (room) {
       room.activeGame = {
         type: gameType,
+        status: 'lobby',
+        initiator,
+        players: [initiator],
+        createdAt: Date.now()
+      };
+      broadcastGameState(roomId, room.activeGame);
+    }
+  });
+
+  // Socket: game-join-lobby
+  socket.on('game-join-lobby', (data) => {
+    const { roomId, gameType, player } = data;
+    const room = rooms.find(r => r.id === roomId);
+    if (room && room.activeGame && room.activeGame.status === 'lobby') {
+      const maxPlayers = {
+        chess: 2,
+        tictactoe: 2,
+        connect4: 2,
+        uno: 6
+      }[gameType] || 2;
+      
+      const exists = room.activeGame.players.some(p => p.id === player.id);
+      if (!exists && room.activeGame.players.length < maxPlayers) {
+        room.activeGame.players.push(player);
+        broadcastGameState(roomId, room.activeGame);
+      }
+    }
+  });
+
+  // Socket: game-start
+  socket.on('game-start', (data) => {
+    const { roomId, gameType, players } = data;
+    const room = rooms.find(r => r.id === roomId);
+    if (room) {
+      let initialState = 'start';
+      let hands = null;
+      let deck = null;
+
+      if (gameType === 'tictactoe') {
+        initialState = { board: Array(9).fill(null), xIsNext: true };
+      } else if (gameType === 'connect4') {
+        initialState = { board: Array.from({ length: 7 }, () => []), redIsNext: true };
+      } else if (gameType === 'uno') {
+        deck = generateDeck();
+        hands = {};
+        players.forEach(p => {
+          hands[p.id] = deck.splice(0, 7);
+        });
+        
+        let discard = deck.pop();
+        while (discard.color === 'black') {
+          deck.unshift(discard);
+          discard = deck.pop();
+        }
+        
+        initialState = {
+          discardPile: [discard],
+          currentColor: discard.color,
+          direction: 1,
+          turnIndex: 0,
+          winner: null,
+          players: players.map(p => ({ id: p.id, name: p.name, handSize: 7 }))
+        };
+      }
+
+      room.activeGame = {
+        type: gameType,
+        status: 'started',
+        players,
+        currentTurnId: players[0].id,
         state: initialState,
-        players: [data.player],
         startedAt: Date.now()
       };
-      io.in(roomId).emit('game-state', room.activeGame);
+
+      if (gameType === 'uno') {
+        room.activeGame.hands = hands;
+        room.activeGame.deck = deck;
+      }
+
+      broadcastGameState(roomId, room.activeGame);
+
+      // Send private hands for UNO
+      if (gameType === 'uno' && hands) {
+        players.forEach(p => {
+          sendPrivateUnoHand(roomId, p.id, hands[p.id]);
+        });
+      }
     }
   });
 
-  socket.on('game-action', (data) => {
-    const { roomId, state, lastAction } = data;
+  // Socket: game-cancel
+  socket.on('game-cancel', (data) => {
+    const { roomId } = data;
     const room = rooms.find(r => r.id === roomId);
-    if (room && room.activeGame) {
-      room.activeGame.state = state; // Update persistent state
-      socket.to(roomId).emit('game-action', { state, lastAction, player: data.player });
+    if (room) {
+      room.activeGame = null;
+      io.in(roomId).emit('game-ended');
     }
   });
 
+  // Socket: game-end
   socket.on('game-end', (data) => {
     const { roomId } = data;
     const room = rooms.find(r => r.id === roomId);
@@ -1209,19 +1442,187 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('game-join', (data) => {
-    const { roomId, player } = data;
+  // Socket: game-action
+  socket.on('game-action', (data) => {
+    const { roomId, action, playerId } = data;
     const room = rooms.find(r => r.id === roomId);
-    if (room && room.activeGame) {
-      // Add player if they aren't already in the game and there's room
-      const exists = room.activeGame.players.some(p => p.id === player.id);
-      if (!exists && room.activeGame.players.length < 4) { // Max 4 for Uno, 2 for Chess/TicTacToe/Connect4
-        room.activeGame.players.push(player);
-        io.in(roomId).emit('game-state', room.activeGame);
+    if (!room || !room.activeGame) return;
+
+    // Validate turn
+    if (room.activeGame.currentTurnId !== playerId) {
+      socket.emit('game-error', { message: 'Not your turn' });
+      return;
+    }
+
+    const { type, players } = room.activeGame;
+
+    if (type === 'uno') {
+      const gameAction = action;
+      const playerIndex = players.findIndex(p => p.id === playerId);
+      if (playerIndex === -1) return;
+
+      const hands = room.activeGame.hands;
+      const deck = room.activeGame.deck;
+      const gameState = room.activeGame.state;
+
+      if (!hands || !deck || !gameState) return;
+
+      if (gameAction.type === 'draw') {
+        // Draw card
+        if (deck.length === 0) {
+          const top = gameState.discardPile.pop();
+          room.activeGame.deck = gameState.discardPile.sort(() => Math.random() - 0.5);
+          gameState.discardPile = [top];
+        }
+        const card = room.activeGame.deck.pop();
+        hands[playerId].push(card);
+
+        // Advance turn
+        const direction = gameState.direction || 1;
+        const nextTurnIndex = (gameState.turnIndex + direction + players.length) % players.length;
+        gameState.turnIndex = nextTurnIndex;
+        room.activeGame.currentTurnId = players[nextTurnIndex].id;
+
+        sendPrivateUnoHand(roomId, playerId, hands[playerId]);
+        broadcastGameState(roomId, room.activeGame);
+        
+      } else if (gameAction.type === 'play') {
+        const cardIndex = gameAction.cardIndex;
+        const playerHand = hands[playerId];
+        if (!playerHand || cardIndex < 0 || cardIndex >= playerHand.length) return;
+
+        const card = playerHand[cardIndex];
+        const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+        const isPlayable = card.color === 'black' || card.color === gameState.currentColor || card.value === topCard.value;
+        if (!isPlayable) {
+          socket.emit('game-error', { message: 'Illegal card play' });
+          return;
+        }
+
+        playerHand.splice(cardIndex, 1);
+        gameState.discardPile.push(card);
+
+        let nextTurnOffset = gameState.direction || 1;
+        let newColor = card.color;
+
+        if (card.color === 'black') {
+          newColor = gameAction.chosenColor || ['red', 'blue', 'green', 'yellow'][Math.floor(Math.random() * 4)];
+        }
+
+        if (card.value === 'reverse') {
+          gameState.direction *= -1;
+          if (players.length === 2) {
+            nextTurnOffset = gameState.direction * 2;
+          } else {
+            nextTurnOffset = gameState.direction;
+          }
+        } else if (card.value === 'skip') {
+          nextTurnOffset = gameState.direction * 2;
+        } else if (card.value === '+2') {
+          nextTurnOffset = gameState.direction * 2;
+          const targetIndex = (gameState.turnIndex + gameState.direction + players.length) % players.length;
+          const targetPlayerId = players[targetIndex].id;
+          for (let i = 0; i < 2; i++) {
+            if (room.activeGame.deck.length === 0) {
+              const top = gameState.discardPile.pop();
+              room.activeGame.deck = gameState.discardPile.sort(() => Math.random() - 0.5);
+              gameState.discardPile = [top];
+            }
+            if (room.activeGame.deck.length > 0) {
+              hands[targetPlayerId].push(room.activeGame.deck.pop());
+            }
+          }
+          sendPrivateUnoHand(roomId, targetPlayerId, hands[targetPlayerId]);
+        } else if (card.value === 'wild+4') {
+          nextTurnOffset = gameState.direction * 2;
+          const targetIndex = (gameState.turnIndex + gameState.direction + players.length) % players.length;
+          const targetPlayerId = players[targetIndex].id;
+          for (let i = 0; i < 4; i++) {
+            if (room.activeGame.deck.length === 0) {
+              const top = gameState.discardPile.pop();
+              room.activeGame.deck = gameState.discardPile.sort(() => Math.random() - 0.5);
+              gameState.discardPile = [top];
+            }
+            if (room.activeGame.deck.length > 0) {
+              hands[targetPlayerId].push(room.activeGame.deck.pop());
+            }
+          }
+          sendPrivateUnoHand(roomId, targetPlayerId, hands[targetPlayerId]);
+        }
+
+        gameState.currentColor = newColor;
+        gameState.turnIndex = (gameState.turnIndex + nextTurnOffset + players.length) % players.length;
+        room.activeGame.currentTurnId = players[gameState.turnIndex].id;
+
+        if (playerHand.length === 0) {
+          gameState.winner = players[playerIndex].name;
+          broadcastGameState(roomId, room.activeGame);
+          setTimeout(() => {
+            if (room.activeGame && room.activeGame.type === 'uno' && room.activeGame.state?.winner) {
+              room.activeGame = null;
+              io.in(roomId).emit('game-ended');
+            }
+          }, 5000);
+          return;
+        }
+
+        sendPrivateUnoHand(roomId, playerId, playerHand);
+        broadcastGameState(roomId, room.activeGame);
       }
+    } else {
+      room.activeGame.state = data.newState;
+
+      const nextTurnIndex = (players.findIndex(p => p.id === playerId) + 1) % players.length;
+      room.activeGame.currentTurnId = players[nextTurnIndex].id;
+
+      if (type === 'tictactoe') {
+        const board = data.newState.board;
+        const winner = calculateTicTacToeWinner(board);
+        const isDraw = !winner && board.every(square => square !== null);
+        if (winner || isDraw) {
+          room.activeGame.winner = winner || 'draw';
+          broadcastGameState(roomId, room.activeGame);
+          setTimeout(() => {
+            if (room.activeGame && room.activeGame.type === 'tictactoe') {
+              room.activeGame = null;
+              io.in(roomId).emit('game-ended');
+            }
+          }, 5000);
+          return;
+        }
+      } else if (type === 'connect4') {
+        const board = data.newState.board;
+        const winner = checkConnect4Winner(board);
+        const isDraw = !winner && board.every(col => col.length === 6);
+        if (winner || isDraw) {
+          room.activeGame.winner = winner || 'draw';
+          broadcastGameState(roomId, room.activeGame);
+          setTimeout(() => {
+            if (room.activeGame && room.activeGame.type === 'connect4') {
+              room.activeGame = null;
+              io.in(roomId).emit('game-ended');
+            }
+          }, 5000);
+          return;
+        }
+      }
+
+      broadcastGameState(roomId, room.activeGame);
     }
   });
 
+
+  // Socket: uno-request-hand
+  socket.on('uno-request-hand', (data) => {
+    const { roomId } = data;
+    const room = rooms.find(r => r.id === roomId);
+    if (room && room.activeGame && room.activeGame.type === 'uno' && room.activeGame.hands) {
+      const uid = socketToIdentity.get(socket.id) || socket.data.uid;
+      if (uid && room.activeGame.hands[uid]) {
+        socket.emit('uno-hand', room.activeGame.hands[uid]);
+      }
+    }
+  });
 
   socket.on('disconnect', () => {
     console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
