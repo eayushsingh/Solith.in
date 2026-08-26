@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import axios from 'axios';
-import { AccessToken, RoomServiceClient } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient, WebhookReceiver } from 'livekit-server-sdk';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { initFirebaseAdmin, verifyToken, verifyAdmin } from './firebaseAdmin.js';
@@ -39,7 +39,6 @@ const io = new Server(server, { cors: corsOptions });
 
 app.use(helmet()); // Set basic HTTP security headers
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '10mb' }));
 
 // Apply global rate limiting (100 reqs / 15 mins per IP)
 const globalLimiter = rateLimit({
@@ -59,6 +58,17 @@ let runtimeConfig = {
 
 // Rooms Database State
 let rooms = [];
+const socketToIdentity = new Map();
+
+const purgeEmptyRooms = () => {
+  const before = rooms.length;
+  rooms = rooms.filter(room => room.participants && room.participants.length > 0);
+  const after = rooms.length;
+  if (before !== after) {
+    console.log(`[purge] Removed ${before - after} empty room(s). ${after} room(s) remain.`);
+    saveDB(); // only emit if something actually changed
+  }
+};
 
 // Load rooms from Firestore or fallback to db.json if exists
 const loadDB = async () => {
@@ -119,7 +129,95 @@ const saveDB = async () => {
       console.error('Error writing to DB:', err);
     }
   }
+  if (io) {
+    io.emit('rooms-updated', { rooms: rooms.filter(r => r.accessType !== 'invite') });
+  }
 };
+
+const evictStalePingParticipants = () => {
+  const now = Date.now();
+  let changed = false;
+  rooms.forEach(room => {
+    if (!room.participants) return;
+    const before = room.participants.length;
+    room.participants = room.participants.filter(p => {
+      // Evict participants whose last ping is older than 30 seconds
+      return !(p.lastPing && (now - p.lastPing > 30000));
+    });
+    if (room.participants.length !== before) changed = true;
+  });
+  if (changed) {
+    console.log('[evictStalePing] Evicted stale participants.');
+    purgeEmptyRooms();
+  }
+};
+setInterval(evictStalePingParticipants, 15000);
+
+// --- Webhooks & Raw Routes (Must be before express.json) ---
+
+app.post('/livekit/webhook', express.raw({ type: 'application/webhook+json' }), async (req, res) => {
+  try {
+    const receiver = new WebhookReceiver(
+      runtimeConfig.livekitApiKey,
+      runtimeConfig.livekitApiSecret
+    );
+    const event = await receiver.receive(req.body.toString('utf8'), req.get('Authorization'));
+
+    if (event.event === 'participant_left' || event.event === 'participant_disconnected') {
+      const roomName = event.room.name;
+      const participant = event.participant;
+      const room = rooms.find(r => r.id === roomName);
+      if (room) {
+        room.participants = room.participants.filter(p => p.id !== participant.identity);
+        purgeEmptyRooms(); // instant cleanup + socket emit
+      }
+    }
+
+    if (event.event === 'room_finished') {
+      const before = rooms.length;
+      rooms = rooms.filter(r => r.id !== event.room.name);
+      if (rooms.length !== before) saveDB();
+    }
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error('[webhook] Invalid LiveKit webhook:', err.message);
+    res.sendStatus(400);
+  }
+});
+
+app.post('/api/rooms/:id/leave-beacon', express.text(), async (req, res) => {
+  const { id } = req.params;
+  const token = req.body;
+  if (!token) return res.sendStatus(400);
+
+  const adminInstance = initFirebaseAdmin();
+  if (adminInstance) {
+    try {
+      const decoded = await adminInstance.auth().verifyIdToken(token);
+      const userId = decoded.uid;
+      const room = rooms.find(r => r.id === id);
+      if (room) {
+        room.participants = room.participants.filter(p => p.id !== userId);
+        purgeEmptyRooms();
+      }
+      res.sendStatus(200);
+    } catch (err) {
+      console.warn('Beacon auth failed:', err.message);
+      res.sendStatus(401);
+    }
+  } else {
+    // For local dev without Firebase
+    const room = rooms.find(r => r.id === id);
+    if (room) {
+      room.participants = room.participants.filter(p => p.id !== token);
+      purgeEmptyRooms();
+    }
+    res.sendStatus(200);
+  }
+});
+
+app.use(express.json({ limit: '10mb' }));
 
 const awardUserXP = async (userId, durationMs) => {
   if (!userId || durationMs < 60000) return; // Minimum 1 minute to earn XP
@@ -187,44 +285,40 @@ const awardUserXP = async (userId, durationMs) => {
   }
 };
 
-// Auto-clean empty rooms
-setInterval(() => {
-  const now = Date.now();
-  let modified = false;
-  const initialRoomCount = rooms.length;
+async function syncWithLiveKit() {
+  if (!runtimeConfig.livekitApiKey || !runtimeConfig.livekitApiSecret) return;
 
-  rooms = rooms.filter(room => {
-    // Rely entirely on LiveKit webhooks for participant cleanup in production
-    // (Vercel Serverless Functions don't reliably route pings to the same instance)
+  try {
+    const roomService = new RoomServiceClient(runtimeConfig.livekitUrl, runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret);
+    const liveRooms = await roomService.listRooms();
+    const liveRoomNames = new Set(liveRooms.map(r => r.name));
 
-    // Auto-delete empty rooms
-    if (room.participants.length === 0) {
-      if (!room.emptySince) {
-        room.emptySince = now;
-        modified = true;
-      } else if (now - room.emptySince > 30 * 60 * 1000) {
-        // Room empty for > 30 mins
-        if (io) io.to(room.id).emit('room-deleted');
-        return false;
+    let changed = false;
+
+    for (const room of rooms) {
+      if (!liveRoomNames.has(room.id)) {
+        if (room.participants.length > 0) {
+          room.participants = [];
+          changed = true;
+        }
+        continue;
       }
-    } else {
-      if (room.emptySince) {
-        delete room.emptySince;
-        modified = true;
-      }
+
+      const liveParticipants = await roomService.listParticipants(room.id);
+      const liveIds = new Set(liveParticipants.map(p => p.identity));
+
+      const before = room.participants.length;
+      room.participants = room.participants.filter(p => liveIds.has(p.id));
+      if (room.participants.length !== before) changed = true;
     }
-    
-    return true;
-  });
 
-  if (rooms.length !== initialRoomCount) {
-    modified = true;
+    if (changed) purgeEmptyRooms();
+  } catch (err) {
+    console.error('[syncWithLiveKit] Error:', err.message);
   }
+}
 
-  if (modified) {
-    saveDB();
-  }
-}, 30000); // Check every 30 seconds
+setInterval(syncWithLiveKit, 15000); // every 15s as a safety net
 
 // GET /api/health - Health check endpoint for Render
 app.get('/api/health', (req, res) => res.status(200).send('OK'));
@@ -253,53 +347,11 @@ app.post('/api/config', verifyToken, verifyAdmin, (req, res) => {
   });
 });
 
+
+
 // API Endpoint: List Rooms
 app.get('/api/rooms', async (req, res) => {
-  const adminInstance = initFirebaseAdmin();
-  let dbRooms = rooms;
-
-  if (adminInstance) {
-    try {
-      const db = adminInstance.firestore();
-      const snapshot = await db.collection('rooms').get();
-      dbRooms = snapshot.docs.map(doc => doc.data());
-      
-      // Async sync with LiveKit to clear ghost participants
-      if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
-        const roomService = new RoomServiceClient(runtimeConfig.livekitUrl, runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret);
-        
-        // Non-blocking background sync
-        Promise.all(dbRooms.map(async (room) => {
-          try {
-            const lkParticipants = await roomService.listParticipants(room.id);
-            const activeIds = new Set(lkParticipants.map(p => p.identity));
-            
-            let changed = false;
-            const validParticipants = room.participants.filter(p => {
-              if (activeIds.has(p.id)) return true;
-              changed = true;
-              return false;
-            });
-
-            if (changed) {
-              await db.collection('rooms').doc(room.id).update({ participants: validParticipants });
-            }
-          } catch (err) {
-            // Room might not exist in LiveKit if empty, that's fine
-            if (room.participants.length > 0) {
-              await db.collection('rooms').doc(room.id).update({ participants: [] });
-            }
-          }
-        })).catch(console.error);
-      }
-      
-      rooms = dbRooms;
-    } catch (err) {
-      console.error('Error fetching rooms from Firestore:', err);
-    }
-  }
-  
-  const publicAndFriendsRooms = dbRooms.filter(r => r.accessType !== 'invite');
+  const publicAndFriendsRooms = rooms.filter(r => r.accessType !== 'invite');
   res.json(publicAndFriendsRooms);
 });
 
@@ -938,7 +990,7 @@ app.post('/api/messages/send', verifyToken, async (req, res) => {
 import setupAdminRoutes from './adminRoutes.js';
 
 // Setup admin routes
-setupAdminRoutes(app, rooms, saveDB, io);
+setupAdminRoutes(app, () => rooms, saveDB, io);
 
 // Serve frontend in production build if needed
 const clientDistPath = path.join(__dirname, '../client/dist');
@@ -980,8 +1032,18 @@ io.on('connection', (socket) => {
   console.log(chalk.green(`✓ Socket connected: ${socket.id}`));
   broadcastOnlineStats();
 
-  socket.on('join-room', (roomId) => {
+  socket.on('join-room', (payload) => {
+    let roomId = payload;
+    let identity = null;
+    if (typeof payload === 'object') {
+      roomId = payload.roomName;
+      identity = payload.identity;
+    }
+    
     socket.join(roomId);
+    if (identity) {
+      socketToIdentity.set(socket.id, identity);
+    }
     
     // Send existing message history and shared YouTube video to the user joining
     const room = rooms.find(r => r.id === roomId);
@@ -1081,6 +1143,18 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
+    
+    const identity = socketToIdentity.get(socket.id);
+    if (identity) {
+      for (const room of rooms) {
+        const before = room.participants.length;
+        room.participants = room.participants.filter(p => p.id !== identity);
+        if (room.participants.length !== before) break;
+      }
+      socketToIdentity.delete(socket.id);
+      purgeEmptyRooms();
+    }
+    
     broadcastOnlineStats();
   });
 });

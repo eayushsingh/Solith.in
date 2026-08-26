@@ -2,7 +2,7 @@ import React from 'react';
 import { Heart, Phone, Users, Globe, Lock } from 'lucide-react';
 import PremiumBadge from './PremiumBadge';
 
-export default function RoomCard({ room, onJoin }) {
+export default function RoomCard({ room, onJoin, inThisRoom }) {
   const isPremium = room.ownerIsPremium || false;
   
   // Free4Talk often has a 3-slot visual, or just a row of users
@@ -15,6 +15,12 @@ export default function RoomCard({ room, onJoin }) {
     <div className={`relative w-full rounded-3xl overflow-hidden flex flex-col p-6 bg-gradient-to-br from-[#1a1d24] to-[#12141a] border border-white/5 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl group
       ${isPremium ? 'border-amber-400/30 hover:border-amber-400/60 shadow-[0_8px_30px_rgba(251,191,36,0.1)]' : 'hover:border-[var(--accent-primary)]/40 shadow-[0_8px_30px_rgba(0,0,0,0.5)]'}
     `}>
+      {inThisRoom && (
+        <div className="absolute top-3 right-3 z-20 px-2 py-1 bg-green-500/20 border border-green-500/40 rounded-full text-[10px] font-bold text-green-400 flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+          You're here
+        </div>
+      )}
       {isPremium && (
         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 pointer-events-none group-hover:via-amber-500/10 transition-colors duration-500"></div>
       )}

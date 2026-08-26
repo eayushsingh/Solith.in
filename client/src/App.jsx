@@ -188,6 +188,16 @@ export default function App() {
   // Custom Toast State (replaces window.alert)
   const [toastMessage, setToastMessage] = useState(null);
 
+  // Always get a fresh token — Firebase caches and auto-refreshes internally
+  const getFreshToken = async () => {
+    if (!auth.currentUser) return user?.token || '';
+    try {
+      return await auth.currentUser.getIdToken(/* forceRefresh= */ false);
+    } catch {
+      return user?.token || '';
+    }
+  };
+
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -512,8 +522,8 @@ export default function App() {
     fetchConfig();
     fetchRooms();
 
-    // Poll room list every 5 seconds to keep participant stacks fresh
-    const roomPoll = setInterval(fetchRooms, 5000);
+    // 30s poll as a fallback only — socket 'rooms-updated' handles instant updates
+    const roomPoll = setInterval(fetchRooms, 30000);
     return () => clearInterval(roomPoll);
   }, []);
 
@@ -562,6 +572,14 @@ export default function App() {
       setOnlineStats(stats);
     };
 
+    const handleRoomsUpdated = (payload) => {
+      if (payload && payload.rooms) {
+        setRooms(payload.rooms);
+      } else {
+        fetchRooms();
+      }
+    };
+
     socket.on('chat-history', handleChatHistory);
     socket.on('chat-message', handleChatMessage);
     socket.on('yt-share', handleYtShare);
@@ -569,6 +587,7 @@ export default function App() {
     socket.on('participant-muted', handleParticipantMuted);
     socket.on('owner-transferred', handleOwnerTransferred);
     socket.on('online-stats', handleOnlineStats);
+    socket.on('rooms-updated', handleRoomsUpdated);
 
     const handleGameState = (state) => setActiveGame(state);
     const handleGameEnded = () => setActiveGame(null);
@@ -583,6 +602,7 @@ export default function App() {
       socket.off('participant-muted', handleParticipantMuted);
       socket.off('owner-transferred', handleOwnerTransferred);
       socket.off('online-stats', handleOnlineStats);
+      socket.off('rooms-updated', handleRoomsUpdated);
       socket.off('game-state', handleGameState);
       socket.off('game-ended', handleGameEnded);
     };
@@ -593,12 +613,12 @@ export default function App() {
     if (callState !== 'joined' || !activeRoom) return;
 
     // Send keep-alive ping to backend every 4 seconds
-    const pingInterval = setInterval(() => {
+    const pingInterval = setInterval(async () => {
       fetch(`${API_URL}/api/rooms/${activeRoom.id}/ping`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${await getFreshToken()}`
         },
         body: JSON.stringify({ userId: user.id })
       }).catch(err => console.warn('Ping error:', err));
@@ -629,8 +649,11 @@ export default function App() {
     // Add robust tab close cleanup to prevent ghost participants
     const handleBeforeUnload = () => {
       if (activeRoom && user && user.token) {
-        // Use sendBeacon for reliable delivery during page unload
-        navigator.sendBeacon(`${API_URL}/api/rooms/${activeRoom.id}/leave?token=${user.token}`);
+        // sendBeacon sends as text/plain body — our /leave-beacon endpoint reads the raw body as the token
+        navigator.sendBeacon(
+          `${API_URL}/api/rooms/${activeRoom.id}/leave-beacon`,
+          user.token
+        );
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -753,7 +776,7 @@ export default function App() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${await getFreshToken()}`
         },
         body: JSON.stringify({
           name: newRoomName,
@@ -818,7 +841,7 @@ export default function App() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${await getFreshToken()}`
         },
         body: JSON.stringify({
           userId: user.id,
@@ -842,7 +865,7 @@ export default function App() {
       setIsRealCall(data.isRealConnection);
 
       // Join Socket.IO room for chat
-      socket.emit('join-room', room.id);
+      socket.emit('join-room', { roomName: room.id, identity: user.id });
 
       // Setup LiveKit WebRTC
       LiveKitService.setCallbacks({
@@ -928,9 +951,13 @@ export default function App() {
     if (!activeRoom) return;
 
     try {
+      const token = await auth.currentUser?.getIdToken();
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/leave`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token || user.token}`
+        },
         body: JSON.stringify({ userId: user.id })
       });
     } catch (err) {
@@ -976,7 +1003,7 @@ export default function App() {
     try {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/raise-hand`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${user.token}` }
+        headers: { 'Authorization': `Bearer ${await getFreshToken()}` }
       });
     } catch (e) { console.error('Raise hand failed', e); }
   };
@@ -986,7 +1013,7 @@ export default function App() {
     try {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/lower-hand`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${user.token}` }
+        headers: { 'Authorization': `Bearer ${await getFreshToken()}` }
       });
     } catch (e) { console.error('Lower hand failed', e); }
   };
@@ -997,7 +1024,7 @@ export default function App() {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/allow-speak`, {
         method: 'POST',
         headers: { 
-          'Authorization': `Bearer ${user.token}`,
+          'Authorization': `Bearer ${await getFreshToken()}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ targetUserId })

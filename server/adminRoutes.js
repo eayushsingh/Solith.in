@@ -1,7 +1,7 @@
 import express from 'express';
 import { initFirebaseAdmin, verifyAdmin } from './firebaseAdmin.js';
 
-export default function setupAdminRoutes(app, rooms, saveDB, io) {
+export default function setupAdminRoutes(app, getRooms, saveDB, io) {
   const router = express.Router();
 
   router.use(verifyAdmin); // All routes in this router require admin role
@@ -28,7 +28,7 @@ export default function setupAdminRoutes(app, rooms, saveDB, io) {
     if (!adminInstance) {
       return res.json({
         usersTotal: 124,
-        activeRooms: rooms.length,
+        activeRooms: getRooms().length,
         reportsTotal: 12,
         reportsPending: 3
       });
@@ -39,7 +39,7 @@ export default function setupAdminRoutes(app, rooms, saveDB, io) {
       const usersCount = (await db.collection('users').count().get()).data().count;
       const reportsCount = (await db.collection('reports').count().get()).data().count;
       const pendingReportsCount = (await db.collection('reports').where('status', '==', 'pending').count().get()).data().count;
-      const activeRoomsCount = rooms.length;
+      const activeRoomsCount = getRooms().length;
       
       res.json({
         usersTotal: usersCount,
@@ -225,22 +225,23 @@ export default function setupAdminRoutes(app, rooms, saveDB, io) {
 
   // 6. GET /api/admin/rooms
   router.get('/rooms', (req, res) => {
-    res.json({ rooms });
+    res.json({ rooms: getRooms() });
   });
 
   // 7. DELETE /api/admin/rooms/:id
   router.delete('/rooms/:id', async (req, res) => {
     const { id } = req.params;
-    const roomIndex = rooms.findIndex(r => r.id === id);
+    const roomsArray = getRooms();
+    const roomIndex = roomsArray.findIndex(r => r.id === id);
     
     if (roomIndex === -1) {
       return res.status(404).json({ error: 'Room not found' });
     }
 
-    const room = rooms[roomIndex];
+    const room = roomsArray[roomIndex];
     
     io.to(id).emit('room-deleted');
-    rooms.splice(roomIndex, 1);
+    roomsArray.splice(roomIndex, 1);
     saveDB();
 
     const adminInstance = initFirebaseAdmin();
