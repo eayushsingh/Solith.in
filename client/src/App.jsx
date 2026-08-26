@@ -2689,42 +2689,77 @@ export default function App() {
           {/* Left Column: Dark Canvas */}
           <div className="flex-1 h-full relative flex flex-col justify-between overflow-hidden">
              
+             {/* Animated drifting background orbs */}
+             <div className="room-orb w-64 h-64 bg-indigo-600/10 bottom-32 left-1/4" style={{animationDelay: '0s'}} />
+             <div className="room-orb w-48 h-48 bg-blue-500/8 bottom-40 right-1/3" style={{animationDelay: '3s'}} />
+
              {/* Top Floating Controls */}
-             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-2xl border border-white/10 shadow-2xl">
+             <div style={{
+               position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+               display: 'flex', alignItems: 'center', gap: 8,
+               background: 'rgba(8,12,20,0.75)', backdropFilter: 'blur(20px)',
+               border: '1px solid rgba(255,255,255,0.08)',
+               borderRadius: 20, padding: '8px 12px', zIndex: 50
+             }}>
                 {/* Mute Button */}
                 <button 
                   onClick={toggleMute} 
-                  className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${
-                    isMuted ? 'bg-red-500 text-white' : 'bg-[#1e2a3a] hover:bg-[#2b3a4f] text-white'
-                  }`}
+                  style={{
+                    width: 48, height: 48, borderRadius: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                    background: isMuted ? '#1877f2' : 'rgba(255,255,255,0.06)'
+                  }}
                   title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
                 >
-                  {isMuted ? <MicOff className="w-5 h-5"/> : <Mic className="w-5 h-5"/>}
+                  {isMuted ? <MicOff size={20} color="white"/> : <Mic size={20} color="white"/>}
                 </button>
 
                 {/* Camera Button */}
                 <button 
                   onClick={toggleScreenShare} 
-                  className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${
-                    isScreenSharing ? 'bg-[#1877f2] text-white' : 'bg-[#1e2a3a] hover:bg-[#2b3a4f] text-white'
-                  }`}
+                  style={{
+                    width: 48, height: 48, borderRadius: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                    background: isScreenSharing ? '#1877f2' : 'rgba(255,255,255,0.06)'
+                  }}
                   title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}
                 >
-                  <Camera className="w-5 h-5"/>
+                  <Camera size={20} color="white"/>
                 </button>
 
-                {/* Signal Indicator */}
-                <div className="w-12 h-12 rounded-xl bg-[#1e2a3a] text-[#1877f2] flex items-center justify-center select-none" title="Signal Status">
-                  <ShieldCheck className="w-5 h-5"/>
+                {/* Signal Indicator with green dot */}
+                <div 
+                  style={{
+                    width: 48, height: 48, borderRadius: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.06)', position: 'relative'
+                  }}
+                  title="Signal Status: Good"
+                >
+                  <ShieldCheck size={20} color="white"/>
+                  <span 
+                    style={{
+                      position: 'absolute', top: 8, right: 8,
+                      width: 6, height: 6, borderRadius: '50%',
+                      background: '#10b981'
+                    }}
+                  />
                 </div>
 
                 {/* Leave Button */}
                 <button 
                   onClick={leaveVoiceRoom} 
-                  className="w-12 h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-all shadow-lg"
+                  style={{
+                    width: 48, height: 48, borderRadius: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
+                    background: '#dc2626'
+                  }}
                   title="Leave Room"
                 >
-                  <LogOut className="w-5 h-5"/>
+                  <LogOut size={20} color="white"/>
                 </button>
              </div>
 
@@ -2771,7 +2806,10 @@ export default function App() {
              })()}
 
              {/* Participant Avatars Anchored at Bottom Center */}
-             <div className="absolute bottom-28 left-0 right-0 z-20 flex items-center justify-center gap-4 flex-wrap px-4">
+             <div style={{
+               position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+               display: 'flex', gap: 20, alignItems: 'flex-end', zIndex: 10
+             }}>
                 {participants.map(p => {
                     const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                     const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
@@ -2779,55 +2817,69 @@ export default function App() {
                     const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
                     const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
                     const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
-                    const isOwner = p.id === activeRoom.ownerId;
-                    const initials = getInitials(pName);
+                    const targetRole = getRole(p.id);
 
                     return (
-                        <div key={p.id} className="flex flex-col items-center gap-1.5 relative group select-none">
-                           {/* 80x80 Circle */}
-                           <div 
-                             className="w-[80px] h-[80px] rounded-full overflow-hidden flex items-center justify-center relative border transition-all duration-300 animate-fade-in"
-                             style={{ 
-                               backgroundColor: pColor,
-                               boxShadow: isSpeaking ? '0 0 0 3px #1877f2' : 'none',
-                               borderColor: isSpeaking ? '#1877f2' : 'rgba(255,255,255,0.1)'
-                             }}
-                           >
+                        <div key={p.id} className="group" style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                          cursor: 'pointer', position: 'relative'
+                        }} onClick={() => !p.isLocal && setActiveActionUser(p)}>
+                           
+                           {/* Avatar circle */}
+                           <div style={{
+                             width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
+                             border: isSpeaking ? '2.5px solid #1877f2' : '2.5px solid rgba(255,255,255,0.1)',
+                             boxShadow: isSpeaking ? '0 0 20px rgba(24,119,242,0.5)' : 'none',
+                             transition: 'all 0.2s ease', position: 'relative',
+                             background: pColor
+                           }}>
                               {pPhotoUrl ? (
-                                <img src={pPhotoUrl} className="w-full h-full object-cover" alt={pName} />
+                                <img src={pPhotoUrl} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
                               ) : (
-                                <span className="text-xl font-bold text-white tracking-wider">{initials}</span>
+                                <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',
+                                  justifyContent:'center',fontSize:28,fontWeight:800,color:'white'}}>
+                                  {pName.slice(0,2).toUpperCase()}
+                                </div>
                               )}
                               
-                              {/* Muted Indicator bottom right */}
+                              {/* Muted indicator — bottom right of circle */}
                               {p.muted && (
-                                <div className="absolute bottom-0 right-0 p-1 bg-red-600 rounded-full border border-[#0d1117] shadow-lg">
-                                  <MicOff className="w-3 h-3 text-white" />
+                                <div style={{
+                                  position:'absolute', bottom:4, right:4,
+                                  background:'#dc2626', borderRadius:'50%',
+                                  width:20, height:20, display:'flex',
+                                  alignItems:'center', justifyContent:'center',
+                                  border:'2px solid #080c14'
+                                }}>
+                                  <MicOff size={10} color="white" />
+                                </div>
+                              )}
+
+                              {/* Gear icon — top right, hover only */}
+                              {!p.isLocal && (
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  style={{position:'absolute',top:4,right:4,
+                                    background:'rgba(0,0,0,0.6)',borderRadius:6,padding:3}}>
+                                  <Settings size={10} color="white" />
                                 </div>
                               )}
                            </div>
 
-                           {/* Name and Role Badge below circle */}
-                           <div className="flex flex-col items-center gap-0.5">
-                              <span className="text-[11px] font-medium text-white max-w-[90px] truncate text-center leading-tight">
-                                {pName}
-                              </span>
-                              {isOwner && (
-                                <span className="px-1.5 py-0.5 bg-[#6c47ff] text-white text-[8px] font-bold rounded-full leading-none tracking-wide uppercase">
-                                  Owner
-                                </span>
-                              )}
-                           </div>
+                           {/* Name */}
+                           <span style={{color:'rgba(255,255,255,0.85)',fontSize:12,fontWeight:600,
+                             maxWidth:80,textAlign:'center',overflow:'hidden',
+                             textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                             {p.isLocal ? 'You' : pName}
+                           </span>
 
-                           {/* Gear Icon top-right of each tile on hover only */}
-                           {!p.isLocal && (
-                             <button 
-                               onClick={() => setActiveActionUser(p)}
-                               className="absolute -top-1 -right-1 p-1 bg-black/80 hover:bg-black border border-white/10 rounded-full text-white/70 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md"
-                               title="Moderation options"
-                             >
-                               <Settings className="w-3 h-3" />
-                             </button>
+                           {/* Role badge — Owner only, no UNVERIFIED ever */}
+                           {targetRole === 'owner' && (
+                             <span style={{
+                               background:'#6c47ff', color:'white', fontSize:9,
+                               fontWeight:700, padding:'2px 8px', borderRadius:20,
+                               letterSpacing:'0.05em', textTransform:'uppercase',
+                               marginTop:-4
+                             }}>Owner</span>
                            )}
                         </div>
                     );
