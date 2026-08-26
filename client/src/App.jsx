@@ -267,6 +267,7 @@ export default function App() {
 
         if (currentUser && !currentUser.isAnonymous) {
           console.log("onAuthStateChanged: Authenticated as", currentUser.email);
+          socket.emit('authenticate', currentUser.uid);
           
           // 1. Instantly get the token (cached by Firebase, very fast)
           const token = await currentUser.getIdToken();
@@ -620,31 +621,9 @@ export default function App() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await getFreshToken()}`
         },
-        body: JSON.stringify({ userId: user.id })
+        body: JSON.stringify({ userId: user.id, isSpeaking: !isMuted })
       }).catch(err => console.warn('Ping error:', err));
     }, 4000);
-
-    // Gamification: Earn XP while inside the call room
-    const xpInterval = setInterval(() => {
-      // Accumulate XP: +5 XP for active listening, +10 XP if speaking (simulated/real unmute)
-      const isSpeaking = !isMuted && (audioLevels[user.id] > 0.05 || Math.random() > 0.4);
-      const xpEarned = isSpeaking ? 10 : 5;
-      
-      setUser(prev => {
-        const nextXp = prev.xp + xpEarned;
-        const prevLevel = getLevelInfo(prev.xp).level;
-        const nextLevel = getLevelInfo(nextXp).level;
-
-        // Show live floating points feed
-        setXpFloater({ amount: xpEarned, key: Date.now() });
-
-        if (nextLevel > prevLevel) {
-          console.log(`🎉 Level Up! You reached Level ${nextLevel} (${getLevelInfo(nextXp).title})! Keep speaking!`);
-        }
-
-        return { ...prev, xp: nextXp };
-      });
-    }, 10000); // every 10 seconds
 
     // Add robust tab close cleanup to prevent ghost participants
     const handleBeforeUnload = () => {
@@ -660,10 +639,20 @@ export default function App() {
 
     return () => {
       clearInterval(pingInterval);
-      clearInterval(xpInterval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [callState, activeRoom, isMuted, participants, isRealCall, user]);
+
+  // Sync XP floater to real Firestore updates via auth onSnapshot
+  const prevXpRef = useRef(user?.xp || 0);
+  useEffect(() => {
+    if (!user?.xp) return;
+    const diff = user.xp - prevXpRef.current;
+    if (diff > 0 && callState === 'joined') {
+      setXpFloater({ amount: diff, key: Date.now() });
+    }
+    prevXpRef.current = user.xp;
+  }, [user?.xp, callState]);
 
   // Scroll chat to bottom on new messages
   useEffect(() => {
