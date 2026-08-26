@@ -17,7 +17,7 @@ import StaticModals from './components/StaticModals';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, Camera,
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
-  Monitor, Youtube, Gamepad2, Crown, LayoutGrid, FileText, Maximize2, Bell, Grid3x3 as Grid
+  Monitor, Youtube, Gamepad2, Crown
 } from 'lucide-react';
 import GameContainer from './components/games/GameContainer';
 import { LiveKitService } from './livekit';
@@ -127,51 +127,6 @@ export default function App() {
       .then(data => setPlatformSettings(data))
       .catch(err => console.error('Failed to fetch settings:', err));
   }, []);
-  const getInitials = (name) => {
-    if (!name) return '👤';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
-  };
-
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarTab, setSidebarTab] = useState('chat');
-  const [joinEvents, setJoinEvents] = useState([]);
-  const prevParticipantsRef = useRef([]);
-
-  useEffect(() => {
-    if (callState !== 'joined' || !activeRoom) {
-      setJoinEvents([]);
-      prevParticipantsRef.current = [];
-      return;
-    }
-    const prev = prevParticipantsRef.current;
-    const now = participants;
-    const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    
-    now.forEach(p => {
-      if (!prev.find(pp => pp.id === p.id) && !p.isLocal) {
-        setJoinEvents(e => [...e.slice(-19), {
-          text: `[${time}] ${p.name} joined.`,
-          initials: p.name.slice(0,2).toUpperCase(),
-          color: p.color
-        }]);
-      }
-    });
-    prev.forEach(p => {
-      if (!now.find(pp => pp.id === p.id) && !p.isLocal) {
-        setJoinEvents(e => [...e.slice(-19), {
-          text: `[${time}] ${p.name} left.`,
-          initials: p.name.slice(0,2).toUpperCase(),
-          color: p.color
-        }]);
-      }
-    });
-    prevParticipantsRef.current = now;
-  }, [participants, callState, activeRoom]);
-
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [targetProfile, setTargetProfile] = useState(null);
   const [showTargetProfileModal, setShowTargetProfileModal] = useState(false);
@@ -225,6 +180,7 @@ export default function App() {
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isRealCall, setIsRealCall] = useState(false);
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
   const [activeGame, setActiveGame] = useState(null);
@@ -302,6 +258,7 @@ export default function App() {
           });
           const data = await res.json();
           if (data.token) {
+            const { signInWithCustomToken, auth } = await import('./firebase');
             await signInWithCustomToken(auth, data.token);
             console.log('Bot successfully logged in via custom token!');
             // Remove the bot param so it doesn't loop
@@ -728,12 +685,12 @@ export default function App() {
 
   // Scroll chat to bottom on new messages
   useEffect(() => {
-    if (sidebarOpen && sidebarTab === 'chat') {
+    if (isChatOpen) {
       setTimeout(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
-  }, [chatMessages, sidebarOpen, sidebarTab]);
+  }, [chatMessages, isChatOpen]);
 
   // Auto-join room from URL parameter if present
   useEffect(() => {
@@ -2665,669 +2622,264 @@ export default function App() {
         const hasRaisedHand = speakingQueue.includes(user?.id);
 
         return (
-        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-row z-50 overflow-hidden text-white">
+        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-bg-base flex flex-col z-50 overflow-hidden">
           
-          {/* Left Column: Dark Canvas */}
-          <div className="flex-1 h-full relative flex flex-col justify-between overflow-hidden">
-             
-             {/* Animated drifting background orbs */}
-             <div className="room-orb w-64 h-64 bg-indigo-600/10 bottom-32 left-1/4" style={{animationDelay: '0s'}} />
-             <div className="room-orb w-48 h-48 bg-blue-500/8 bottom-40 right-1/3" style={{animationDelay: '3s'}} />
+          {/* Top Floating Controls - Pill buttons (Mute, Camera, Signal, Leave) */}
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3">
+             {/* Mute Button */}
+             <button 
+               onClick={toggleMute} 
+               className={`px-4 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all ${
+                 isMuted ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+               }`}
+             >
+               {isMuted ? <MicOff className="w-3.5 h-3.5"/> : <Mic className="w-3.5 h-3.5"/>}
+               <span>{isMuted ? 'Muted' : 'Mute'}</span>
+             </button>
 
-             {/* Top Floating Controls */}
-             <div style={{
-               position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-               display: 'flex', alignItems: 'center', gap: 8,
-               background: 'rgba(8,12,20,0.75)', backdropFilter: 'blur(20px)',
-               border: '1px solid rgba(255,255,255,0.08)',
-               borderRadius: 20, padding: '8px 12px', zIndex: 50
-             }}>
-                {/* Mute Button */}
-                <button 
-                  onClick={toggleMute} 
-                  style={{
-                    width: 48, height: 48, borderRadius: 14,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
-                    background: isMuted ? '#1877f2' : 'rgba(255,255,255,0.06)'
-                  }}
-                  title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
-                >
-                  {isMuted ? <MicOff size={20} color="white"/> : <Mic size={20} color="white"/>}
-                </button>
+             {/* Camera/Screen Share Button */}
+             <button 
+               onClick={toggleScreenShare} 
+               className={`px-4 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all ${
+                 isScreenSharing ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+               }`}
+             >
+               <Camera className="w-3.5 h-3.5"/>
+               <span>{isScreenSharing ? 'Sharing' : 'Camera'}</span>
+             </button>
 
-                {/* Camera Button */}
-                <button 
-                  onClick={toggleScreenShare} 
-                  style={{
-                    width: 48, height: 48, borderRadius: 14,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
-                    background: isScreenSharing ? '#1877f2' : 'rgba(255,255,255,0.06)'
-                  }}
-                  title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}
-                >
-                  <Camera size={20} color="white"/>
-                </button>
-
-                {/* Signal Indicator with green dot */}
-                <div 
-                  style={{
-                    width: 48, height: 48, borderRadius: 14,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(255,255,255,0.06)', position: 'relative'
-                  }}
-                  title="Signal Status: Good"
-                >
-                  <ShieldCheck size={20} color="white"/>
-                  <span 
-                    style={{
-                      position: 'absolute', top: 8, right: 8,
-                      width: 6, height: 6, borderRadius: '50%',
-                      background: '#10b981'
-                    }}
-                  />
-                </div>
-
-                {/* Leave Button */}
-                <button 
-                  onClick={leaveVoiceRoom} 
-                  style={{
-                    width: 48, height: 48, borderRadius: 14,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s ease', border: 'none', cursor: 'pointer',
-                    background: '#dc2626'
-                  }}
-                  title="Leave Room"
-                >
-                  <LogOut size={20} color="white"/>
-                </button>
+             {/* Signal Status */}
+             <div className="px-4 py-2.5 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg select-none">
+               <ShieldCheck className="w-3.5 h-3.5"/>
+               <span>Signal: Good</span>
              </div>
 
-             {/* Presenter View Content (YouTube, Game, Screen Share) */}
-             {(() => {
-               const screenSharingParticipant = participants.find(p => p.isScreenSharing);
-               const hasPresenterContent = screenSharingParticipant || ytVideoId || activeGame;
-               if (hasPresenterContent) {
-                 return (
-                   <div className="absolute inset-0 pt-24 pb-44 px-4 flex items-center justify-center z-10">
-                     <div className="w-full h-full max-w-5xl bg-[#161a24] rounded-2xl border border-white/10 overflow-hidden shadow-2xl relative">
-                       {activeGame ? (
-                         <GameContainer activeGame={activeGame} socket={socket} roomId={activeRoom.id} currentUser={user} />
-                       ) : screenSharingParticipant ? (
-                         <div className="w-full h-full flex items-center justify-center bg-black">
-                           {isRealCall ? (
-                             screenSharingParticipant.screenShareTrack ? (
-                               <VideoTrack track={screenSharingParticipant.screenShareTrack} className="w-full h-full object-contain" />
-                             ) : (
-                               <div className="text-white/40 text-sm flex flex-col items-center gap-2">
-                                 <span className="w-2.5 h-2.5 rounded-full bg-[#1877f2] animate-ping"></span>
-                                 Connecting screen share...
-                               </div>
-                             )
-                           ) : (
-                             <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain" />
-                           )}
-                         </div>
-                       ) : (
-                         <div className="w-full h-full bg-black">
-                           <iframe 
-                             src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&enablejsapi=1`}
-                             className="w-full h-full border-0"
-                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                             allowFullScreen
-                           />
-                         </div>
-                       )}
-                     </div>
-                   </div>
-                 );
-               }
-               return null;
-             })()}
+             {/* Leave/Hang Up Button */}
+             <button 
+               onClick={leaveVoiceRoom} 
+               className="px-4 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-lg"
+             >
+               <LogOut className="w-3.5 h-3.5"/>
+               <span>Leave</span>
+             </button>
+           </div>
 
-             {/* Participant Avatars Anchored at Bottom Center */}
-             <div style={{
-               position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
-               display: 'flex', gap: 20, alignItems: 'flex-end', zIndex: 10
-             }}>
-                {participants.map(p => {
-                    const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                    const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
-                    const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
-                    const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
-                    const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
-                    const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
-                    const targetRole = getRole(p.id);
-
-                    return (
-                        <div key={p.id} className="group" style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                          cursor: 'pointer', position: 'relative'
-                        }} onClick={() => !p.isLocal && setActiveActionUser(p)}>
-                           
-                           {/* Avatar circle */}
-                           <div style={{
-                             width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
-                             border: isSpeaking ? '2.5px solid #1877f2' : '2.5px solid rgba(255,255,255,0.1)',
-                             boxShadow: isSpeaking ? '0 0 20px rgba(24,119,242,0.5)' : 'none',
-                             transition: 'all 0.2s ease', position: 'relative',
-                             background: pColor
-                           }}>
-                              {pPhotoUrl ? (
-                                <img src={pPhotoUrl} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
-                              ) : (
-                                <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',
-                                  justifyContent:'center',fontSize:28,fontWeight:800,color:'white'}}>
-                                  {pName.slice(0,2).toUpperCase()}
-                                </div>
-                              )}
-                              
-                              {/* Muted indicator — bottom right of circle */}
-                              {p.muted && (
-                                <div style={{
-                                  position:'absolute', bottom:4, right:4,
-                                  background:'#dc2626', borderRadius:'50%',
-                                  width:20, height:20, display:'flex',
-                                  alignItems:'center', justifyContent:'center',
-                                  border:'2px solid #080c14'
-                                }}>
-                                  <MicOff size={10} color="white" />
-                                </div>
-                              )}
-
-                              {/* Gear icon — top right, hover only */}
-                              {!p.isLocal && (
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                  style={{position:'absolute',top:4,right:4,
-                                    background:'rgba(0,0,0,0.6)',borderRadius:6,padding:3}}>
-                                  <Settings size={10} color="white" />
-                                </div>
-                              )}
-                           </div>
-
-                           {/* Name */}
-                           <span style={{color:'rgba(255,255,255,0.85)',fontSize:12,fontWeight:600,
-                             maxWidth:80,textAlign:'center',overflow:'hidden',
-                             textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                             {p.isLocal ? 'You' : pName}
-                           </span>
-
-                           {/* Role badge — Owner only, no UNVERIFIED ever */}
-                           {targetRole === 'owner' && (
-                             <span style={{
-                               background:'#6c47ff', color:'white', fontSize:9,
-                               fontWeight:700, padding:'2px 8px', borderRadius:20,
-                               letterSpacing:'0.05em', textTransform:'uppercase',
-                               marginTop:-4
-                             }}>Owner</span>
-                           )}
+          {/* Participant Grid / Presenter View */}
+          {(() => {
+            const screenSharingParticipant = participants.find(p => p.isScreenSharing);
+            const hasPresenterContent = screenSharingParticipant || ytVideoId || activeGame;
+            
+            if (hasPresenterContent) {
+              return (
+                <div className="flex flex-col lg:flex-row flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 gap-6 overflow-hidden">
+                  {/* Large Screen Share / YouTube Viewer / Game */}
+                  <div className="flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px]">
+                    {activeGame ? (
+                      <GameContainer activeGame={activeGame} socket={socket} roomId={activeRoom.id} currentUser={user} />
+                    ) : screenSharingParticipant ? (
+                      <>
+                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
+                          <Monitor className="w-3.5 h-3.5 text-[var(--accent-primary)] animate-pulse" />
+                          <span>{screenSharingParticipant.isLocal ? 'Your Screen' : `${screenSharingParticipant.name}'s Screen`}</span>
                         </div>
-                    );
-                })}
-             </div>
-             {/* Bottom Floating Bar */}
-             <div style={{
-               position:'absolute', bottom:24, left:'50%', transform:'translateX(-50%)',
-               display:'flex', alignItems:'center', gap:12,
-               background:'rgba(8,12,20,0.8)', backdropFilter:'blur(20px)',
-               border:'1px solid rgba(255,255,255,0.08)',
-               borderRadius:28, padding:'10px 20px', zIndex:50
-             }}>
-               <button onClick={hasRaisedHand ? lowerHand : raiseHand}
-                 style={{background:'none',border:'none',cursor:'pointer',
-                   fontSize:22,lineHeight:1}}>✋</button>
-               
-               {/* Solith branded center button */}
-               <div style={{
-                 width:44,height:44,borderRadius:'50%',
-                 background:'linear-gradient(135deg,#1877f2,#6c47ff)',
-                 display:'flex',alignItems:'center',justifyContent:'center',
-                 boxShadow:'0 0 20px rgba(108,71,255,0.4)',cursor:'pointer'
-               }} onClick={() => setSidebarTab('chat')}>
-                 <span style={{color:'white',fontSize:11,fontWeight:900,letterSpacing:'-0.5px'}}>S</span>
-               </div>
-
-               <div className="relative">
-                 <button onClick={() => setShowGameSelector(!showGameSelector)}
-                   style={{background:'none',border:'none',cursor:'pointer',
-                     color:'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                   <MoreVertical size={20}/>
-                 </button>
-                 {showGameSelector && (
-                    <div className="absolute bottom-[135%] left-1/2 -translate-x-1/2 bg-[#12141c] border border-white/10 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[160px] animate-fade-in z-[100]">
-                      <div className="text-[10px] font-bold text-white/40 uppercase px-2 py-1 tracking-wider mb-1">Games</div>
-                      {['chess', 'uno', 'connect4', 'tictactoe'].map(game => (
-                        <button 
-                          key={game} 
-                          onClick={(e) => { e.stopPropagation(); startGame(game); setShowGameSelector(false); }}
-                          className="text-left px-3 py-2 text-xs text-white/70 hover:bg-white/10 rounded-xl capitalize font-medium flex items-center gap-2"
-                        >
-                          {game === 'chess' && '♟️ Chess'}
-                          {game === 'uno' && '🃏 UNO'}
-                          {game === 'connect4' && '🔴 Connect 4'}
-                          {game === 'tictactoe' && '❌ Tic-Tac-Toe'}
-                        </button>
-                      ))}
-                    </div>
-                 )}
-               </div>
-             </div>
-
-             {/* Uncollapse Toggle Arrow */}
-             {!sidebarOpen && (
-               <button 
-                 onClick={() => setSidebarOpen(true)}
-                 className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-xl"
-                 title="Show Sidebar"
-               >
-                 <ChevronRight className="w-5 h-5 rotate-180" />
-               </button>
-             )}
-
-          </div>
-
-          {/* Right Sidebar Column */}
-          {sidebarOpen && (
-            <div style={{
-              width: 320, flexShrink: 0,
-              background: '#0f1520',
-              borderLeft: '1px solid rgba(255,255,255,0.07)',
-              display: 'flex', flexDirection: 'column',
-              height: '100vh'
-            }}>
-               
-               {/* Tab Bar - 5 icon tabs */}
-               <div style={{
-                 height:52, background:'#111827',
-                 borderBottom:'1px solid rgba(255,255,255,0.07)',
-                 display:'flex', alignItems:'center',
-                 padding:'0 8px', gap:4, flexShrink:0
-               }}>
-                 {[
-                   {icon: MessageSquare, key:'chat'},
-                   {icon: Users, key:'participants'},
-                   {icon: Grid, key:'grid'},
-                   {icon: Settings, key:'settings'},
-                   {icon: Maximize2, key:'fullscreen'},
-                 ].map(tab => (
-                   <button key={tab.key}
-                     onClick={() => {
-                       if (tab.key === 'fullscreen') {
-                         if (!document.fullscreenElement) {
-                           document.documentElement.requestFullscreen().catch(err => console.log(err));
-                         } else {
-                           document.exitFullscreen();
-                         }
-                       } else {
-                         setSidebarTab(tab.key);
-                       }
-                     }}
-                     style={{
-                       width:40, height:40, borderRadius:10,
-                       background: sidebarTab===tab.key ? 'rgba(24,119,242,0.15)' : 'transparent',
-                       border: 'none', cursor:'pointer', display:'flex',
-                       alignItems:'center', justifyContent:'center',
-                       borderBottom: sidebarTab===tab.key ? '2px solid #1877f2' : '2px solid transparent',
-                       transition:'all 0.15s'
-                     }}>
-                     <tab.icon size={18} color={sidebarTab===tab.key ? '#1877f2' : 'rgba(255,255,255,0.4)'} />
-                   </button>
-                 ))}
-                 {/* Collapse arrow on far right */}
-                 <button style={{
-                   marginLeft:'auto',
-                   width:32, height:32, borderRadius:8,
-                   display:'flex', alignItems:'center', justifyContent:'center',
-                   background:'transparent', border:'none', cursor:'pointer'
-                 }} onClick={() => setSidebarOpen(false)}>
-                   <ChevronRight size={18} color="rgba(255,255,255,0.4)" />
-                 </button>
-               </div>
-
-               {/* Tab Contents Area */}
-               <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
-                  
-                  {/* Chat Panel */}
-                  {sidebarTab === 'chat' && (
-                    <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-                       {/* Room Info Section */}
-                       <div style={{
-                         background:'#111827', padding:'12px 16px',
-                         borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0
-                       }}>
-                         <div style={{color:'rgba(255,255,255,0.9)',fontSize:13,fontWeight:700,marginBottom:6}}>
-                           Room Info
-                         </div>
-                         <div style={{color:'rgba(255,255,255,0.45)',fontSize:12}}>
-                           Language: {activeRoom.language || 'English'}
-                         </div>
-                         {activeRoom.topic && (
-                           <div style={{color:'rgba(255,255,255,0.45)',fontSize:12,marginTop:2}}>
-                             Topic: {activeRoom.topic}
-                           </div>
-                         )}
-                       </div>
-
-                       {/* Messages & Feed Scroll Area */}
-                       <div style={{flex:1, overflowY:'auto', padding:'8px 0'}} className="hide-scrollbar">
-                          
-                          {/* Join/Leave Event Feed */}
-                          {joinEvents.map((ev, i) => (
-                            <div key={i} style={{
-                              display:'flex', alignItems:'center',
-                              padding:'8px 16px', fontSize:12, color:'rgba(255,255,255,0.35)',
-                              justifyContent: 'space-between'
-                            }}>
-                              <span>{ev.text}</span>
-                              <div style={{
-                                width:24,height:24,borderRadius:'50%',
-                                background:ev.color||'#333',
-                                display:'flex',alignItems:'center',justifyContent:'center',
-                                fontSize:9,fontWeight:700,color:'white',flexShrink:0
-                              }}>
-                                {ev.initials}
+                        <div className="flex-1 w-full h-full flex items-center justify-center p-2 bg-black">
+                          {isRealCall ? (
+                            screenSharingParticipant.screenShareTrack ? (
+                              <VideoTrack track={screenSharingParticipant.screenShareTrack} />
+                            ) : (
+                              <div className="text-text-primary/40 text-sm flex flex-col items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-accent-secondary animate-ping"></span>
+                                Connecting screen share stream...
                               </div>
-                            </div>
-                          ))}
-
-                          {/* Message List */}
-                          {chatMessages.length === 0 ? (
-                            <div className="h-full flex items-center justify-center text-white/30 text-xs">
-                              No messages in this chat.
-                            </div>
+                            )
                           ) : (
-                            chatMessages.map(msg => (
-                              <div key={msg.id} className="group" style={{
-                                display:'flex', gap:10, padding:'8px 16px',
-                                transition:'background 0.15s'
-                              }}
-                              onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}
-                              onMouseLeave={e => e.currentTarget.style.background='transparent'}
-                              >
-                                {/* Avatar */}
-                                <div style={{
-                                  width:32,height:32,borderRadius:'50%',flexShrink:0,
-                                  background:msg.senderColor||'#333',overflow:'hidden',
-                                  display:'flex',alignItems:'center',justifyContent:'center',
-                                  fontSize:11,fontWeight:700,color:'white'
-                                }}>
-                                  {msg.senderPhotoUrl 
-                                    ? <img src={msg.senderPhotoUrl} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
-                                    : msg.senderName?.slice(0,2).toUpperCase()
-                                  }
-                                </div>
-                                
-                                {/* Content */}
-                                <div style={{flex:1,minWidth:0}}>
-                                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
-                                    <div style={{display:'flex',alignItems:'center',gap:6}}>
-                                      <span style={{color:'white',fontSize:13,fontWeight:700}}>{msg.senderName}</span>
-                                      {(msg.senderRole === 'owner' || msg.senderId === activeRoom.ownerId) && (
-                                        <span style={{background:'#6c47ff',color:'white',fontSize:9,
-                                          fontWeight:700,padding:'1px 6px',borderRadius:20}}>Owner</span>
-                                      )}
-                                    </div>
-                                    <div style={{display:'flex',alignItems:'center',gap:8}}>
-                                      <button onClick={() => setShowReportModal(msg.senderId)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                        style={{color:'#f87171',fontSize:11,background:'none',border:'none',cursor:'pointer',
-                                          display:'flex',alignItems:'center',gap:3}}>
-                                        🚩 Report
-                                      </button>
-                                      <span style={{color:'rgba(255,255,255,0.25)',fontSize:11}}>{msg.timestamp}</span>
-                                    </div>
-                                  </div>
-                                  <p style={{color:'rgba(255,255,255,0.8)',fontSize:13,margin:0,lineHeight:1.5,
-                                    wordBreak:'break-word'}}>{msg.text}</p>
-                                </div>
-                              </div>
-                            ))
+                            <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain rounded-2xl bg-black" />
                           )}
-                          <div ref={chatEndRef} />
-                       </div>
-
-                       {/* Chat Input Pinned to Bottom */}
-                       <div style={{
-                         borderTop:'1px solid rgba(255,255,255,0.07)',
-                         background:'#111827', flexShrink:0, padding:'10px 12px'
-                       }}>
-                         {/* Icon toolbar row */}
-                         <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
-                           {[
-                             {icon:'😊', action: null},
-                             {icon:'GIF', action: null, text:true},
-                             {icon: Gamepad2, action: () => setShowGameSelector(!showGameSelector)},
-                             {icon: Youtube, action: () => setShowYtModal(true)},
-                             {icon:'AI', action: null, text:true},
-                             {icon: Bell, action: null},
-                           ].map((item, i) => (
-                             <button key={i} onClick={item.action}
-                               type="button"
-                               style={{
-                                 width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.06)',
-                                 border:'none',cursor:item.action?'pointer':'default',
-                                 display:'flex',alignItems:'center',justifyContent:'center',
-                                 color:'rgba(255,255,255,0.5)',fontSize:item.text?10:16,fontWeight:700,
-                                 opacity:item.action?1:0.4
-                               }}>
-                               {item.text ? item.icon : typeof item.icon === 'string' ? item.icon : <item.icon size={15}/>}
-                             </button>
-                           ))}
-                           {/* Mic button far right */}
-                           <button onClick={toggleMute} style={{marginLeft:'auto',
-                             width:32,height:32,borderRadius:8,
-                             background: isMuted?'rgba(220,38,38,0.2)':'rgba(24,119,242,0.2)',
-                             border:'none',cursor:'pointer',display:'flex',
-                             alignItems:'center',justifyContent:'center'}}>
-                             {isMuted ? <MicOff size={15} color="#f87171"/> : <Mic size={15} color="#60a5fa"/>}
-                           </button>
-                         </div>
-
-                         {/* Text input row */}
-                         <form onSubmit={(e) => { e.preventDefault(); sendChatMessage(e); }} style={{display:'flex',gap:8,alignItems:'center'}}>
-                           <div style={{flex:1,background:'rgba(255,255,255,0.05)',
-                             borderRadius:10,border:'1px solid rgba(255,255,255,0.08)',
-                             padding:'8px 12px'}}>
-                             <input
-                               value={chatInput}
-                               onChange={e => setChatInput(e.target.value)}
-                               placeholder="Type a message..."
-                               style={{width:'100%',background:'none',border:'none',outline:'none',
-                                 color:'white',fontSize:13}}
-                             />
-                             <div style={{color:'rgba(255,255,255,0.2)',fontSize:11,marginTop:3}}>
-                               Type @ to mention someone.
-                             </div>
-                           </div>
-                           <button type="submit" style={{
-                             width:36,height:36,borderRadius:10,
-                             background:'#1877f2',border:'none',cursor:'pointer',
-                             display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0
-                           }}>
-                             <Send size={15} color="white" />
-                           </button>
-                         </form>
-                       </div>
-                    </div>
-                  )}
-
-                  {/* Participants Panel */}
-                  {sidebarTab === 'participants' && (
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                       <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Connected ({participants.length})</div>
-                       {participants.map(p => {
-                           const isOwner = p.id === activeRoom.ownerId;
-                           const pEmoji = p.isLocal ? (user?.emoji || '👤') : (p.emoji || '👤');
-                           const pColor = p.isLocal ? (user?.color || '#0d94a8') : (p.color || '#ff4d4d');
-                           return (
-                             <div key={p.id} className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/5">
-                               <div className="flex items-center gap-2.5 min-w-0">
-                                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-white" style={{ backgroundColor: pColor }}>
-                                    {pEmoji}
-                                 </div>
-                                 <div className="flex flex-col min-w-0">
-                                   <span className="text-white text-xs font-bold truncate">{p.name} {p.isLocal && '(You)'}</span>
-                                   {isOwner && <span className="text-[8px] text-[#6c47ff] font-bold uppercase tracking-wider">Owner</span>}
-                                 </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
+                          <Youtube className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                          <span>Shared YouTube Video (Shared by {ytSharingUser})</span>
+                          <button onClick={() => socket.emit('yt-share', { roomId: activeRoom.id, videoId: null, sharingUser: null })} className="ml-2 px-2 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg transition-colors text-[10px] font-bold">Stop</button>
+                        </div>
+                        <div className="flex-1 w-full h-full bg-black">
+                          <iframe 
+                            src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&enablejsapi=1`}
+                            className="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {/* Side Participant List */}
+                  <div className="w-full lg:w-[240px] flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
+                    {participants.map(p => {
+                        const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
+                        const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                        const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
+                        const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
+                        const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
+                        const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
+                        
+                        return (
+                            <div key={p.id} className={`relative flex flex-col items-center justify-center w-[120px] h-[100px] lg:w-[200px] lg:h-[130px] rounded-2xl overflow-hidden bg-[#161920] border transition-all duration-300 ${isSpeaking ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'border-white/5'} flex-shrink-0 group`}>
+                               <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden shadow-lg border border-white/10 group-hover:scale-105 transition-transform" style={{ backgroundColor: pColor }}>
+                                  {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-2xl lg:text-3xl">{pEmoji}</div>}
                                </div>
-                               <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  {p.muted && <MicOff className="w-3.5 h-3.5 text-red-500" />}
-                                  {!p.isLocal && (
-                                    <button onClick={() => setActiveActionUser(p)} className="p-1 hover:bg-white/10 rounded-lg text-white/50 hover:text-white">
-                                      <Settings className="w-3.5 h-3.5" />
-                                    </button>
+                               
+                               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-10">
+                                  <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg max-w-[75%]">
+                                     <span className="text-white text-[10px] lg:text-xs font-semibold truncate">{pName}</span>
+                                  </div>
+                                  {p.muted && (
+                                     <div className="w-6 h-6 bg-red-500/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-red-500/30 flex-shrink-0">
+                                       <MicOff className="w-3 h-3 text-red-400" />
+                                     </div>
                                   )}
                                </div>
-                             </div>
-                           );
-                       })}
-                    </div>
-                  )}
+                            </div>
+                        );
+                    })}
+                  </div>
+                </div>
+              );
+            }
 
-                  {/* Grid Tools Panel */}
-                  {sidebarTab === 'grid' && (
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                       <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Interactive Tools</div>
-                       
-                       {/* AI Mock Interview Tool */}
-                       <button 
-                         onClick={() => { setShowDevModal('ai-mock'); }}
-                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
-                       >
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 bg-blue-600/20 text-[#1877f2] rounded-lg flex items-center justify-center">
-                                <Sparkles className="w-4 h-4" />
+            // Default view: Participant avatar sits at the bottom center of a dark empty canvas
+            return (
+              <div className="flex-1 w-full h-full relative bg-[#0b0d11] flex flex-col items-center justify-end pb-36 overflow-hidden">
+                {/* Avatars anchored at the bottom center of the dark canvas */}
+                <div className="flex items-center justify-center gap-6 z-20 flex-wrap px-4">
+                  {participants.map(p => {
+                      const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
+                      const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                      const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
+                      const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
+                      const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
+                      const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
+
+                      return (
+                          <div key={p.id} className="flex flex-col items-center gap-2 group">
+                             <div 
+                               className={`w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-300 relative ${
+                                 isSpeaking ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105' : 'border-white/10'
+                               }`}
+                               style={{ backgroundColor: pColor }}
+                             >
+                                {pPhotoUrl ? (
+                                  <img src={pPhotoUrl} className="w-full h-full object-cover" alt={pName} />
+                                ) : (
+                                  <span className="text-3xl md:text-4xl text-white">{pEmoji}</span>
+                                )}
+                                {p.muted && (
+                                  <div className="absolute bottom-0 right-0 p-1 bg-red-600 rounded-full border border-[#0f1115]">
+                                    <MicOff className="w-2.5 h-2.5 text-white" />
+                                  </div>
+                                )}
                              </div>
-                             <div>
-                                <div className="text-xs font-bold text-white">AI Mock Interview</div>
-                                <div className="text-[10px] text-white/40">Practice conversational skills</div>
-                             </div>
+                             <span className="text-[10px] font-bold text-white/50 bg-black/40 px-2 py-0.5 rounded-full border border-white/5">
+                               {pName}
+                             </span>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
-                       </button>
+                      );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
-                       {/* AI Notetaker Tool */}
-                       <button 
-                         onClick={() => { setShowDevModal('ai-notes'); }}
-                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
-                       >
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 bg-purple-600/20 text-purple-400 rounded-lg flex items-center justify-center">
-                                <FileText className="w-4 h-4" />
-                             </div>
-                             <div>
-                                <div className="text-xs font-bold text-white">AI Notetaker & Summary</div>
-                                <div className="text-[10px] text-white/40">Real-time room transcripts</div>
-                             </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
-                       </button>
+          {/* Room Sidebar Panel */}
+          <RoomPanel 
+            isChatOpen={isChatOpen}
+            setIsChatOpen={setIsChatOpen}
+            chatMessages={chatMessages}
+            sendChatMessage={(e, customMsg) => {
+              if (customMsg) {
+                setChatMessages(prev => [...prev, customMsg]);
+                setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+              } else {
+                sendChatMessage(e);
+              }
+            }}
+            chatInput={chatInput}
+            setChatInput={setChatInput}
+            chatEndRef={chatEndRef}
+            participants={participants}
+            activeRoom={activeRoom}
+            user={user}
+            setUser={setUser}
+            socket={socket}
+            ytVideoId={ytVideoId}
+            getRole={getRole}
+            API_URL={API_URL}
+            getAvatarUrl={getAvatarUrl}
+          />
 
-                       {/* Drawing Whiteboard Tool */}
-                       <button 
-                         onClick={() => { setShowDevModal('whiteboard'); }}
-                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
-                       >
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 bg-emerald-600/20 text-emerald-400 rounded-lg flex items-center justify-center">
-                                <Grid className="w-4 h-4" />
-                             </div>
-                             <div>
-                                <div className="text-xs font-bold text-white">Drawing Whiteboard</div>
-                                <div className="text-[10px] text-white/40">Collaborative canvas sketcher</div>
-                             </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
-                       </button>
+          {/* Bottom Floating Controls - Raise hand, circular menu, more options */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-[#12141c]/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-white/10 shadow-2xl">
+             {/* Raise Hand Button */}
+             <button 
+               onClick={hasRaisedHand ? lowerHand : raiseHand} 
+               className={`p-2.5 rounded-full transition-all duration-200 border ${
+                 hasRaisedHand 
+                   ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white shadow-lg shadow-[var(--accent-primary-glow)]' 
+                   : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+               }`}
+               title={hasRaisedHand ? 'Lower Hand' : 'Raise Hand'}
+             >
+               <Hand className="w-4 h-4"/>
+             </button>
 
-                       {/* YouTube Tool */}
-                       <button 
-                         onClick={() => setShowYtModal(true)}
-                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
-                       >
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 bg-red-600/20 text-red-500 rounded-lg flex items-center justify-center">
-                                <Youtube className="w-4 h-4" />
-                             </div>
-                             <div>
-                                <div className="text-xs font-bold text-white">Share YouTube Video</div>
-                                <div className="text-[10px] text-white/40">Sync stream with everyone</div>
-                             </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
-                       </button>
+             {/* Circular Menu Button (Opens/Closes right sidebar panel) */}
+             <button 
+               onClick={() => setIsChatOpen(!isChatOpen)} 
+               className={`p-2.5 rounded-full transition-all duration-200 border ${
+                 isChatOpen 
+                   ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white shadow-lg shadow-[var(--accent-primary-glow)]' 
+                   : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+               }`}
+               title="Toggle Sidebar Panel"
+             >
+               <MessageSquare className="w-4 h-4"/>
+             </button>
 
-                       {/* Game Selector */}
-                       <button 
-                         onClick={() => setShowGameSelector(!showGameSelector)}
-                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
-                       >
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 bg-amber-600/20 text-amber-500 rounded-lg flex items-center justify-center">
-                                <Gamepad2 className="w-4 h-4" />
-                             </div>
-                             <div>
-                                <div className="text-xs font-bold text-white">Multiplayer Games</div>
-                                <div className="text-[10px] text-white/40">Chess, Uno, Connect4, TicTacToe</div>
-                             </div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
-                       </button>
-                    </div>
-                  )}
-
-                  {/* Settings Panel */}
-                  {sidebarTab === 'settings' && (
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                       <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Profile & Settings</div>
-                       
-                       {/* Quick Nickname Selector */}
-                       <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Display Name</label>
-                          <input 
-                            type="text" 
-                            value={user?.name || ''} 
-                            onChange={(e) => setUser(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#1877f2] transition-colors" 
-                          />
-                       </div>
-
-                       {/* Emoji Selector */}
-                       <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Avatar Emoji</label>
-                          <div className="grid grid-cols-6 gap-1 bg-black/10 p-2 rounded-xl border border-white/5">
-                            {['👤', '🦊', '🐼', '🦁', '🦉', '🐱', '🐶', '🦄', '🐝', '🐧', '🦖', '🐬'].map(em => (
-                              <button 
-                                key={em} 
-                                onClick={() => setUser(prev => ({ ...prev, emoji: em }))}
-                                className={`text-lg p-1 hover:bg-white/10 rounded transition-all ${user?.emoji === em ? 'bg-white/15 scale-110' : ''}`}
-                              >
-                                {em}
-                              </button>
-                            ))}
-                          </div>
-                       </div>
-
-                       {/* Color Selector */}
-                       <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Avatar Color</label>
-                          <div className="grid grid-cols-6 gap-1 bg-black/10 p-2 rounded-xl border border-white/5">
-                            {['#ff4d4d', '#ff944d', '#ffd11a', '#0d94a8', '#4da6ff', '#8b5cf6', '#ec4899', '#10b981', '#6b7280', '#b45309', '#065f46', '#1e3a8a'].map(col => (
-                              <button 
-                                key={col} 
-                                onClick={() => setUser(prev => ({ ...prev, color: col }))}
-                                className={`w-6 h-6 rounded-full mx-auto border transition-all ${user?.color === col ? 'border-white scale-110' : 'border-transparent'}`}
-                                style={{ backgroundColor: col }}
-                              />
-                            ))}
-                          </div>
-                       </div>
-                    </div>
-                  )}
-               </div>
-            </div>
-          )}
+             {/* More options button (...) with dropdown */}
+             <div className="relative">
+               <button 
+                 onClick={() => setShowGameSelector(!showGameSelector)} 
+                 className={`p-2.5 rounded-full transition-all duration-200 border ${
+                   showGameSelector 
+                     ? 'bg-white/20 border-white/20 text-white' 
+                     : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                 }`}
+                 title="Select Game"
+               >
+                 <MoreVertical className="w-4 h-4"/>
+               </button>
+               {/* Game Selector Dropdown */}
+               {showGameSelector && (
+                  <div className="absolute bottom-[125%] left-1/2 -translate-x-1/2 bg-[#12141c] border border-white/10 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[160px] animate-fade-in z-[100]">
+                    <div className="text-[10px] font-bold text-white/40 uppercase px-2 py-1 tracking-wider mb-1">Select a Game</div>
+                    {['chess', 'uno', 'connect4', 'tictactoe'].map(game => (
+                      <button 
+                        key={game} 
+                        onClick={(e) => { e.stopPropagation(); startGame(game); setShowGameSelector(false); }}
+                        className="text-left px-3 py-2 text-xs text-white/70 hover:bg-white/10 rounded-xl capitalize font-medium flex items-center gap-2"
+                      >
+                        {game === 'chess' && '♟️ Chess'}
+                        {game === 'uno' && '🃏 UNO'}
+                        {game === 'connect4' && '🔴 Connect 4'}
+                        {game === 'tictactoe' && '❌ Tic-Tac-Toe'}
+                      </button>
+                    ))}
+                  </div>
+               )}
+             </div>
+          </div>
 
         </div>
         );
