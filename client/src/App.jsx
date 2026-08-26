@@ -15,7 +15,7 @@ import RoomPanel from './components/RoomPanel';
 
 import StaticModals from './components/StaticModals';
 import { 
-  Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, 
+  Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, Camera,
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
   Monitor, Youtube, Gamepad2, Crown
 } from 'lucide-react';
@@ -900,8 +900,9 @@ export default function App() {
         onConnectionChange: ({ state, isMock, error }) => {
           setCallState(state);
           if (state === 'error') {
-            alert(`Call connection error: ${error || 'Unknown issue'}`);
+            setToastMessage(`Connection error: ${error || 'Unknown issue'}`);
             setActiveRoom(null);
+            setCallState('left');
           }
         }
       });
@@ -913,7 +914,7 @@ export default function App() {
       fetchRooms(); // refresh listing UI
     } catch (err) {
       console.error('Error joining call room:', err);
-      alert(err.message || 'Could not join voice session.');
+      setToastMessage(err.message || 'Could not join voice session.');
       setIsMuted(true);
       setActiveRoom(null);
       setCallState('left');
