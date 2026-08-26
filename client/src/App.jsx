@@ -186,6 +186,7 @@ export default function App() {
   const [activeGame, setActiveGame] = useState(null);
   const [showGameSelector, setShowGameSelector] = useState(false);
   const [lobbyGridCols, setLobbyGridCols] = useState(3);
+  const [joiningRoomId, setJoiningRoomId] = useState(null);
   
   // Custom Toast State (replaces window.alert)
   const [toastMessage, setToastMessage] = useState(null);
@@ -821,15 +822,17 @@ export default function App() {
       }
 
       setRooms(prev => [...prev, newRoom]);
-      setShowCreateModal(false);
       
       // Join newly created room in current tab and update URL for easy sharing
       window.history.pushState({}, '', `/?room=${newRoom.id}`);
-      joinVoiceRoom(newRoom);
-      // Reset form
-      setNewRoomName('');
-      setNewRoomTopic('');
-      setNewRoomTags('Casual');
+      const success = await joinVoiceRoom(newRoom);
+      if (success) {
+        setShowCreateModal(false);
+        // Reset form
+        setNewRoomName('');
+        setNewRoomTopic('');
+        setNewRoomTags('Casual');
+      }
     } catch (err) {
       console.error('Error creating room:', err);
       alert(err.message || 'Failed to create new practice room.');
@@ -840,21 +843,23 @@ export default function App() {
 
   // Join a room logic
   const joinVoiceRoom = async (room) => {
+    if (joiningRoomId) return false;
     if (!user || !user.id) {
       setShowAuthModal(true);
-      return;
+      return false;
     }
 
     if (user?.isRestricted) {
       alert("Your account is temporarily restricted from creating or joining rooms due to community guidelines violations. Pending manual review.");
-      return;
+      return false;
     }
 
     if (activeRoom) {
-      // Prompt user or automatically leave old room?
       alert('You are already in a room. Leave it first.');
-      return;
+      return false;
     }
+
+    setJoiningRoomId(room.id);
     setIsMuted(true);
     setChatMessages([]);
 
@@ -915,6 +920,7 @@ export default function App() {
       
       setRoomJoinTime(Date.now());
       fetchRooms(); // refresh listing UI
+      return true;
     } catch (err) {
       console.error('Error joining call room:', err);
       setToastMessage(err.message || 'Could not join voice session.');
@@ -922,6 +928,9 @@ export default function App() {
       setActiveRoom(null);
       setCallState('left');
       setRoomJoinTime(null);
+      return false;
+    } finally {
+      setJoiningRoomId(null);
     }
   };
 
@@ -2581,6 +2590,8 @@ export default function App() {
                   inThisRoom={activeRoom?.id === filteredRooms[0].id} 
                   onJoin={joinVoiceRoom} 
                   userFollowing={user?.following || []}
+                  isJoining={joiningRoomId === filteredRooms[0].id}
+                  anyRoomJoining={!!joiningRoomId}
                 />
               </div>
 
@@ -2598,6 +2609,8 @@ export default function App() {
                       inThisRoom={activeRoom?.id === room.id} 
                       onJoin={joinVoiceRoom} 
                       userFollowing={user?.following || []}
+                      isJoining={joiningRoomId === room.id}
+                      anyRoomJoining={!!joiningRoomId}
                     />
                   ))}
                 </div>
