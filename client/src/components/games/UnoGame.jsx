@@ -1,241 +1,205 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 
-// Deck generation
-const COLORS = ['red', 'yellow', 'green', 'blue'];
-const VALUES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'skip', 'reverse', '+2'];
-const WILDS = ['wild', 'wild+4'];
+export default function UnoGame({ activeGame, socket, roomId, currentUser, myPlayerId, currentTurnId }) {
+  const [myHand, setMyHand] = useState([]);
+  const [showColorSelector, setShowColorSelector] = useState(false);
+  const [pendingPlayIndex, setPendingPlayIndex] = useState(null);
 
-function generateDeck() {
-  const deck = [];
-  COLORS.forEach(color => {
-    deck.push({ color, value: '0', id: Math.random().toString() });
-    for (let i = 0; i < 2; i++) {
-      VALUES.slice(1).forEach(value => {
-        deck.push({ color, value, id: Math.random().toString() });
-      });
-    }
-  });
-  for (let i = 0; i < 4; i++) {
-    deck.push({ color: 'black', value: 'wild', id: Math.random().toString() });
-    deck.push({ color: 'black', value: 'wild+4', id: Math.random().toString() });
-  }
-  return deck.sort(() => Math.random() - 0.5);
-}
-
-export default function UnoGame({ activeGame, socket, roomId, currentUser }) {
-  const [gameState, setGameState] = useState(null);
-  const [playerIndex, setPlayerIndex] = useState(-1);
-
-  // Initialize
+  // Sync hand privately from socket
   useEffect(() => {
-    let pIndex = activeGame.players?.findIndex(p => p.id === currentUser.id) ?? -1;
-    setPlayerIndex(pIndex);
-
-    if (activeGame.state === 'start' && pIndex === 0) {
-      // Host initializes game
-      const deck = generateDeck();
-      const players = activeGame.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        hand: deck.splice(0, 7)
-      }));
-      
-      // First card can't be wild for simplicity
-      let discard = deck.pop();
-      while (discard.color === 'black') {
-        deck.unshift(discard);
-        discard = deck.pop();
-      }
-
-      const initialState = {
-        deck,
-        discardPile: [discard],
-        players,
-        turnIndex: 0,
-        direction: 1,
-        currentColor: discard.color,
-        winner: null
-      };
-      
-      setGameState(initialState);
-      
-      socket.emit('game-action', {
-        roomId,
-        state: initialState,
-        player: currentUser
-      });
-    } else if (activeGame.state && activeGame.state !== 'start') {
-      setGameState(activeGame.state);
-    }
-  }, [activeGame.players, currentUser.id, activeGame.state]);
-
-  useEffect(() => {
-    const handleGameAction = (data) => {
-      if (data.state) {
-        setGameState(data.state);
-        if (data.state.winner && (!gameState || !gameState.winner)) {
-          confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
-        }
-      }
+    const handleUnoHand = (hand) => {
+      setMyHand(hand || []);
     };
-    socket.on('game-action', handleGameAction);
-    return () => socket.off('game-action', handleGameAction);
-  }, [socket, gameState]);
+    
+    socket.on('uno-hand', handleUnoHand);
+    
+    // Proactively request hand in case of join/reconnect
+    socket.emit('uno-request-hand', { roomId });
 
-  if (!gameState) return <div className="p-8 text-white text-center">Loading game...</div>;
+    return () => {
+      socket.off('uno-hand', handleUnoHand);
+    };
+  }, [socket, roomId]);
 
-  const myTurn = gameState.turnIndex === playerIndex;
-  const me = gameState.players[playerIndex];
+  // Handle confetti when winner is detected
+  useEffect(() => {
+    if (activeGame.state && activeGame.state.winner) {
+      confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+    }
+  }, [activeGame.state?.winner]);
+
+  if (!activeGame.state || typeof activeGame.state !== 'object') {
+    return <div className="p-8 text-white text-center">Loading game state...</div>;
+  }
+
+  const { discardPile, currentColor, winner, players } = activeGame.state;
+  const topCard = discardPile[discardPile.length - 1];
+
+  const isPlayer = activeGame.players?.some(p => p.id === currentUser.id);
+  const isMyTurn = currentTurnId === myPlayerId;
+  const activePlayerName = activeGame.players?.find(p => p.id === currentTurnId)?.name || 'Player';
 
   const canPlay = (card) => {
-    if (!myTurn || gameState.winner) return false;
+    if (!isMyTurn || winner) return false;
     if (card.color === 'black') return true;
-    const topCard = gameState.discardPile[gameState.discardPile.length - 1];
-    return card.color === gameState.currentColor || card.value === topCard.value;
+    return card.color === currentColor || card.value === topCard.value;
   };
 
   const drawCard = () => {
-    if (!myTurn || gameState.winner) return;
-    const newState = { ...gameState };
-    if (newState.deck.length === 0) {
-      // Reshuffle
-      const top = newState.discardPile.pop();
-      newState.deck = newState.discardPile.sort(() => Math.random() - 0.5);
-      newState.discardPile = [top];
-    }
-    const card = newState.deck.pop();
-    newState.players[playerIndex].hand.push(card);
-    newState.turnIndex = (newState.turnIndex + newState.direction + newState.players.length) % newState.players.length;
-    
-    setGameState(newState);
-    socket.emit('game-action', { roomId, state: newState, player: currentUser });
+    if (!isMyTurn || winner) return;
+    socket.emit('game-action', {
+      roomId,
+      action: { type: 'draw' },
+      playerId: currentUser.id
+    });
   };
 
   const playCard = (card, cardIndex) => {
+    if (!isMyTurn || winner) return;
     if (!canPlay(card)) return;
-    
-    const newState = JSON.parse(JSON.stringify(gameState)); // Deep copy
-    
-    // Remove from hand
-    newState.players[playerIndex].hand.splice(cardIndex, 1);
-    newState.discardPile.push(card);
-    
-    // Handle effects
-    let nextTurnOffset = newState.direction;
-    let newColor = card.color;
-    
-    if (card.color === 'black') {
-      // Auto pick color for simplicity, ideally would prompt
-      newColor = ['red', 'blue', 'green', 'yellow'][Math.floor(Math.random() * 4)];
-    }
-    
-    if (card.value === 'reverse') {
-      newState.direction *= -1;
-      if (newState.players.length === 2) nextTurnOffset = newState.direction * 2; // Reverse in 2 player is a skip
-      else nextTurnOffset = newState.direction;
-    } else if (card.value === 'skip') {
-      nextTurnOffset = newState.direction * 2;
-    } else if (card.value === '+2') {
-      nextTurnOffset = newState.direction * 2;
-      const target = (newState.turnIndex + newState.direction + newState.players.length) % newState.players.length;
-      for(let i=0; i<2; i++) {
-        if(newState.deck.length > 0) newState.players[target].hand.push(newState.deck.pop());
-      }
-    } else if (card.value === 'wild+4') {
-      nextTurnOffset = newState.direction * 2;
-      const target = (newState.turnIndex + newState.direction + newState.players.length) % newState.players.length;
-      for(let i=0; i<4; i++) {
-        if(newState.deck.length > 0) newState.players[target].hand.push(newState.deck.pop());
-      }
-    }
-    
-    newState.currentColor = newColor;
-    newState.turnIndex = (newState.turnIndex + nextTurnOffset + newState.players.length) % newState.players.length;
-    
-    if (newState.players[playerIndex].hand.length === 0) {
-      newState.winner = newState.players[playerIndex].name;
-    }
 
-    setGameState(newState);
-    socket.emit('game-action', { roomId, state: newState, player: currentUser });
+    if (card.color === 'black') {
+      setPendingPlayIndex(cardIndex);
+      setShowColorSelector(true);
+    } else {
+      socket.emit('game-action', {
+        roomId,
+        action: { type: 'play', cardIndex },
+        playerId: currentUser.id
+      });
+    }
   };
 
-  const topCard = gameState.discardPile[gameState.discardPile.length - 1];
+  const selectColorAndPlay = (color) => {
+    if (pendingPlayIndex === null) return;
+    socket.emit('game-action', {
+      roomId,
+      action: { type: 'play', cardIndex: pendingPlayIndex, chosenColor: color },
+      playerId: currentUser.id
+    });
+    setShowColorSelector(false);
+    setPendingPlayIndex(null);
+  };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-between p-4 bg-gradient-to-b from-green-900 to-green-950">
+    <div className="w-full h-full flex flex-col items-center justify-between p-4 bg-gradient-to-b from-green-900 to-green-950 relative">
       
-      {/* Opponents Status */}
-      <div className="flex gap-4 mb-4">
-        {gameState.players.map((p, i) => i !== playerIndex && (
-          <div key={p.id} className={`p-2 rounded-lg bg-black/40 border-2 ${gameState.turnIndex === i ? 'border-yellow-400' : 'border-transparent'}`}>
-            <div className="text-sm text-white font-bold">{p.name}</div>
-            <div className="text-xs text-gray-300">{p.hand.length} cards</div>
+      {/* Wild Card Color Selector Modal */}
+      {showColorSelector && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-50 rounded-2xl backdrop-blur-sm animate-fade-in">
+          <div className="bg-bg-surface border border-border-color p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 max-w-xs w-full">
+            <h3 className="text-white font-bold text-lg">Select Wild Color</h3>
+            <div className="grid grid-cols-2 gap-3 w-full">
+              {['red', 'blue', 'green', 'yellow'].map(color => (
+                <button
+                  key={color}
+                  onClick={() => selectColorAndPlay(color)}
+                  className="py-3 px-4 rounded-xl text-white font-black uppercase tracking-wider text-sm transition-all hover:scale-105 active:scale-95 shadow-md shadow-black/40"
+                  style={{ backgroundColor: getHexColor(color) }}
+                >
+                  {color}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Turn Enforcement Banner / Game Status */}
+      {winner ? (
+        <div className="w-full max-w-md bg-accent-primary/20 border border-accent-primary/30 text-[var(--accent-primary)] py-2 px-4 rounded-xl text-center font-black text-sm uppercase tracking-wider animate-bounce">
+          🎉 {winner} Wins!
+        </div>
+      ) : isMyTurn ? (
+        <div className="w-full max-w-md bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 py-2 px-4 rounded-xl text-center font-bold text-sm animate-pulse">
+          🟢 Your turn
+        </div>
+      ) : (
+        <div className="w-full max-w-md bg-white/5 border border-white/10 text-text-secondary py-2 px-4 rounded-xl text-center font-medium text-sm">
+          ⏳ Waiting for {activePlayerName}...
+        </div>
+      )}
+
+      {/* Opponents Status (Hand sizes only) */}
+      <div className="flex gap-4 my-4 flex-wrap justify-center">
+        {players.map((p) => p.id !== myPlayerId && (
+          <div key={p.id} className={`p-2 rounded-xl bg-black/40 border-2 ${currentTurnId === p.id ? 'border-yellow-400' : 'border-transparent'} flex flex-col items-center min-w-[70px]`}>
+            <div className="text-xs text-white font-bold max-w-[80px] truncate">{p.name}</div>
+            <div className="text-[10px] text-gray-300 font-bold mt-0.5">{p.handSize} cards</div>
           </div>
         ))}
       </div>
 
       {/* Center Table */}
       <div className="flex-1 flex items-center justify-center gap-8 w-full relative">
-        {gameState.winner ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 rounded-2xl backdrop-blur-sm">
-            <h1 className="text-5xl font-black text-white uppercase drop-shadow-[0_0_20px_#fff] animate-bounce">
-              {gameState.winner} Wins!
+        {winner ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10 rounded-2xl backdrop-blur-xs">
+            <h1 className="text-4xl font-black text-white uppercase drop-shadow-[0_0_20px_#fff]">
+              {winner} Wins!
             </h1>
           </div>
         ) : (
           <>
+            {/* Draw Pile Button */}
             <button 
               onClick={drawCard}
-              className="w-24 h-36 rounded-xl bg-gray-900 border-4 border-white/20 flex items-center justify-center text-white font-black hover:scale-105 transition-transform cursor-pointer shadow-2xl"
+              disabled={!isMyTurn}
+              className={`w-24 h-36 rounded-xl bg-gray-900 border-4 border-white/20 flex items-center justify-center text-white font-black transition-all shadow-2xl ${isMyTurn ? 'hover:scale-105 active:scale-95 cursor-pointer hover:border-emerald-400/50' : 'opacity-40 cursor-not-allowed'}`}
             >
               DRAW
             </button>
             
+            {/* Discard Pile */}
             <div className="relative">
-              <div className={`w-24 h-36 rounded-xl flex items-center justify-center text-white font-black text-3xl shadow-2xl shadow-${gameState.currentColor}-500/50 border-4 border-white/20`} style={{ backgroundColor: getHexColor(gameState.currentColor) }}>
-                {topCard.value}
+              <div 
+                className="w-24 h-36 rounded-xl flex items-center justify-center text-white font-black text-2xl shadow-2xl border-4 border-white/20 uppercase transition-all"
+                style={{ 
+                  backgroundColor: getHexColor(currentColor),
+                  boxShadow: `0 10px 25px ${getHexColor(currentColor)}80` 
+                }}
+              >
+                {topCard?.value}
               </div>
             </div>
           </>
         )}
       </div>
 
-      {/* My Hand */}
-      {me && (
+      {/* Player's Own Hand */}
+      {isPlayer && (
         <div className="w-full max-w-3xl mt-4">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-white font-bold">Your Hand</h3>
-            {myTurn && <span className="text-yellow-400 font-bold animate-pulse">Your Turn!</span>}
+            <h3 className="text-white font-bold text-sm">Your Hand ({myHand.length} cards)</h3>
           </div>
-          <div className="flex flex-wrap gap-2 justify-center max-h-48 overflow-y-auto custom-scrollbar p-2">
-            {me.hand.map((card, idx) => (
-              <button
-                key={card.id}
-                onClick={() => playCard(card, idx)}
-                disabled={!canPlay(card)}
-                className={`w-16 h-24 rounded-lg flex items-center justify-center text-white font-black text-xl shadow-lg transition-transform ${canPlay(card) ? 'hover:-translate-y-4 cursor-pointer ring-2 ring-white/50' : 'opacity-50 cursor-not-allowed'}`}
-                style={{ backgroundColor: getHexColor(card.color) }}
-              >
-                {card.value}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-2 justify-center max-h-48 overflow-y-auto custom-scrollbar p-2 bg-black/20 rounded-2xl border border-white/5">
+            {myHand.map((card, idx) => {
+              const playable = canPlay(card);
+              return (
+                <button
+                  key={card.id}
+                  onClick={() => playCard(card, idx)}
+                  disabled={!playable}
+                  className={`w-16 h-24 rounded-lg flex flex-col items-center justify-between p-2 text-white font-black text-lg shadow-lg transition-all ${playable ? 'hover:-translate-y-4 hover:shadow-2xl cursor-pointer ring-2 ring-white/50 active:scale-95' : 'opacity-35 cursor-not-allowed'}`}
+                  style={{ backgroundColor: getHexColor(card.color) }}
+                >
+                  <span className="text-xs self-start">{card.value}</span>
+                  <span className="text-xl self-center">{card.value}</span>
+                  <span className="text-xs self-end rotate-180">{card.value}</span>
+                </button>
+              );
+            })}
+            {myHand.length === 0 && (
+              <span className="text-xs text-gray-400 italic">No cards in hand</span>
+            )}
           </div>
         </div>
       )}
 
-      {/* Join Game Button */}
-      {!me && activeGame.players?.length < 4 && (
-        <div className="mt-8 text-center">
-          <button 
-            onClick={() => {
-              socket.emit('game-join', { roomId, player: currentUser });
-            }}
-            className="px-6 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-bold rounded-lg transition-colors shadow-lg"
-          >
-            Join Game
-          </button>
+      {/* Spectator Mode Indicator */}
+      {!isPlayer && (
+        <div className="mt-4 px-4 py-2 bg-black/30 border border-white/10 text-text-secondary text-xs rounded-full uppercase tracking-wider font-semibold">
+          👀 Spectating Mode
         </div>
       )}
     </div>
