@@ -2435,7 +2435,7 @@ export default function App() {
         <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center gap-8 relative">
           
           {/* Main Hero Video Banner */}
-          <div className="w-full relative rounded-2xl border border-border-color overflow-hidden shadow-2xl flex flex-col items-center justify-center bg-black group">
+          <div className="w-full relative rounded-2xl border border-border-color overflow-hidden shadow-2xl bg-black group">
             <video 
               src="/freevideo.mp4" 
               autoPlay 
@@ -2455,16 +2455,14 @@ export default function App() {
 
           {/* Full Width Search Row */}
           <div className="w-full flex flex-row items-center gap-2 md:gap-4 bg-bg-base/60 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-2xl overflow-hidden focus-within:border-[var(--accent-primary)] focus-within:bg-bg-base transition-all">
-            <div className="relative flex-1 min-w-0 group flex items-center">
-              <div className="absolute left-3 md:left-4 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors pointer-events-none z-10 flex items-center justify-center">
-                <Search className="w-5 h-5" />
-              </div>
+            <div className="relative flex-1 min-w-0 group flex items-center pl-3 md:pl-4 gap-2 md:gap-3">
+              <Search className="w-5 h-5 flex-shrink-0 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors pointer-events-none" />
               <input 
                 type="text" 
                 placeholder="Search rooms..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-3 md:py-4 pl-10 md:pl-12 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium relative z-0"
+                className="flex-1 py-3 md:py-4 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium relative z-0"
               />
             </div>
             {searchQuery && (
