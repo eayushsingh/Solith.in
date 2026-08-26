@@ -17,7 +17,7 @@ import StaticModals from './components/StaticModals';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, Camera,
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
-  Monitor, Youtube, Gamepad2, Crown
+  Monitor, Youtube, Gamepad2, Crown, LayoutGrid, FileText
 } from 'lucide-react';
 import GameContainer from './components/games/GameContainer';
 import { LiveKitService } from './livekit';
@@ -127,6 +127,68 @@ export default function App() {
       .then(data => setPlatformSettings(data))
       .catch(err => console.error('Failed to fetch settings:', err));
   }, []);
+  const getInitials = (name) => {
+    if (!name) return '👤';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activePanelTab, setActivePanelTab] = useState('chat');
+  const [activityFeed, setActivityFeed] = useState([]);
+  const prevParticipantsRef = useRef([]);
+
+  useEffect(() => {
+    if (callState !== 'joined' || !activeRoom) {
+      setActivityFeed([]);
+      prevParticipantsRef.current = [];
+      return;
+    }
+    
+    const prev = prevParticipantsRef.current;
+    const current = participants;
+    
+    // Find joined
+    const joined = current.filter(p => !prev.some(op => op.id === p.id));
+    // Find left
+    const left = prev.filter(op => !current.some(p => p.id === op.id));
+    
+    const newEntries = [];
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    joined.forEach(p => {
+      // Avoid adding ourselves on initial load if list was empty
+      if (prev.length > 0) {
+        newEntries.push({
+          id: `feed-${Date.now()}-${Math.random()}`,
+          text: `${p.name} joined.`,
+          initials: getInitials(p.name),
+          color: p.color || '#ff4d4d',
+          time: timeStr
+        });
+      }
+    });
+
+    left.forEach(p => {
+      newEntries.push({
+        id: `feed-${Date.now()}-${Math.random()}`,
+        text: `${p.name} left.`,
+        initials: getInitials(p.name),
+        color: p.color || '#ff4d4d',
+        time: timeStr
+      });
+    });
+
+    if (newEntries.length > 0) {
+      setActivityFeed(prevFeed => [...prevFeed, ...newEntries].slice(-20));
+    }
+    
+    prevParticipantsRef.current = current;
+  }, [participants, callState, activeRoom]);
+
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [targetProfile, setTargetProfile] = useState(null);
   const [showTargetProfileModal, setShowTargetProfileModal] = useState(false);
@@ -2622,264 +2684,584 @@ export default function App() {
         const hasRaisedHand = speakingQueue.includes(user?.id);
 
         return (
-        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-col z-50 overflow-hidden">
+        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-row z-50 overflow-hidden text-white">
           
-          {/* Top Floating Controls - Pill buttons (Mute, Camera, Signal, Leave) */}
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3">
-             {/* Mute Button */}
-             <button 
-               onClick={toggleMute} 
-               className={`px-4 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all ${
-                 isMuted ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-               }`}
-             >
-               {isMuted ? <MicOff className="w-3.5 h-3.5"/> : <Mic className="w-3.5 h-3.5"/>}
-               <span>{isMuted ? 'Muted' : 'Mute'}</span>
-             </button>
+          {/* Left Column: Dark Canvas */}
+          <div className="flex-1 h-full relative flex flex-col justify-between overflow-hidden">
+             
+             {/* Top Floating Controls */}
+             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-2xl border border-white/10 shadow-2xl">
+                {/* Mute Button */}
+                <button 
+                  onClick={toggleMute} 
+                  className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${
+                    isMuted ? 'bg-red-500 text-white' : 'bg-[#1e2a3a] hover:bg-[#2b3a4f] text-white'
+                  }`}
+                  title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
+                >
+                  {isMuted ? <MicOff className="w-5 h-5"/> : <Mic className="w-5 h-5"/>}
+                </button>
 
-             {/* Camera/Screen Share Button */}
-             <button 
-               onClick={toggleScreenShare} 
-               className={`px-4 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all ${
-                 isScreenSharing ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-               }`}
-             >
-               <Camera className="w-3.5 h-3.5"/>
-               <span>{isScreenSharing ? 'Sharing' : 'Camera'}</span>
-             </button>
+                {/* Camera Button */}
+                <button 
+                  onClick={toggleScreenShare} 
+                  className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all ${
+                    isScreenSharing ? 'bg-[#1877f2] text-white' : 'bg-[#1e2a3a] hover:bg-[#2b3a4f] text-white'
+                  }`}
+                  title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}
+                >
+                  <Camera className="w-5 h-5"/>
+                </button>
 
-             {/* Signal Status */}
-             <div className="px-4 py-2.5 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg select-none">
-               <ShieldCheck className="w-3.5 h-3.5"/>
-               <span>Signal: Good</span>
+                {/* Signal Indicator */}
+                <div className="w-12 h-12 rounded-xl bg-[#1e2a3a] text-[#1877f2] flex items-center justify-center select-none" title="Signal Status">
+                  <ShieldCheck className="w-5 h-5"/>
+                </div>
+
+                {/* Leave Button */}
+                <button 
+                  onClick={leaveVoiceRoom} 
+                  className="w-12 h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-all shadow-lg"
+                  title="Leave Room"
+                >
+                  <LogOut className="w-5 h-5"/>
+                </button>
              </div>
 
-             {/* Leave/Hang Up Button */}
-             <button 
-               onClick={leaveVoiceRoom} 
-               className="px-4 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-lg"
-             >
-               <LogOut className="w-3.5 h-3.5"/>
-               <span>Leave</span>
-             </button>
-           </div>
-
-          {/* Participant Grid / Presenter View */}
-          {(() => {
-            const screenSharingParticipant = participants.find(p => p.isScreenSharing);
-            const hasPresenterContent = screenSharingParticipant || ytVideoId || activeGame;
-            
-            if (hasPresenterContent) {
-              return (
-                <div className="flex flex-col lg:flex-row flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 gap-6 overflow-hidden">
-                  {/* Large Screen Share / YouTube Viewer / Game */}
-                  <div className="flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px]">
-                    {activeGame ? (
-                      <GameContainer activeGame={activeGame} socket={socket} roomId={activeRoom.id} currentUser={user} />
-                    ) : screenSharingParticipant ? (
-                      <>
-                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
-                          <Monitor className="w-3.5 h-3.5 text-[var(--accent-primary)] animate-pulse" />
-                          <span>{screenSharingParticipant.isLocal ? 'Your Screen' : `${screenSharingParticipant.name}'s Screen`}</span>
-                        </div>
-                        <div className="flex-1 w-full h-full flex items-center justify-center p-2 bg-black">
-                          {isRealCall ? (
-                            screenSharingParticipant.screenShareTrack ? (
-                              <VideoTrack track={screenSharingParticipant.screenShareTrack} />
-                            ) : (
-                              <div className="text-text-primary/40 text-sm flex flex-col items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-accent-secondary animate-ping"></span>
-                                Connecting screen share stream...
-                              </div>
-                            )
-                          ) : (
-                            <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain rounded-2xl bg-black" />
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
-                          <Youtube className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-                          <span>Shared YouTube Video (Shared by {ytSharingUser})</span>
-                          <button onClick={() => socket.emit('yt-share', { roomId: activeRoom.id, videoId: null, sharingUser: null })} className="ml-2 px-2 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg transition-colors text-[10px] font-bold">Stop</button>
-                        </div>
-                        <div className="flex-1 w-full h-full bg-black">
-                          <iframe 
-                            src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&enablejsapi=1`}
-                            className="w-full h-full border-0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  {/* Side Participant List */}
-                  <div className="w-full lg:w-[240px] flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
-                    {participants.map(p => {
-                        const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                        const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
-                        const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
-                        const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
-                        const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
-                        const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
-                        
-                        return (
-                            <div key={p.id} className={`relative flex flex-col items-center justify-center w-[120px] h-[100px] lg:w-[200px] lg:h-[130px] rounded-2xl overflow-hidden bg-[#161920] border transition-all duration-300 ${isSpeaking ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'border-white/5'} flex-shrink-0 group`}>
-                               <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden shadow-lg border border-white/10 group-hover:scale-105 transition-transform" style={{ backgroundColor: pColor }}>
-                                  {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-2xl lg:text-3xl">{pEmoji}</div>}
+             {/* Presenter View Content (YouTube, Game, Screen Share) */}
+             {(() => {
+               const screenSharingParticipant = participants.find(p => p.isScreenSharing);
+               const hasPresenterContent = screenSharingParticipant || ytVideoId || activeGame;
+               if (hasPresenterContent) {
+                 return (
+                   <div className="absolute inset-0 pt-24 pb-44 px-4 flex items-center justify-center z-10">
+                     <div className="w-full h-full max-w-5xl bg-[#161a24] rounded-2xl border border-white/10 overflow-hidden shadow-2xl relative">
+                       {activeGame ? (
+                         <GameContainer activeGame={activeGame} socket={socket} roomId={activeRoom.id} currentUser={user} />
+                       ) : screenSharingParticipant ? (
+                         <div className="w-full h-full flex items-center justify-center bg-black">
+                           {isRealCall ? (
+                             screenSharingParticipant.screenShareTrack ? (
+                               <VideoTrack track={screenSharingParticipant.screenShareTrack} className="w-full h-full object-contain" />
+                             ) : (
+                               <div className="text-white/40 text-sm flex flex-col items-center gap-2">
+                                 <span className="w-2.5 h-2.5 rounded-full bg-[#1877f2] animate-ping"></span>
+                                 Connecting screen share...
                                </div>
-                               
-                               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-10">
-                                  <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg max-w-[75%]">
-                                     <span className="text-white text-[10px] lg:text-xs font-semibold truncate">{pName}</span>
-                                  </div>
-                                  {p.muted && (
-                                     <div className="w-6 h-6 bg-red-500/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-red-500/30 flex-shrink-0">
-                                       <MicOff className="w-3 h-3 text-red-400" />
-                                     </div>
+                             )
+                           ) : (
+                             <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain" />
+                           )}
+                         </div>
+                       ) : (
+                         <div className="w-full h-full bg-black">
+                           <iframe 
+                             src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&enablejsapi=1`}
+                             className="w-full h-full border-0"
+                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                             allowFullScreen
+                           />
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 );
+               }
+               return null;
+             })()}
+
+             {/* Participant Avatars Anchored at Bottom Center */}
+             <div className="absolute bottom-28 left-0 right-0 z-20 flex items-center justify-center gap-4 flex-wrap px-4">
+                {participants.map(p => {
+                    const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
+                    const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                    const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
+                    const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
+                    const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
+                    const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
+                    const isOwner = p.id === activeRoom.ownerId;
+                    const initials = getInitials(pName);
+
+                    return (
+                        <div key={p.id} className="flex flex-col items-center gap-1.5 relative group select-none">
+                           {/* 80x80 Circle */}
+                           <div 
+                             className="w-[80px] h-[80px] rounded-full overflow-hidden flex items-center justify-center relative border transition-all duration-300 animate-fade-in"
+                             style={{ 
+                               backgroundColor: pColor,
+                               boxShadow: isSpeaking ? '0 0 0 3px #1877f2' : 'none',
+                               borderColor: isSpeaking ? '#1877f2' : 'rgba(255,255,255,0.1)'
+                             }}
+                           >
+                              {pPhotoUrl ? (
+                                <img src={pPhotoUrl} className="w-full h-full object-cover" alt={pName} />
+                              ) : (
+                                <span className="text-xl font-bold text-white tracking-wider">{initials}</span>
+                              )}
+                              
+                              {/* Muted Indicator bottom right */}
+                              {p.muted && (
+                                <div className="absolute bottom-0 right-0 p-1 bg-red-600 rounded-full border border-[#0d1117] shadow-lg">
+                                  <MicOff className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                           </div>
+
+                           {/* Name and Role Badge below circle */}
+                           <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[11px] font-medium text-white max-w-[90px] truncate text-center leading-tight">
+                                {pName}
+                              </span>
+                              {isOwner && (
+                                <span className="px-1.5 py-0.5 bg-[#6c47ff] text-white text-[8px] font-bold rounded-full leading-none tracking-wide uppercase">
+                                  Owner
+                                </span>
+                              )}
+                           </div>
+
+                           {/* Gear Icon top-right of each tile on hover only */}
+                           {!p.isLocal && (
+                             <button 
+                               onClick={() => setActiveActionUser(p)}
+                               className="absolute -top-1 -right-1 p-1 bg-black/80 hover:bg-black border border-white/10 rounded-full text-white/70 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md"
+                               title="Moderation options"
+                             >
+                               <Settings className="w-3 h-3" />
+                             </button>
+                           )}
+                        </div>
+                    );
+                })}
+             </div>
+
+             {/* Bottom Floating Controls */}
+             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-2xl border border-white/10 shadow-2xl">
+                {/* Raise Hand Button */}
+                <button 
+                  onClick={hasRaisedHand ? lowerHand : raiseHand} 
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
+                    hasRaisedHand 
+                      ? 'bg-[#1877f2] text-white shadow-lg' 
+                      : 'bg-[#1e2a3a] hover:bg-[#2b3a4f] text-white/80 hover:text-white'
+                  }`}
+                  title={hasRaisedHand ? 'Lower Hand' : 'Raise Hand'}
+                >
+                  <Hand className="w-5 h-5"/>
+                </button>
+
+                {/* Solith branding icon */}
+                <div className="w-12 h-12 rounded-xl bg-[#1e2a3a] text-[#1877f2] flex items-center justify-center select-none" title="Solith Space">
+                   <span className="text-lg font-bold">🔵</span>
+                </div>
+
+                {/* More options button (...) with dropdown */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowGameSelector(!showGameSelector)} 
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
+                      showGameSelector 
+                        ? 'bg-white/20 text-white' 
+                        : 'bg-[#1e2a3a] hover:bg-[#2b3a4f] text-white/80 hover:text-white'
+                    }`}
+                    title="Games & More"
+                  >
+                    <MoreVertical className="w-5 h-5"/>
+                  </button>
+                  {/* Game Selector Dropdown */}
+                  {showGameSelector && (
+                     <div className="absolute bottom-[125%] left-1/2 -translate-x-1/2 bg-[#12141c] border border-white/10 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[160px] animate-fade-in z-[100]">
+                       <div className="text-[10px] font-bold text-white/40 uppercase px-2 py-1 tracking-wider mb-1">Games</div>
+                       {['chess', 'uno', 'connect4', 'tictactoe'].map(game => (
+                         <button 
+                           key={game} 
+                           onClick={(e) => { e.stopPropagation(); startGame(game); setShowGameSelector(false); }}
+                           className="text-left px-3 py-2 text-xs text-white/70 hover:bg-white/10 rounded-xl capitalize font-medium flex items-center gap-2"
+                         >
+                           {game === 'chess' && '♟️ Chess'}
+                           {game === 'uno' && '🃏 UNO'}
+                           {game === 'connect4' && '🔴 Connect 4'}
+                           {game === 'tictactoe' && '❌ Tic-Tac-Toe'}
+                         </button>
+                       ))}
+                     </div>
+                  )}
+                </div>
+             </div>
+
+             {/* Uncollapse Toggle Arrow */}
+             {isSidebarCollapsed && (
+               <button 
+                 onClick={() => setIsSidebarCollapsed(false)}
+                 className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-xl"
+                 title="Show Sidebar"
+               >
+                 <ChevronRight className="w-5 h-5 rotate-180" />
+               </button>
+             )}
+
+          </div>
+
+          {/* Right Sidebar Column */}
+          {!isSidebarCollapsed && (
+            <div className="w-[320px] h-full bg-[#1a2035] border-l border-white/10 flex flex-col flex-shrink-0 relative z-30 shadow-2xl">
+               
+               {/* Tab Bar - 5 icon tabs */}
+               <div className="h-[52px] border-b border-white/10 flex items-center justify-around px-2" style={{ backgroundColor: '#1e2840' }}>
+                  {/* Chat Tab Button */}
+                  <button 
+                    onClick={() => setActivePanelTab('chat')} 
+                    className="w-10 h-10 flex items-center justify-center relative transition-all"
+                    style={{ borderBottom: activePanelTab === 'chat' ? '2px solid #1877f2' : 'none' }}
+                    title="Room Chat"
+                  >
+                    <MessageSquare className={`w-5 h-5 ${activePanelTab === 'chat' ? 'text-[#1877f2]' : 'text-white/50 hover:text-white'}`} />
+                    {chatMessages.length > 0 && activePanelTab !== 'chat' && (
+                      <span className="absolute top-2 right-2 w-2 h-2 bg-[#1877f2] rounded-full"></span>
+                    )}
+                  </button>
+
+                  {/* Participants Tab Button */}
+                  <button 
+                    onClick={() => setActivePanelTab('participants')} 
+                    className="w-10 h-10 flex items-center justify-center relative transition-all"
+                    style={{ borderBottom: activePanelTab === 'participants' ? '2px solid #1877f2' : 'none' }}
+                    title="Room Participants"
+                  >
+                    <Users className={`w-5 h-5 ${activePanelTab === 'participants' ? 'text-[#1877f2]' : 'text-white/50 hover:text-white'}`} />
+                    <span className="absolute -top-0.5 -right-0.5 bg-white/10 text-white text-[9px] font-bold px-1.5 rounded-full">{participants.length}</span>
+                  </button>
+
+                  {/* Grid Tab Button */}
+                  <button 
+                    onClick={() => setActivePanelTab('grid')} 
+                    className="w-10 h-10 flex items-center justify-center transition-all"
+                    style={{ borderBottom: activePanelTab === 'grid' ? '2px solid #1877f2' : 'none' }}
+                    title="Interactive Tools"
+                  >
+                    <LayoutGrid className={`w-5 h-5 ${activePanelTab === 'grid' ? 'text-[#1877f2]' : 'text-white/50 hover:text-white'}`} />
+                  </button>
+
+                  {/* Settings Tab Button */}
+                  <button 
+                    onClick={() => setActivePanelTab('settings')} 
+                    className="w-10 h-10 flex items-center justify-center transition-all"
+                    style={{ borderBottom: activePanelTab === 'settings' ? '2px solid #1877f2' : 'none' }}
+                    title="Customize Profile"
+                  >
+                    <Settings className={`w-5 h-5 ${activePanelTab === 'settings' ? 'text-[#1877f2]' : 'text-white/50 hover:text-white'}`} />
+                  </button>
+
+                  {/* Collapse Sidebar Button */}
+                  <button 
+                    onClick={() => setIsSidebarCollapsed(true)} 
+                    className="w-10 h-10 flex items-center justify-center text-white/50 hover:text-white transition-all"
+                    title="Collapse Sidebar"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+               </div>
+
+               {/* Tab Contents Area */}
+               <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
+                  
+                  {/* Chat Panel */}
+                  {activePanelTab === 'chat' && (
+                    <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+                       {/* Room Info Section */}
+                       <div className="bg-[#1e2840] p-3 text-xs text-white/60 flex flex-col gap-1 border-b border-white/5">
+                          <div>Language: <span className="text-white font-bold">{activeRoom.language || 'English'}</span></div>
+                          <div>Topic: <span className="text-white font-bold">{activeRoom.topic || activeRoom.name || 'Casual Conversation'}</span></div>
+                       </div>
+
+                       {/* Messages & Feed Scroll Area */}
+                       <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0" ref={chatEndRef}>
+                          
+                          {/* Join/Leave Feed (timestamped) */}
+                          {activityFeed.length > 0 && (
+                            <div className="border-b border-white/5 pb-2 mb-2 space-y-1">
+                              {activityFeed.map(feed => (
+                                <div key={feed.id} className="flex items-center justify-between text-[11px] text-white/40 px-2 py-0.5 hover:bg-white/5 rounded transition-colors">
+                                   <span>[{feed.time}] {feed.text}</span>
+                                   <div className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] text-white/80 font-bold" style={{ backgroundColor: feed.color }}>
+                                     {feed.initials}
+                                   </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Message List */}
+                          {chatMessages.length === 0 ? (
+                            <div className="h-full flex items-center justify-center text-white/30 text-xs">
+                              No messages in this chat.
+                            </div>
+                          ) : (
+                            chatMessages.map(msg => (
+                              <div key={msg.id} className="flex gap-3 p-3 hover:bg-white/5 group relative rounded-lg transition-colors" id={`chat-msg-${msg.id}`}>
+                                 {/* Sender Avatar */}
+                                 <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs text-white shadow" style={{ backgroundColor: msg.senderColor || '#6c47ff' }}>
+                                    {msg.senderEmoji || '👤'}
+                                 </div>
+                                 
+                                 <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                       <div className="flex items-center gap-1.5">
+                                          <span className="text-white text-xs font-bold truncate max-w-[90px]">{msg.senderName}</span>
+                                          {msg.senderId === activeRoom.ownerId && (
+                                            <span className="px-1.5 py-0.5 bg-[#6c47ff] text-white text-[8px] font-bold rounded-full leading-none tracking-wide uppercase">
+                                              Owner
+                                            </span>
+                                          )}
+                                       </div>
+                                       <div className="flex items-center gap-2">
+                                          <button 
+                                            onClick={() => setShowReportModal(msg.senderId)} 
+                                            className="hidden group-hover:flex text-red-400 text-[10px] items-center gap-1 hover:text-red-300"
+                                          >
+                                             🚩 Report
+                                          </button>
+                                          <span className="text-white/30 text-[10px]">{msg.timestamp || '01:13 AM'}</span>
+                                       </div>
+                                    </div>
+                                    
+                                    {/* Text message */}
+                                    <p className="text-white/85 text-xs mt-0.5 break-words whitespace-pre-wrap">{msg.text}</p>
+                                 </div>
+                              </div>
+                            ))
+                          )}
+                       </div>
+
+                       {/* Chat Input Pinned to Bottom */}
+                       <div className="bg-[#1e2840] border-t border-white/10 p-3 flex flex-col gap-2">
+                          {/* Top Row Shortcut Icons */}
+                          <div className="flex items-center justify-start gap-3 text-white/50">
+                             {/* Emoji Button */}
+                             <button className="hover:text-white transition-colors" title="Emoji (Soon)">
+                               <span className="text-sm">😊</span>
+                             </button>
+                             {/* GIF Button */}
+                             <button className="text-[10px] font-bold hover:text-white transition-colors" title="GIF">
+                               GIF
+                             </button>
+                             {/* Games Button */}
+                             <button onClick={() => setShowGameSelector(!showGameSelector)} className="hover:text-white transition-colors" title="Games">
+                               <Gamepad2 className="w-4 h-4" />
+                             </button>
+                             {/* YouTube Button */}
+                             <button onClick={() => setShowYtModal(true)} className="hover:text-white transition-colors" title="Share YouTube">
+                               <Youtube className="w-4 h-4" />
+                             </button>
+                             {/* AI Button - Disabled */}
+                             <button className="text-[10px] font-bold opacity-30 cursor-not-allowed" title="AI (Disabled)">
+                               AI
+                             </button>
+                             {/* Notifications Button */}
+                             <button className="hover:text-white transition-colors" title="Notifications">
+                               <ShieldCheck className="w-4 h-4" />
+                             </button>
+                             {/* Mute toggle button */}
+                             <button onClick={toggleMute} className="hover:text-white transition-colors" title="Mute Microphone">
+                               {isMuted ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4" />}
+                             </button>
+                          </div>
+
+                          {/* Bottom Row Input Form */}
+                          <form onSubmit={(e) => { e.preventDefault(); sendChatMessage(e); }} className="flex items-center gap-2 bg-black/20 rounded-lg p-1.5 border border-white/5 focus-within:border-[#1877f2] transition-colors">
+                             <input 
+                               type="text" 
+                               placeholder="Type a message... Type @ to mention." 
+                               value={chatInput} 
+                               onChange={e => setChatInput(e.target.value)} 
+                               className="flex-1 bg-transparent border-none text-white text-xs outline-none shadow-none px-2 py-1 placeholder:text-white/20" 
+                             />
+                             <button 
+                               type="submit" 
+                               className="w-8 h-8 rounded-lg bg-[#1877f2] hover:bg-[#1877f2]/80 transition-colors flex items-center justify-center text-white flex-shrink-0"
+                             >
+                                <Send className="w-3.5 h-3.5"/>
+                             </button>
+                          </form>
+                       </div>
+                    </div>
+                  )}
+
+                  {/* Participants Panel */}
+                  {activePanelTab === 'participants' && (
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                       <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Connected ({participants.length})</div>
+                       {participants.map(p => {
+                           const isOwner = p.id === activeRoom.ownerId;
+                           const pEmoji = p.isLocal ? (user?.emoji || '👤') : (p.emoji || '👤');
+                           const pColor = p.isLocal ? (user?.color || '#0d94a8') : (p.color || '#ff4d4d');
+                           return (
+                             <div key={p.id} className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/5">
+                               <div className="flex items-center gap-2.5 min-w-0">
+                                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-white" style={{ backgroundColor: pColor }}>
+                                    {pEmoji}
+                                 </div>
+                                 <div className="flex flex-col min-w-0">
+                                   <span className="text-white text-xs font-bold truncate">{p.name} {p.isLocal && '(You)'}</span>
+                                   {isOwner && <span className="text-[8px] text-[#6c47ff] font-bold uppercase tracking-wider">Owner</span>}
+                                 </div>
+                               </div>
+                               <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  {p.muted && <MicOff className="w-3.5 h-3.5 text-red-500" />}
+                                  {!p.isLocal && (
+                                    <button onClick={() => setActiveActionUser(p)} className="p-1 hover:bg-white/10 rounded-lg text-white/50 hover:text-white">
+                                      <Settings className="w-3.5 h-3.5" />
+                                    </button>
                                   )}
                                </div>
-                            </div>
-                        );
-                    })}
-                  </div>
-                </div>
-              );
-            }
-
-            // Default view: Participant avatar sits at the bottom center of a dark empty canvas
-            return (
-              <div className="flex-1 w-full h-full relative bg-[#0b0d11] flex flex-col items-center justify-end pb-36 overflow-hidden">
-                {/* Avatars anchored at the bottom center of the dark canvas */}
-                <div className="flex items-center justify-center gap-6 z-20 flex-wrap px-4">
-                  {participants.map(p => {
-                      const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                      const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
-                      const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
-                      const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
-                      const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
-                      const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
-
-                      return (
-                          <div key={p.id} className="flex flex-col items-center gap-2 group">
-                             <div 
-                               className={`w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-300 relative ${
-                                 isSpeaking ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105' : 'border-white/10'
-                               }`}
-                               style={{ backgroundColor: pColor }}
-                             >
-                                {pPhotoUrl ? (
-                                  <img src={pPhotoUrl} className="w-full h-full object-cover" alt={pName} />
-                                ) : (
-                                  <span className="text-3xl md:text-4xl text-white">{pEmoji}</span>
-                                )}
-                                {p.muted && (
-                                  <div className="absolute bottom-0 right-0 p-1 bg-red-600 rounded-full border border-[#0f1115]">
-                                    <MicOff className="w-2.5 h-2.5 text-white" />
-                                  </div>
-                                )}
                              </div>
-                             <span className="text-[10px] font-bold text-white/50 bg-black/40 px-2 py-0.5 rounded-full border border-white/5">
-                               {pName}
-                             </span>
+                           );
+                       })}
+                    </div>
+                  )}
+
+                  {/* Grid Tools Panel */}
+                  {activePanelTab === 'grid' && (
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                       <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Interactive Tools</div>
+                       
+                       {/* AI Mock Interview Tool */}
+                       <button 
+                         onClick={() => { setShowDevModal('ai-mock'); }}
+                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
+                       >
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 bg-blue-600/20 text-[#1877f2] rounded-lg flex items-center justify-center">
+                                <Sparkles className="w-4 h-4" />
+                             </div>
+                             <div>
+                                <div className="text-xs font-bold text-white">AI Mock Interview</div>
+                                <div className="text-[10px] text-white/40">Practice conversational skills</div>
+                             </div>
                           </div>
-                      );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
+                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
+                       </button>
 
-          {/* Room Sidebar Panel */}
-          <RoomPanel 
-            isChatOpen={isChatOpen}
-            setIsChatOpen={setIsChatOpen}
-            chatMessages={chatMessages}
-            sendChatMessage={(e, customMsg) => {
-              if (customMsg) {
-                setChatMessages(prev => [...prev, customMsg]);
-                setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-              } else {
-                sendChatMessage(e);
-              }
-            }}
-            chatInput={chatInput}
-            setChatInput={setChatInput}
-            chatEndRef={chatEndRef}
-            participants={participants}
-            activeRoom={activeRoom}
-            user={user}
-            setUser={setUser}
-            socket={socket}
-            ytVideoId={ytVideoId}
-            getRole={getRole}
-            API_URL={API_URL}
-            getAvatarUrl={getAvatarUrl}
-          />
+                       {/* AI Notetaker Tool */}
+                       <button 
+                         onClick={() => { setShowDevModal('ai-notes'); }}
+                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
+                       >
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 bg-purple-600/20 text-purple-400 rounded-lg flex items-center justify-center">
+                                <FileText className="w-4 h-4" />
+                             </div>
+                             <div>
+                                <div className="text-xs font-bold text-white">AI Notetaker & Summary</div>
+                                <div className="text-[10px] text-white/40">Real-time room transcripts</div>
+                             </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
+                       </button>
 
-          {/* Bottom Floating Controls - Raise hand, circular menu, more options */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-[#12141c]/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-white/10 shadow-2xl">
-             {/* Raise Hand Button */}
-             <button 
-               onClick={hasRaisedHand ? lowerHand : raiseHand} 
-               className={`p-2.5 rounded-full transition-all duration-200 border ${
-                 hasRaisedHand 
-                   ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white shadow-lg shadow-[var(--accent-primary-glow)]' 
-                   : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-               }`}
-               title={hasRaisedHand ? 'Lower Hand' : 'Raise Hand'}
-             >
-               <Hand className="w-4 h-4"/>
-             </button>
+                       {/* Drawing Whiteboard Tool */}
+                       <button 
+                         onClick={() => { setShowDevModal('whiteboard'); }}
+                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
+                       >
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 bg-emerald-600/20 text-emerald-400 rounded-lg flex items-center justify-center">
+                                <LayoutGrid className="w-4 h-4" />
+                             </div>
+                             <div>
+                                <div className="text-xs font-bold text-white">Drawing Whiteboard</div>
+                                <div className="text-[10px] text-white/40">Collaborative canvas sketcher</div>
+                             </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
+                       </button>
 
-             {/* Circular Menu Button (Opens/Closes right sidebar panel) */}
-             <button 
-               onClick={() => setIsChatOpen(!isChatOpen)} 
-               className={`p-2.5 rounded-full transition-all duration-200 border ${
-                 isChatOpen 
-                   ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white shadow-lg shadow-[var(--accent-primary-glow)]' 
-                   : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-               }`}
-               title="Toggle Sidebar Panel"
-             >
-               <MessageSquare className="w-4 h-4"/>
-             </button>
+                       {/* YouTube Tool */}
+                       <button 
+                         onClick={() => setShowYtModal(true)}
+                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
+                       >
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 bg-red-600/20 text-red-500 rounded-lg flex items-center justify-center">
+                                <Youtube className="w-4 h-4" />
+                             </div>
+                             <div>
+                                <div className="text-xs font-bold text-white">Share YouTube Video</div>
+                                <div className="text-[10px] text-white/40">Sync stream with everyone</div>
+                             </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
+                       </button>
 
-             {/* More options button (...) with dropdown */}
-             <div className="relative">
-               <button 
-                 onClick={() => setShowGameSelector(!showGameSelector)} 
-                 className={`p-2.5 rounded-full transition-all duration-200 border ${
-                   showGameSelector 
-                     ? 'bg-white/20 border-white/20 text-white' 
-                     : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                 }`}
-                 title="Select Game"
-               >
-                 <MoreVertical className="w-4 h-4"/>
-               </button>
-               {/* Game Selector Dropdown */}
-               {showGameSelector && (
-                  <div className="absolute bottom-[125%] left-1/2 -translate-x-1/2 bg-[#12141c] border border-white/10 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[160px] animate-fade-in z-[100]">
-                    <div className="text-[10px] font-bold text-white/40 uppercase px-2 py-1 tracking-wider mb-1">Select a Game</div>
-                    {['chess', 'uno', 'connect4', 'tictactoe'].map(game => (
-                      <button 
-                        key={game} 
-                        onClick={(e) => { e.stopPropagation(); startGame(game); setShowGameSelector(false); }}
-                        className="text-left px-3 py-2 text-xs text-white/70 hover:bg-white/10 rounded-xl capitalize font-medium flex items-center gap-2"
-                      >
-                        {game === 'chess' && '♟️ Chess'}
-                        {game === 'uno' && '🃏 UNO'}
-                        {game === 'connect4' && '🔴 Connect 4'}
-                        {game === 'tictactoe' && '❌ Tic-Tac-Toe'}
-                      </button>
-                    ))}
-                  </div>
-               )}
-             </div>
-          </div>
+                       {/* Game Selector */}
+                       <button 
+                         onClick={() => setShowGameSelector(!showGameSelector)}
+                         className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-left transition-all group"
+                       >
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 bg-amber-600/20 text-amber-500 rounded-lg flex items-center justify-center">
+                                <Gamepad2 className="w-4 h-4" />
+                             </div>
+                             <div>
+                                <div className="text-xs font-bold text-white">Multiplayer Games</div>
+                                <div className="text-[10px] text-white/40">Chess, Uno, Connect4, TicTacToe</div>
+                             </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white transition-colors" />
+                       </button>
+                    </div>
+                  )}
+
+                  {/* Settings Panel */}
+                  {activePanelTab === 'settings' && (
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                       <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Profile & Settings</div>
+                       
+                       {/* Quick Nickname Selector */}
+                       <div className="space-y-1">
+                         <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Display Name</label>
+                         <input 
+                           type="text" 
+                           value={user?.name || ''} 
+                           onChange={(e) => setUser(prev => ({ ...prev, name: e.target.value }))}
+                           className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#1877f2] transition-colors" 
+                         />
+                       </div>
+
+                       {/* Emoji Selector */}
+                       <div className="space-y-1">
+                         <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Avatar Emoji</label>
+                         <div className="grid grid-cols-6 gap-1 bg-black/10 p-2 rounded-xl border border-white/5">
+                           {['👤', '🦊', '🐼', '🦁', '🦉', '🐱', '🐶', '🦄', '🐝', '🐧', '🦖', '🐬'].map(em => (
+                             <button 
+                               key={em} 
+                               onClick={() => setUser(prev => ({ ...prev, emoji: em }))}
+                               className={`text-lg p-1 hover:bg-white/10 rounded transition-all ${user?.emoji === em ? 'bg-white/15 scale-110' : ''}`}
+                             >
+                               {em}
+                             </button>
+                           ))}
+                         </div>
+                       </div>
+
+                       {/* Color Selector */}
+                       <div className="space-y-1">
+                         <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Avatar Color</label>
+                         <div className="grid grid-cols-6 gap-1 bg-black/10 p-2 rounded-xl border border-white/5">
+                           {['#ff4d4d', '#ff944d', '#ffd11a', '#0d94a8', '#4da6ff', '#8b5cf6', '#ec4899', '#10b981', '#6b7280', '#b45309', '#065f46', '#1e3a8a'].map(col => (
+                             <button 
+                               key={col} 
+                               onClick={() => setUser(prev => ({ ...prev, color: col }))}
+                               className={`w-6 h-6 rounded-full mx-auto border transition-all ${user?.color === col ? 'border-white scale-110' : 'border-transparent'}`}
+                               style={{ backgroundColor: col }}
+                             />
+                           ))}
+                         </div>
+                       </div>
+                    </div>
+                  )}
+               </div>
+            </div>
+          )}
 
         </div>
         );
