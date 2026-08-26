@@ -17,7 +17,7 @@ import StaticModals from './components/StaticModals';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, Camera,
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
-  Monitor, Youtube, Gamepad2, Crown
+  Monitor, Youtube, Gamepad2, Crown, BarChart2
 } from 'lucide-react';
 import GameContainer from './components/games/GameContainer';
 import { LiveKitService } from './livekit';
@@ -2624,43 +2624,45 @@ export default function App() {
         return (
         <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-bg-base flex flex-col z-50 overflow-hidden">
           
-          {/* Top Floating Controls - Pill buttons (Mute, Camera, Signal, Leave) */}
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3">
-             {/* Mute Button */}
-             <button 
-               onClick={toggleMute} 
-               className={`px-4 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all ${
-                 isMuted ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-               }`}
-             >
-               {isMuted ? <MicOff className="w-3.5 h-3.5"/> : <Mic className="w-3.5 h-3.5"/>}
-               <span>{isMuted ? 'Muted' : 'Mute'}</span>
+          {/* Top Floating Controls — icon-only pill */}
+           <div style={{
+             position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+             display: 'flex', alignItems: 'center', gap: 8,
+             background: 'rgba(15,21,32,0.85)', backdropFilter: 'blur(20px)',
+             border: '1px solid rgba(255,255,255,0.08)',
+             borderRadius: 16, padding: '8px 12px', zIndex: 50
+           }}>
+             <button onClick={toggleMute} style={{
+               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+               background: isMuted ? '#1877f2' : 'rgba(255,255,255,0.08)',
+               display: 'flex', alignItems: 'center', justifyContent: 'center'
+             }}>
+               {isMuted ? <MicOff size={20} color="white"/> : <Mic size={20} color="white"/>}
              </button>
 
-             {/* Camera/Screen Share Button */}
-             <button 
-               onClick={toggleScreenShare} 
-               className={`px-4 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all ${
-                 isScreenSharing ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-               }`}
-             >
-               <Camera className="w-3.5 h-3.5"/>
-               <span>{isScreenSharing ? 'Sharing' : 'Camera'}</span>
+             <button onClick={toggleScreenShare} style={{
+               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+               background: isScreenSharing ? '#1877f2' : 'rgba(255,255,255,0.08)',
+               display: 'flex', alignItems: 'center', justifyContent: 'center'
+             }}>
+               <Monitor size={20} color="white"/>
              </button>
 
-             {/* Signal Status */}
-             <div className="px-4 py-2.5 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center gap-2 shadow-lg select-none">
-               <ShieldCheck className="w-3.5 h-3.5"/>
-               <span>Signal: Good</span>
-             </div>
+             <button style={{
+               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'default',
+               background: 'rgba(255,255,255,0.08)',
+               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+             }}>
+               <span style={{width: 7, height: 7, borderRadius: '50%', background: '#22c55e', display: 'block'}}/>
+               <BarChart2 size={18} color="white"/>
+             </button>
 
-             {/* Leave/Hang Up Button */}
-             <button 
-               onClick={leaveVoiceRoom} 
-               className="px-4 py-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-lg"
-             >
-               <LogOut className="w-3.5 h-3.5"/>
-               <span>Leave</span>
+             <button onClick={leaveVoiceRoom} style={{
+               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+               background: '#dc2626',
+               display: 'flex', alignItems: 'center', justifyContent: 'center'
+             }}>
+               <LogOut size={20} color="white"/>
              </button>
            </div>
 
@@ -2749,42 +2751,70 @@ export default function App() {
               );
             }
 
-            // Default view: Participant avatar sits at the bottom center of a dark empty canvas
+            // Default view: Circular participant avatars anchored at the bottom center
             return (
-              <div className="flex-1 w-full h-full relative bg-[#0b0d11] flex flex-col items-center justify-end pb-36 overflow-hidden">
-                {/* Avatars anchored at the bottom center of the dark canvas */}
-                <div className="flex items-center justify-center gap-6 z-20 flex-wrap px-4">
+              <div className="flex-1 w-full h-full relative bg-[#0b0d11] flex flex-col items-center justify-end overflow-hidden" style={{ paddingBottom: 140 }}>
+                {/* Circular participant avatars */}
+                <div style={{
+                  position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+                  display: 'flex', alignItems: 'flex-end', gap: 20, zIndex: 10
+                }}>
                   {participants.map(p => {
                       const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                       const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
                       const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
-                      const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
-                      const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
-                      const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
+                      const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
+                      const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
+                      const targetRole = getRole(p.id);
 
                       return (
-                          <div key={p.id} className="flex flex-col items-center gap-2 group">
-                             <div 
-                               className={`w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-300 relative ${
-                                 isSpeaking ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105' : 'border-white/10'
-                               }`}
-                               style={{ backgroundColor: pColor }}
-                             >
-                                {pPhotoUrl ? (
-                                  <img src={pPhotoUrl} className="w-full h-full object-cover" alt={pName} />
-                                ) : (
-                                  <span className="text-3xl md:text-4xl text-white">{pEmoji}</span>
-                                )}
-                                {p.muted && (
-                                  <div className="absolute bottom-0 right-0 p-1 bg-red-600 rounded-full border border-[#0f1115]">
-                                    <MicOff className="w-2.5 h-2.5 text-white" />
-                                  </div>
-                                )}
-                             </div>
-                             <span className="text-[10px] font-bold text-white/50 bg-black/40 px-2 py-0.5 rounded-full border border-white/5">
-                               {pName}
-                             </span>
+                        <div key={p.id}
+                          onClick={() => !p.isLocal && setActiveActionUser(p)}
+                          className="group"
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: p.isLocal ? 'default' : 'pointer' }}
+                        >
+                          <div style={{
+                            width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
+                            border: isSpeaking ? '2.5px solid #1877f2' : '2.5px solid rgba(255,255,255,0.12)',
+                            boxShadow: isSpeaking ? '0 0 20px rgba(24,119,242,0.6)' : 'none',
+                            transition: 'all 0.2s ease',
+                            background: pColor, position: 'relative', flexShrink: 0
+                          }}>
+                            {pPhotoUrl
+                              ? <img src={pPhotoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
+                                  {pName.slice(0, 2).toUpperCase()}
+                                </div>
+                            }
+                            {p.muted && (
+                              <div style={{
+                                position: 'absolute', bottom: 3, right: 3,
+                                background: '#dc2626', borderRadius: '50%',
+                                width: 20, height: 20,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                border: '2px solid #080c14'
+                              }}>
+                                <MicOff size={10} color="white" />
+                              </div>
+                            )}
+                            {!p.isLocal && (
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity" style={{
+                                position: 'absolute', top: 4, right: 4,
+                                background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: 3
+                              }}>
+                                <Settings size={10} color="white" />
+                              </div>
+                            )}
                           </div>
+                          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600, maxWidth: 80, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {pName}
+                          </span>
+                          {targetRole === 'owner' && (
+                            <span style={{ background: '#6c47ff', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, marginTop: -4 }}>
+                              Owner
+                            </span>
+                          )}
+                        </div>
                       );
                   })}
                 </div>
@@ -2792,9 +2822,9 @@ export default function App() {
             );
           })()}
 
-          {/* Room Sidebar Panel */}
+          {/* Room Sidebar Panel — always visible */}
           <RoomPanel 
-            isChatOpen={isChatOpen}
+            isChatOpen={true}
             setIsChatOpen={setIsChatOpen}
             chatMessages={chatMessages}
             sendChatMessage={(e, customMsg) => {
@@ -2819,46 +2849,28 @@ export default function App() {
             getAvatarUrl={getAvatarUrl}
           />
 
-          {/* Bottom Floating Controls - Raise hand, circular menu, more options */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-[#12141c]/90 backdrop-blur-md px-4 py-2.5 rounded-full border border-white/10 shadow-2xl">
-             {/* Raise Hand Button */}
-             <button 
-               onClick={hasRaisedHand ? lowerHand : raiseHand} 
-               className={`p-2.5 rounded-full transition-all duration-200 border ${
-                 hasRaisedHand 
-                   ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white shadow-lg shadow-[var(--accent-primary-glow)]' 
-                   : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-               }`}
-               title={hasRaisedHand ? 'Lower Hand' : 'Raise Hand'}
-             >
-               <Hand className="w-4 h-4"/>
+          {/* Bottom Floating Controls */}
+          <div style={{
+            position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+            display: 'flex', alignItems: 'center', gap: 12,
+            background: 'rgba(15,21,32,0.85)', backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 28, padding: '10px 20px', zIndex: 50
+          }}>
+             <button onClick={hasRaisedHand ? lowerHand : raiseHand}
+               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22 }}>
+               ✋
              </button>
-
-             {/* Circular Menu Button (Opens/Closes right sidebar panel) */}
-             <button 
-               onClick={() => setIsChatOpen(!isChatOpen)} 
-               className={`p-2.5 rounded-full transition-all duration-200 border ${
-                 isChatOpen 
-                   ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white shadow-lg shadow-[var(--accent-primary-glow)]' 
-                   : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-               }`}
-               title="Toggle Sidebar Panel"
-             >
-               <MessageSquare className="w-4 h-4"/>
+             <button onClick={() => setIsChatOpen(!isChatOpen)}
+               style={{ background: 'none', border: 'none', cursor: 'pointer',
+                 color: isChatOpen ? '#1877f2' : 'rgba(255,255,255,0.5)' }}>
+               <MessageSquare size={20}/>
              </button>
-
-             {/* More options button (...) with dropdown */}
              <div className="relative">
-               <button 
-                 onClick={() => setShowGameSelector(!showGameSelector)} 
-                 className={`p-2.5 rounded-full transition-all duration-200 border ${
-                   showGameSelector 
-                     ? 'bg-white/20 border-white/20 text-white' 
-                     : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                 }`}
-                 title="Select Game"
-               >
-                 <MoreVertical className="w-4 h-4"/>
+               <button onClick={() => setShowGameSelector(!showGameSelector)}
+                 style={{ background: 'none', border: 'none', cursor: 'pointer',
+                   color: 'rgba(255,255,255,0.5)' }}>
+                 <MoreVertical size={20}/>
                </button>
                {/* Game Selector Dropdown */}
                {showGameSelector && (
