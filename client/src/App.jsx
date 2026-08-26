@@ -900,7 +900,10 @@ export default function App() {
         onConnectionChange: ({ state, isMock, error }) => {
           setCallState(state);
           if (state === 'error') {
-            setToastMessage(`Connection error: ${error || 'Unknown issue'}`);
+            const msg = error || '';
+            if (!msg.includes('Client initiated disconnect')) {
+              setToastMessage(`Connection error: ${msg}`);
+            }
             setActiveRoom(null);
             setCallState('left');
           }
