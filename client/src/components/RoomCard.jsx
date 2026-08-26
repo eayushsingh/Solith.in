@@ -1,109 +1,130 @@
 import React from 'react';
-import { Heart, Globe, Lock } from 'lucide-react';
+import { Globe, Heart } from 'lucide-react';
 
-export default function RoomCard({ room, onJoin, inThisRoom, isFeatured }) {
+export default function RoomCard({ room, onJoin, inThisRoom, userFollowing }) {
   const participants = room.participants || [];
-  const maxDisplay = isFeatured ? 4 : 3;
-  const displayParticipants = participants.slice(0, maxDisplay);
-  const hasOverflow = participants.length > maxDisplay;
-  const overflowCount = participants.length - maxDisplay;
-
-  // Level tag helper
-  const levelTag = room.tags && room.tags.length > 0 ? room.tags[0] : 'Any Level';
+  const MAX_SLOTS = 4;
+  const displaySlots = Array.from({ length: MAX_SLOTS }, (_, i) => participants[i] || null);
+  const extraCount = participants.length > MAX_SLOTS ? participants.length - MAX_SLOTS : 0;
 
   return (
-    <div className="relative w-full rounded-2xl p-5 bg-[#1a1d24] border border-white/5 shadow-xl transition-all duration-300 hover:border-white/10 flex flex-col justify-between">
-      
-      {/* "You're here" badge */}
+    <div style={{
+      background: '#13171f',
+      border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: 16,
+      padding: 20,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16,
+      transition: 'border-color 0.2s, transform 0.2s',
+      cursor: 'pointer',
+      position: 'relative'
+    }}
+    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(24,119,242,0.4)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = 'none'; }}
+    >
+      {/* You're here badge */}
       {inThisRoom && (
-        <div className="absolute top-3 right-3 z-20 px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-[9px] font-bold text-emerald-400 flex items-center gap-1">
-          <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
-          You're here
+        <div style={{
+          position: 'absolute', top: 12, right: 12,
+          background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)',
+          borderRadius: 20, padding: '3px 10px',
+          display: 'flex', alignItems: 'center', gap: 5
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'block' }}/>
+          <span style={{ color: '#22c55e', fontSize: 10, fontWeight: 700 }}>You're here</span>
         </div>
       )}
 
-      <div>
-        {/* Top row: Circular blue icon, language name, level tag */}
-        <div className="flex items-center gap-2 mb-1.5">
-          <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
-            <Globe className="w-3.5 h-3.5" />
-          </div>
-          <div className="flex items-baseline gap-1.5 truncate">
-            <span className="text-white font-bold text-sm tracking-wide">
-              {room.language || 'English'}
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: '50%',
+          background: 'rgba(24,119,242,0.15)',
+          border: '1px solid rgba(24,119,242,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0
+        }}>
+          <Globe size={16} color="#1877f2" />
+        </div>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ color: 'white', fontWeight: 700, fontSize: 15 }}>{room.language}</span>
+            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: 13, fontStyle: 'italic' }}>
+              {room.tags?.[0] || 'Casual'}
             </span>
-            <span className="italic text-text-secondary text-[10px] font-normal">
-              {levelTag}
-            </span>
           </div>
+          {room.topic && (
+            <div style={{ color: '#1877f2', fontSize: 12, marginTop: 2 }}>{room.name}</div>
+          )}
+          {!room.topic && room.name && (
+            <div style={{ color: '#1877f2', fontSize: 12, marginTop: 2 }}>{room.name}</div>
+          )}
         </div>
+      </div>
 
-        {/* Second row: Topic/room name in small blue text below the language */}
-        <div className="text-[11px] font-semibold text-blue-400 pl-8 mb-4 break-words">
-          {room.name || 'Practicing Club'}
-        </div>
-
-        {/* Middle: Avatar circles (4 for featured, 3 for smaller) */}
-        <div className="flex items-center gap-3 mb-3 flex-wrap">
-          {[...Array(maxDisplay)].map((_, idx) => {
-            const p = displayParticipants[idx];
-            if (p) {
-              return (
-                <div 
-                  key={p.id || idx} 
-                  className="w-10 h-10 rounded-full overflow-hidden border border-white/15 flex-shrink-0 flex items-center justify-center text-white" 
-                  style={{ backgroundColor: p.color || '#ff4d4d' }}
-                  title={p.name}
-                >
-                  {p.photoUrl ? (
-                    <img src={p.photoUrl} className="w-full h-full object-cover" alt="" />
-                  ) : (
-                    <span className="text-sm">{p.emoji || '👤'}</span>
-                  )}
-                </div>
-              );
-            } else {
-              return (
-                <div 
-                  key={`empty-${idx}`} 
-                  className="w-10 h-10 rounded-full border border-dashed border-white/10 flex-shrink-0 flex items-center justify-center bg-white/[0.01] text-white/10 text-sm font-light select-none"
-                >
-                  +
-                </div>
-              );
-            }
-          })}
-        </div>
-
-        {/* 5th dashed circle on a second row for overflow */}
-        {hasOverflow && (
-          <div className="flex justify-start mb-3">
-            <div 
-              className="w-7 h-7 rounded-full border border-dashed border-white/20 bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/50"
-              title={`${overflowCount} more participants`}
-            >
-              +{overflowCount}
+      {/* Avatar row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 64 }}>
+        {displaySlots.map((participant, idx) =>
+          participant ? (
+            <div key={participant.id || idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: '50%',
+                overflow: 'hidden', background: participant.color || '#1877f2',
+                border: '2px solid rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 700, color: 'white', flexShrink: 0
+              }}>
+                {participant.photoUrl
+                  ? <img src={participant.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                  : participant.name?.slice(0, 2).toUpperCase()
+                }
+              </div>
+              {/* Follower count */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#1877f2', fontSize: 10, fontWeight: 600 }}>
+                <Heart size={9} fill="#1877f2" color="#1877f2" />
+                {participant.followersCount || 0}
+              </div>
             </div>
+          ) : (
+            <div key={`empty-${idx}`} style={{
+              width: 52, height: 52, borderRadius: '50%',
+              border: '2px dashed rgba(255,255,255,0.1)',
+              flexShrink: 0
+            }} />
+          )
+        )}
+        {extraCount > 0 && (
+          <div style={{
+            width: 52, height: 52, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)',
+            border: '2px dashed rgba(255,255,255,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 700
+          }}>
+            +{extraCount}
           </div>
         )}
-
-        {/* Host's followers count below avatars */}
-        <div className="flex items-center gap-1 text-[11px] text-blue-400 font-bold mb-4">
-          <span className="text-xs">❤</span>
-          <span>{participants[0]?.followersCount || 18}</span>
-        </div>
       </div>
 
-      {/* Bottom: Dashed-border Join Button */}
-      <div className="w-full mt-auto">
-        <button 
-          onClick={() => onJoin(room)}
-          className="w-full py-2.5 rounded-xl border border-dashed border-emerald-500 bg-transparent hover:bg-emerald-500/10 text-emerald-400 font-bold text-xs tracking-wider transition-all duration-200"
-        >
-          🔗 Join and talk now!
-        </button>
-      </div>
-
+      {/* Join button */}
+      <button
+        onClick={() => onJoin(room)}
+        disabled={participants.length >= 25}
+        style={{
+          width: '100%', padding: '12px 0',
+          background: 'transparent',
+          border: '1.5px dashed rgba(24,119,242,0.5)',
+          borderRadius: 10, cursor: participants.length >= 25 ? 'not-allowed' : 'pointer',
+          color: '#1877f2', fontSize: 13, fontWeight: 700,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          transition: 'all 0.2s'
+        }}
+        onMouseEnter={e => { if (participants.length < 25) e.currentTarget.style.background = 'rgba(24,119,242,0.08)'; }}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+      >
+        {participants.length >= 25 ? '🔒 Room Full' : '🔗 Join and talk now!'}
+      </button>
     </div>
   );
 }
