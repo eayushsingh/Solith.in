@@ -1272,7 +1272,7 @@ export default function App() {
   };
 
     const renderAppLayout = (children) => (
-    <div className="layout-container relative min-h-[100dvh] overflow-x-hidden">
+    <div className="layout-container lobby-bg relative min-h-[100dvh] overflow-x-hidden">
 
       {!activeRoom && <Sidebar {...layoutProps} />}
       <div className="main-content hide-scrollbar z-10 relative">
@@ -2348,7 +2348,7 @@ export default function App() {
         </div>
 
         {/* Lobby View */}
-<div className={view !== 'lobby' || activeRoom ? 'hidden' : "lobby-bg w-full pb-28 flex flex-col items-center min-h-screen"}>
+<div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
         {/* Global Header */}
         <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 bg-bg-base/95 backdrop-blur-md sticky top-0 z-30 border-b border-border-color">
           
