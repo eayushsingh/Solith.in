@@ -17,7 +17,7 @@ import StaticModals from './components/StaticModals';
 import { 
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, Camera,
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
-  Monitor, Youtube, Gamepad2, Crown, LayoutGrid, FileText
+  Monitor, Youtube, Gamepad2, Crown, LayoutGrid, FileText, Maximize2, Bell, Grid3x3 as Grid
 } from 'lucide-react';
 import GameContainer from './components/games/GameContainer';
 import { LiveKitService } from './livekit';
@@ -136,57 +136,40 @@ export default function App() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [activePanelTab, setActivePanelTab] = useState('chat');
-  const [activityFeed, setActivityFeed] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarTab, setSidebarTab] = useState('chat');
+  const [joinEvents, setJoinEvents] = useState([]);
   const prevParticipantsRef = useRef([]);
 
   useEffect(() => {
     if (callState !== 'joined' || !activeRoom) {
-      setActivityFeed([]);
+      setJoinEvents([]);
       prevParticipantsRef.current = [];
       return;
     }
-    
     const prev = prevParticipantsRef.current;
-    const current = participants;
+    const now = participants;
+    const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
     
-    // Find joined
-    const joined = current.filter(p => !prev.some(op => op.id === p.id));
-    // Find left
-    const left = prev.filter(op => !current.some(p => p.id === op.id));
-    
-    const newEntries = [];
-    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    joined.forEach(p => {
-      // Avoid adding ourselves on initial load if list was empty
-      if (prev.length > 0) {
-        newEntries.push({
-          id: `feed-${Date.now()}-${Math.random()}`,
-          text: `${p.name} joined.`,
-          initials: getInitials(p.name),
-          color: p.color || '#ff4d4d',
-          time: timeStr
-        });
+    now.forEach(p => {
+      if (!prev.find(pp => pp.id === p.id) && !p.isLocal) {
+        setJoinEvents(e => [...e.slice(-19), {
+          text: `[${time}] ${p.name} joined.`,
+          initials: p.name.slice(0,2).toUpperCase(),
+          color: p.color
+        }]);
       }
     });
-
-    left.forEach(p => {
-      newEntries.push({
-        id: `feed-${Date.now()}-${Math.random()}`,
-        text: `${p.name} left.`,
-        initials: getInitials(p.name),
-        color: p.color || '#ff4d4d',
-        time: timeStr
-      });
+    prev.forEach(p => {
+      if (!now.find(pp => pp.id === p.id) && !p.isLocal) {
+        setJoinEvents(e => [...e.slice(-19), {
+          text: `[${time}] ${p.name} left.`,
+          initials: p.name.slice(0,2).toUpperCase(),
+          color: p.color
+        }]);
+      }
     });
-
-    if (newEntries.length > 0) {
-      setActivityFeed(prevFeed => [...prevFeed, ...newEntries].slice(-20));
-    }
-    
-    prevParticipantsRef.current = current;
+    prevParticipantsRef.current = now;
   }, [participants, callState, activeRoom]);
 
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -242,7 +225,6 @@ export default function App() {
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isRealCall, setIsRealCall] = useState(false);
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
   const [activeGame, setActiveGame] = useState(null);
@@ -320,7 +302,6 @@ export default function App() {
           });
           const data = await res.json();
           if (data.token) {
-            const { signInWithCustomToken, auth } = await import('./firebase');
             await signInWithCustomToken(auth, data.token);
             console.log('Bot successfully logged in via custom token!');
             // Remove the bot param so it doesn't loop
@@ -747,12 +728,12 @@ export default function App() {
 
   // Scroll chat to bottom on new messages
   useEffect(() => {
-    if (isChatOpen) {
+    if (sidebarOpen && sidebarTab === 'chat') {
       setTimeout(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
-  }, [chatMessages, isChatOpen]);
+  }, [chatMessages, sidebarOpen, sidebarTab]);
 
   // Auto-join room from URL parameter if present
   useEffect(() => {
@@ -2885,65 +2866,58 @@ export default function App() {
                     );
                 })}
              </div>
+             {/* Bottom Floating Bar */}
+             <div style={{
+               position:'absolute', bottom:24, left:'50%', transform:'translateX(-50%)',
+               display:'flex', alignItems:'center', gap:12,
+               background:'rgba(8,12,20,0.8)', backdropFilter:'blur(20px)',
+               border:'1px solid rgba(255,255,255,0.08)',
+               borderRadius:28, padding:'10px 20px', zIndex:50
+             }}>
+               <button onClick={hasRaisedHand ? lowerHand : raiseHand}
+                 style={{background:'none',border:'none',cursor:'pointer',
+                   fontSize:22,lineHeight:1}}>✋</button>
+               
+               {/* Solith branded center button */}
+               <div style={{
+                 width:44,height:44,borderRadius:'50%',
+                 background:'linear-gradient(135deg,#1877f2,#6c47ff)',
+                 display:'flex',alignItems:'center',justifyContent:'center',
+                 boxShadow:'0 0 20px rgba(108,71,255,0.4)',cursor:'pointer'
+               }} onClick={() => setSidebarTab('chat')}>
+                 <span style={{color:'white',fontSize:11,fontWeight:900,letterSpacing:'-0.5px'}}>S</span>
+               </div>
 
-             {/* Bottom Floating Controls */}
-             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-2xl border border-white/10 shadow-2xl">
-                {/* Raise Hand Button */}
-                <button 
-                  onClick={hasRaisedHand ? lowerHand : raiseHand} 
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                    hasRaisedHand 
-                      ? 'bg-[#1877f2] text-white shadow-lg' 
-                      : 'bg-[#1e2a3a] hover:bg-[#2b3a4f] text-white/80 hover:text-white'
-                  }`}
-                  title={hasRaisedHand ? 'Lower Hand' : 'Raise Hand'}
-                >
-                  <Hand className="w-5 h-5"/>
-                </button>
-
-                {/* Solith branding icon */}
-                <div className="w-12 h-12 rounded-xl bg-[#1e2a3a] text-[#1877f2] flex items-center justify-center select-none" title="Solith Space">
-                   <span className="text-lg font-bold">🔵</span>
-                </div>
-
-                {/* More options button (...) with dropdown */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setShowGameSelector(!showGameSelector)} 
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                      showGameSelector 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-[#1e2a3a] hover:bg-[#2b3a4f] text-white/80 hover:text-white'
-                    }`}
-                    title="Games & More"
-                  >
-                    <MoreVertical className="w-5 h-5"/>
-                  </button>
-                  {/* Game Selector Dropdown */}
-                  {showGameSelector && (
-                     <div className="absolute bottom-[125%] left-1/2 -translate-x-1/2 bg-[#12141c] border border-white/10 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[160px] animate-fade-in z-[100]">
-                       <div className="text-[10px] font-bold text-white/40 uppercase px-2 py-1 tracking-wider mb-1">Games</div>
-                       {['chess', 'uno', 'connect4', 'tictactoe'].map(game => (
-                         <button 
-                           key={game} 
-                           onClick={(e) => { e.stopPropagation(); startGame(game); setShowGameSelector(false); }}
-                           className="text-left px-3 py-2 text-xs text-white/70 hover:bg-white/10 rounded-xl capitalize font-medium flex items-center gap-2"
-                         >
-                           {game === 'chess' && '♟️ Chess'}
-                           {game === 'uno' && '🃏 UNO'}
-                           {game === 'connect4' && '🔴 Connect 4'}
-                           {game === 'tictactoe' && '❌ Tic-Tac-Toe'}
-                         </button>
-                       ))}
-                     </div>
-                  )}
-                </div>
+               <div className="relative">
+                 <button onClick={() => setShowGameSelector(!showGameSelector)}
+                   style={{background:'none',border:'none',cursor:'pointer',
+                     color:'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                   <MoreVertical size={20}/>
+                 </button>
+                 {showGameSelector && (
+                    <div className="absolute bottom-[135%] left-1/2 -translate-x-1/2 bg-[#12141c] border border-white/10 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[160px] animate-fade-in z-[100]">
+                      <div className="text-[10px] font-bold text-white/40 uppercase px-2 py-1 tracking-wider mb-1">Games</div>
+                      {['chess', 'uno', 'connect4', 'tictactoe'].map(game => (
+                        <button 
+                          key={game} 
+                          onClick={(e) => { e.stopPropagation(); startGame(game); setShowGameSelector(false); }}
+                          className="text-left px-3 py-2 text-xs text-white/70 hover:bg-white/10 rounded-xl capitalize font-medium flex items-center gap-2"
+                        >
+                          {game === 'chess' && '♟️ Chess'}
+                          {game === 'uno' && '🃏 UNO'}
+                          {game === 'connect4' && '🔴 Connect 4'}
+                          {game === 'tictactoe' && '❌ Tic-Tac-Toe'}
+                        </button>
+                      ))}
+                    </div>
+                 )}
+               </div>
              </div>
 
              {/* Uncollapse Toggle Arrow */}
-             {isSidebarCollapsed && (
+             {!sidebarOpen && (
                <button 
-                 onClick={() => setIsSidebarCollapsed(false)}
+                 onClick={() => setSidebarOpen(true)}
                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 w-10 h-10 bg-black/60 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-xl"
                  title="Show Sidebar"
                >
@@ -2954,93 +2928,108 @@ export default function App() {
           </div>
 
           {/* Right Sidebar Column */}
-          {!isSidebarCollapsed && (
-            <div className="w-[320px] h-full bg-[#1a2035] border-l border-white/10 flex flex-col flex-shrink-0 relative z-30 shadow-2xl">
+          {sidebarOpen && (
+            <div style={{
+              width: 320, flexShrink: 0,
+              background: '#0f1520',
+              borderLeft: '1px solid rgba(255,255,255,0.07)',
+              display: 'flex', flexDirection: 'column',
+              height: '100vh'
+            }}>
                
                {/* Tab Bar - 5 icon tabs */}
-               <div className="h-[52px] border-b border-white/10 flex items-center justify-around px-2" style={{ backgroundColor: '#1e2840' }}>
-                  {/* Chat Tab Button */}
-                  <button 
-                    onClick={() => setActivePanelTab('chat')} 
-                    className="w-10 h-10 flex items-center justify-center relative transition-all"
-                    style={{ borderBottom: activePanelTab === 'chat' ? '2px solid #1877f2' : 'none' }}
-                    title="Room Chat"
-                  >
-                    <MessageSquare className={`w-5 h-5 ${activePanelTab === 'chat' ? 'text-[#1877f2]' : 'text-white/50 hover:text-white'}`} />
-                    {chatMessages.length > 0 && activePanelTab !== 'chat' && (
-                      <span className="absolute top-2 right-2 w-2 h-2 bg-[#1877f2] rounded-full"></span>
-                    )}
-                  </button>
-
-                  {/* Participants Tab Button */}
-                  <button 
-                    onClick={() => setActivePanelTab('participants')} 
-                    className="w-10 h-10 flex items-center justify-center relative transition-all"
-                    style={{ borderBottom: activePanelTab === 'participants' ? '2px solid #1877f2' : 'none' }}
-                    title="Room Participants"
-                  >
-                    <Users className={`w-5 h-5 ${activePanelTab === 'participants' ? 'text-[#1877f2]' : 'text-white/50 hover:text-white'}`} />
-                    <span className="absolute -top-0.5 -right-0.5 bg-white/10 text-white text-[9px] font-bold px-1.5 rounded-full">{participants.length}</span>
-                  </button>
-
-                  {/* Grid Tab Button */}
-                  <button 
-                    onClick={() => setActivePanelTab('grid')} 
-                    className="w-10 h-10 flex items-center justify-center transition-all"
-                    style={{ borderBottom: activePanelTab === 'grid' ? '2px solid #1877f2' : 'none' }}
-                    title="Interactive Tools"
-                  >
-                    <LayoutGrid className={`w-5 h-5 ${activePanelTab === 'grid' ? 'text-[#1877f2]' : 'text-white/50 hover:text-white'}`} />
-                  </button>
-
-                  {/* Settings Tab Button */}
-                  <button 
-                    onClick={() => setActivePanelTab('settings')} 
-                    className="w-10 h-10 flex items-center justify-center transition-all"
-                    style={{ borderBottom: activePanelTab === 'settings' ? '2px solid #1877f2' : 'none' }}
-                    title="Customize Profile"
-                  >
-                    <Settings className={`w-5 h-5 ${activePanelTab === 'settings' ? 'text-[#1877f2]' : 'text-white/50 hover:text-white'}`} />
-                  </button>
-
-                  {/* Collapse Sidebar Button */}
-                  <button 
-                    onClick={() => setIsSidebarCollapsed(true)} 
-                    className="w-10 h-10 flex items-center justify-center text-white/50 hover:text-white transition-all"
-                    title="Collapse Sidebar"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+               <div style={{
+                 height:52, background:'#111827',
+                 borderBottom:'1px solid rgba(255,255,255,0.07)',
+                 display:'flex', alignItems:'center',
+                 padding:'0 8px', gap:4, flexShrink:0
+               }}>
+                 {[
+                   {icon: MessageSquare, key:'chat'},
+                   {icon: Users, key:'participants'},
+                   {icon: Grid, key:'grid'},
+                   {icon: Settings, key:'settings'},
+                   {icon: Maximize2, key:'fullscreen'},
+                 ].map(tab => (
+                   <button key={tab.key}
+                     onClick={() => {
+                       if (tab.key === 'fullscreen') {
+                         if (!document.fullscreenElement) {
+                           document.documentElement.requestFullscreen().catch(err => console.log(err));
+                         } else {
+                           document.exitFullscreen();
+                         }
+                       } else {
+                         setSidebarTab(tab.key);
+                       }
+                     }}
+                     style={{
+                       width:40, height:40, borderRadius:10,
+                       background: sidebarTab===tab.key ? 'rgba(24,119,242,0.15)' : 'transparent',
+                       border: 'none', cursor:'pointer', display:'flex',
+                       alignItems:'center', justifyContent:'center',
+                       borderBottom: sidebarTab===tab.key ? '2px solid #1877f2' : '2px solid transparent',
+                       transition:'all 0.15s'
+                     }}>
+                     <tab.icon size={18} color={sidebarTab===tab.key ? '#1877f2' : 'rgba(255,255,255,0.4)'} />
+                   </button>
+                 ))}
+                 {/* Collapse arrow on far right */}
+                 <button style={{
+                   marginLeft:'auto',
+                   width:32, height:32, borderRadius:8,
+                   display:'flex', alignItems:'center', justifyContent:'center',
+                   background:'transparent', border:'none', cursor:'pointer'
+                 }} onClick={() => setSidebarOpen(false)}>
+                   <ChevronRight size={18} color="rgba(255,255,255,0.4)" />
+                 </button>
                </div>
 
                {/* Tab Contents Area */}
                <div className="flex-1 flex flex-col overflow-hidden min-h-0 relative">
                   
                   {/* Chat Panel */}
-                  {activePanelTab === 'chat' && (
+                  {sidebarTab === 'chat' && (
                     <div className="flex-1 flex flex-col overflow-hidden min-h-0">
                        {/* Room Info Section */}
-                       <div className="bg-[#1e2840] p-3 text-xs text-white/60 flex flex-col gap-1 border-b border-white/5">
-                          <div>Language: <span className="text-white font-bold">{activeRoom.language || 'English'}</span></div>
-                          <div>Topic: <span className="text-white font-bold">{activeRoom.topic || activeRoom.name || 'Casual Conversation'}</span></div>
+                       <div style={{
+                         background:'#111827', padding:'12px 16px',
+                         borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0
+                       }}>
+                         <div style={{color:'rgba(255,255,255,0.9)',fontSize:13,fontWeight:700,marginBottom:6}}>
+                           Room Info
+                         </div>
+                         <div style={{color:'rgba(255,255,255,0.45)',fontSize:12}}>
+                           Language: {activeRoom.language || 'English'}
+                         </div>
+                         {activeRoom.topic && (
+                           <div style={{color:'rgba(255,255,255,0.45)',fontSize:12,marginTop:2}}>
+                             Topic: {activeRoom.topic}
+                           </div>
+                         )}
                        </div>
 
                        {/* Messages & Feed Scroll Area */}
-                       <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0" ref={chatEndRef}>
+                       <div style={{flex:1, overflowY:'auto', padding:'8px 0'}} className="hide-scrollbar">
                           
-                          {/* Join/Leave Feed (timestamped) */}
-                          {activityFeed.length > 0 && (
-                            <div className="border-b border-white/5 pb-2 mb-2 space-y-1">
-                              {activityFeed.map(feed => (
-                                <div key={feed.id} className="flex items-center justify-between text-[11px] text-white/40 px-2 py-0.5 hover:bg-white/5 rounded transition-colors">
-                                   <span>[{feed.time}] {feed.text}</span>
-                                   <div className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] text-white/80 font-bold" style={{ backgroundColor: feed.color }}>
-                                     {feed.initials}
-                                   </div>
-                                </div>
-                              ))}
+                          {/* Join/Leave Event Feed */}
+                          {joinEvents.map((ev, i) => (
+                            <div key={i} style={{
+                              display:'flex', alignItems:'center',
+                              padding:'8px 16px', fontSize:12, color:'rgba(255,255,255,0.35)',
+                              justifyContent: 'space-between'
+                            }}>
+                              <span>{ev.text}</span>
+                              <div style={{
+                                width:24,height:24,borderRadius:'50%',
+                                background:ev.color||'#333',
+                                display:'flex',alignItems:'center',justifyContent:'center',
+                                fontSize:9,fontWeight:700,color:'white',flexShrink:0
+                              }}>
+                                {ev.initials}
+                              </div>
                             </div>
-                          )}
+                          ))}
 
                           {/* Message List */}
                           {chatMessages.length === 0 ? (
@@ -3049,97 +3038,122 @@ export default function App() {
                             </div>
                           ) : (
                             chatMessages.map(msg => (
-                              <div key={msg.id} className="flex gap-3 p-3 hover:bg-white/5 group relative rounded-lg transition-colors" id={`chat-msg-${msg.id}`}>
-                                 {/* Sender Avatar */}
-                                 <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs text-white shadow" style={{ backgroundColor: msg.senderColor || '#6c47ff' }}>
-                                    {msg.senderEmoji || '👤'}
-                                 </div>
-                                 
-                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between">
-                                       <div className="flex items-center gap-1.5">
-                                          <span className="text-white text-xs font-bold truncate max-w-[90px]">{msg.senderName}</span>
-                                          {msg.senderId === activeRoom.ownerId && (
-                                            <span className="px-1.5 py-0.5 bg-[#6c47ff] text-white text-[8px] font-bold rounded-full leading-none tracking-wide uppercase">
-                                              Owner
-                                            </span>
-                                          )}
-                                       </div>
-                                       <div className="flex items-center gap-2">
-                                          <button 
-                                            onClick={() => setShowReportModal(msg.senderId)} 
-                                            className="hidden group-hover:flex text-red-400 text-[10px] items-center gap-1 hover:text-red-300"
-                                          >
-                                             🚩 Report
-                                          </button>
-                                          <span className="text-white/30 text-[10px]">{msg.timestamp || '01:13 AM'}</span>
-                                       </div>
+                              <div key={msg.id} className="group" style={{
+                                display:'flex', gap:10, padding:'8px 16px',
+                                transition:'background 0.15s'
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.03)'}
+                              onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                              >
+                                {/* Avatar */}
+                                <div style={{
+                                  width:32,height:32,borderRadius:'50%',flexShrink:0,
+                                  background:msg.senderColor||'#333',overflow:'hidden',
+                                  display:'flex',alignItems:'center',justifyContent:'center',
+                                  fontSize:11,fontWeight:700,color:'white'
+                                }}>
+                                  {msg.senderPhotoUrl 
+                                    ? <img src={msg.senderPhotoUrl} style={{width:'100%',height:'100%',objectFit:'cover'}} alt="" />
+                                    : msg.senderName?.slice(0,2).toUpperCase()
+                                  }
+                                </div>
+                                
+                                {/* Content */}
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
+                                    <div style={{display:'flex',alignItems:'center',gap:6}}>
+                                      <span style={{color:'white',fontSize:13,fontWeight:700}}>{msg.senderName}</span>
+                                      {(msg.senderRole === 'owner' || msg.senderId === activeRoom.ownerId) && (
+                                        <span style={{background:'#6c47ff',color:'white',fontSize:9,
+                                          fontWeight:700,padding:'1px 6px',borderRadius:20}}>Owner</span>
+                                      )}
                                     </div>
-                                    
-                                    {/* Text message */}
-                                    <p className="text-white/85 text-xs mt-0.5 break-words whitespace-pre-wrap">{msg.text}</p>
-                                 </div>
+                                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                      <button onClick={() => setShowReportModal(msg.senderId)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                        style={{color:'#f87171',fontSize:11,background:'none',border:'none',cursor:'pointer',
+                                          display:'flex',alignItems:'center',gap:3}}>
+                                        🚩 Report
+                                      </button>
+                                      <span style={{color:'rgba(255,255,255,0.25)',fontSize:11}}>{msg.timestamp}</span>
+                                    </div>
+                                  </div>
+                                  <p style={{color:'rgba(255,255,255,0.8)',fontSize:13,margin:0,lineHeight:1.5,
+                                    wordBreak:'break-word'}}>{msg.text}</p>
+                                </div>
                               </div>
                             ))
                           )}
+                          <div ref={chatEndRef} />
                        </div>
 
                        {/* Chat Input Pinned to Bottom */}
-                       <div className="bg-[#1e2840] border-t border-white/10 p-3 flex flex-col gap-2">
-                          {/* Top Row Shortcut Icons */}
-                          <div className="flex items-center justify-start gap-3 text-white/50">
-                             {/* Emoji Button */}
-                             <button className="hover:text-white transition-colors" title="Emoji (Soon)">
-                               <span className="text-sm">😊</span>
+                       <div style={{
+                         borderTop:'1px solid rgba(255,255,255,0.07)',
+                         background:'#111827', flexShrink:0, padding:'10px 12px'
+                       }}>
+                         {/* Icon toolbar row */}
+                         <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                           {[
+                             {icon:'😊', action: null},
+                             {icon:'GIF', action: null, text:true},
+                             {icon: Gamepad2, action: () => setShowGameSelector(!showGameSelector)},
+                             {icon: Youtube, action: () => setShowYtModal(true)},
+                             {icon:'AI', action: null, text:true},
+                             {icon: Bell, action: null},
+                           ].map((item, i) => (
+                             <button key={i} onClick={item.action}
+                               type="button"
+                               style={{
+                                 width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.06)',
+                                 border:'none',cursor:item.action?'pointer':'default',
+                                 display:'flex',alignItems:'center',justifyContent:'center',
+                                 color:'rgba(255,255,255,0.5)',fontSize:item.text?10:16,fontWeight:700,
+                                 opacity:item.action?1:0.4
+                               }}>
+                               {item.text ? item.icon : typeof item.icon === 'string' ? item.icon : <item.icon size={15}/>}
                              </button>
-                             {/* GIF Button */}
-                             <button className="text-[10px] font-bold hover:text-white transition-colors" title="GIF">
-                               GIF
-                             </button>
-                             {/* Games Button */}
-                             <button onClick={() => setShowGameSelector(!showGameSelector)} className="hover:text-white transition-colors" title="Games">
-                               <Gamepad2 className="w-4 h-4" />
-                             </button>
-                             {/* YouTube Button */}
-                             <button onClick={() => setShowYtModal(true)} className="hover:text-white transition-colors" title="Share YouTube">
-                               <Youtube className="w-4 h-4" />
-                             </button>
-                             {/* AI Button - Disabled */}
-                             <button className="text-[10px] font-bold opacity-30 cursor-not-allowed" title="AI (Disabled)">
-                               AI
-                             </button>
-                             {/* Notifications Button */}
-                             <button className="hover:text-white transition-colors" title="Notifications">
-                               <ShieldCheck className="w-4 h-4" />
-                             </button>
-                             {/* Mute toggle button */}
-                             <button onClick={toggleMute} className="hover:text-white transition-colors" title="Mute Microphone">
-                               {isMuted ? <MicOff className="w-4 h-4 text-red-500" /> : <Mic className="w-4 h-4" />}
-                             </button>
-                          </div>
+                           ))}
+                           {/* Mic button far right */}
+                           <button onClick={toggleMute} style={{marginLeft:'auto',
+                             width:32,height:32,borderRadius:8,
+                             background: isMuted?'rgba(220,38,38,0.2)':'rgba(24,119,242,0.2)',
+                             border:'none',cursor:'pointer',display:'flex',
+                             alignItems:'center',justifyContent:'center'}}>
+                             {isMuted ? <MicOff size={15} color="#f87171"/> : <Mic size={15} color="#60a5fa"/>}
+                           </button>
+                         </div>
 
-                          {/* Bottom Row Input Form */}
-                          <form onSubmit={(e) => { e.preventDefault(); sendChatMessage(e); }} className="flex items-center gap-2 bg-black/20 rounded-lg p-1.5 border border-white/5 focus-within:border-[#1877f2] transition-colors">
-                             <input 
-                               type="text" 
-                               placeholder="Type a message... Type @ to mention." 
-                               value={chatInput} 
-                               onChange={e => setChatInput(e.target.value)} 
-                               className="flex-1 bg-transparent border-none text-white text-xs outline-none shadow-none px-2 py-1 placeholder:text-white/20" 
+                         {/* Text input row */}
+                         <form onSubmit={(e) => { e.preventDefault(); sendChatMessage(e); }} style={{display:'flex',gap:8,alignItems:'center'}}>
+                           <div style={{flex:1,background:'rgba(255,255,255,0.05)',
+                             borderRadius:10,border:'1px solid rgba(255,255,255,0.08)',
+                             padding:'8px 12px'}}>
+                             <input
+                               value={chatInput}
+                               onChange={e => setChatInput(e.target.value)}
+                               placeholder="Type a message..."
+                               style={{width:'100%',background:'none',border:'none',outline:'none',
+                                 color:'white',fontSize:13}}
                              />
-                             <button 
-                               type="submit" 
-                               className="w-8 h-8 rounded-lg bg-[#1877f2] hover:bg-[#1877f2]/80 transition-colors flex items-center justify-center text-white flex-shrink-0"
-                             >
-                                <Send className="w-3.5 h-3.5"/>
-                             </button>
-                          </form>
+                             <div style={{color:'rgba(255,255,255,0.2)',fontSize:11,marginTop:3}}>
+                               Type @ to mention someone.
+                             </div>
+                           </div>
+                           <button type="submit" style={{
+                             width:36,height:36,borderRadius:10,
+                             background:'#1877f2',border:'none',cursor:'pointer',
+                             display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0
+                           }}>
+                             <Send size={15} color="white" />
+                           </button>
+                         </form>
                        </div>
                     </div>
                   )}
 
                   {/* Participants Panel */}
-                  {activePanelTab === 'participants' && (
+                  {sidebarTab === 'participants' && (
                     <div className="flex-1 overflow-y-auto p-4 space-y-3">
                        <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Connected ({participants.length})</div>
                        {participants.map(p => {
@@ -3172,7 +3186,7 @@ export default function App() {
                   )}
 
                   {/* Grid Tools Panel */}
-                  {activePanelTab === 'grid' && (
+                  {sidebarTab === 'grid' && (
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                        <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Interactive Tools</div>
                        
@@ -3217,7 +3231,7 @@ export default function App() {
                        >
                           <div className="flex items-center gap-3">
                              <div className="w-8 h-8 bg-emerald-600/20 text-emerald-400 rounded-lg flex items-center justify-center">
-                                <LayoutGrid className="w-4 h-4" />
+                                <Grid className="w-4 h-4" />
                              </div>
                              <div>
                                 <div className="text-xs font-bold text-white">Drawing Whiteboard</div>
@@ -3264,50 +3278,50 @@ export default function App() {
                   )}
 
                   {/* Settings Panel */}
-                  {activePanelTab === 'settings' && (
+                  {sidebarTab === 'settings' && (
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                        <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Profile & Settings</div>
                        
                        {/* Quick Nickname Selector */}
                        <div className="space-y-1">
-                         <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Display Name</label>
-                         <input 
-                           type="text" 
-                           value={user?.name || ''} 
-                           onChange={(e) => setUser(prev => ({ ...prev, name: e.target.value }))}
-                           className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#1877f2] transition-colors" 
-                         />
+                          <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Display Name</label>
+                          <input 
+                            type="text" 
+                            value={user?.name || ''} 
+                            onChange={(e) => setUser(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#1877f2] transition-colors" 
+                          />
                        </div>
 
                        {/* Emoji Selector */}
                        <div className="space-y-1">
-                         <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Avatar Emoji</label>
-                         <div className="grid grid-cols-6 gap-1 bg-black/10 p-2 rounded-xl border border-white/5">
-                           {['👤', '🦊', '🐼', '🦁', '🦉', '🐱', '🐶', '🦄', '🐝', '🐧', '🦖', '🐬'].map(em => (
-                             <button 
-                               key={em} 
-                               onClick={() => setUser(prev => ({ ...prev, emoji: em }))}
-                               className={`text-lg p-1 hover:bg-white/10 rounded transition-all ${user?.emoji === em ? 'bg-white/15 scale-110' : ''}`}
-                             >
-                               {em}
-                             </button>
-                           ))}
-                         </div>
+                          <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Avatar Emoji</label>
+                          <div className="grid grid-cols-6 gap-1 bg-black/10 p-2 rounded-xl border border-white/5">
+                            {['👤', '🦊', '🐼', '🦁', '🦉', '🐱', '🐶', '🦄', '🐝', '🐧', '🦖', '🐬'].map(em => (
+                              <button 
+                                key={em} 
+                                onClick={() => setUser(prev => ({ ...prev, emoji: em }))}
+                                className={`text-lg p-1 hover:bg-white/10 rounded transition-all ${user?.emoji === em ? 'bg-white/15 scale-110' : ''}`}
+                              >
+                                {em}
+                              </button>
+                            ))}
+                          </div>
                        </div>
 
                        {/* Color Selector */}
                        <div className="space-y-1">
-                         <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Avatar Color</label>
-                         <div className="grid grid-cols-6 gap-1 bg-black/10 p-2 rounded-xl border border-white/5">
-                           {['#ff4d4d', '#ff944d', '#ffd11a', '#0d94a8', '#4da6ff', '#8b5cf6', '#ec4899', '#10b981', '#6b7280', '#b45309', '#065f46', '#1e3a8a'].map(col => (
-                             <button 
-                               key={col} 
-                               onClick={() => setUser(prev => ({ ...prev, color: col }))}
-                               className={`w-6 h-6 rounded-full mx-auto border transition-all ${user?.color === col ? 'border-white scale-110' : 'border-transparent'}`}
-                               style={{ backgroundColor: col }}
-                             />
-                           ))}
-                         </div>
+                          <label className="text-[10px] font-bold text-white/50 uppercase tracking-wide">Avatar Color</label>
+                          <div className="grid grid-cols-6 gap-1 bg-black/10 p-2 rounded-xl border border-white/5">
+                            {['#ff4d4d', '#ff944d', '#ffd11a', '#0d94a8', '#4da6ff', '#8b5cf6', '#ec4899', '#10b981', '#6b7280', '#b45309', '#065f46', '#1e3a8a'].map(col => (
+                              <button 
+                                key={col} 
+                                onClick={() => setUser(prev => ({ ...prev, color: col }))}
+                                className={`w-6 h-6 rounded-full mx-auto border transition-all ${user?.color === col ? 'border-white scale-110' : 'border-transparent'}`}
+                                style={{ backgroundColor: col }}
+                              />
+                            ))}
+                          </div>
                        </div>
                     </div>
                   )}
