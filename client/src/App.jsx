@@ -180,7 +180,7 @@ export default function App() {
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(true);
   const [isRealCall, setIsRealCall] = useState(false);
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
   const [activeGame, setActiveGame] = useState(null);
@@ -2723,27 +2723,58 @@ export default function App() {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                         const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
                         const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
-                        const pEmoji = p.isLocal ? (user?.emoji || '👤') : (backendP?.emoji || p.emoji || '👤');
-                        const pColor = p.isLocal ? (user?.color || '#0d94a8') : (backendP?.color || p.color || '#ff4d4d');
-                        const pName = p.isLocal ? 'You' : (backendP?.name || p.name);
-                        
+                        const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
+                        const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
+                        const targetRole = getRole(p.id);
+
                         return (
-                            <div key={p.id} className={`relative flex flex-col items-center justify-center w-[120px] h-[100px] lg:w-[200px] lg:h-[130px] rounded-2xl overflow-hidden bg-[#161920] border transition-all duration-300 ${isSpeaking ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'border-white/5'} flex-shrink-0 group`}>
-                               <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full overflow-hidden shadow-lg border border-white/10 group-hover:scale-105 transition-transform" style={{ backgroundColor: pColor }}>
-                                  {pPhotoUrl ? <img src={pPhotoUrl} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-2xl lg:text-3xl">{pEmoji}</div>}
-                               </div>
-                               
-                               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between z-10">
-                                  <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg max-w-[75%]">
-                                     <span className="text-white text-[10px] lg:text-xs font-semibold truncate">{pName}</span>
+                          <div key={p.id}
+                            onClick={() => !p.isLocal && setActiveActionUser(p)}
+                            className="group flex-shrink-0"
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: p.isLocal ? 'default' : 'pointer' }}
+                          >
+                            <div style={{
+                              width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
+                              border: isSpeaking ? '2.5px solid #1877f2' : '2.5px solid rgba(255,255,255,0.12)',
+                              boxShadow: isSpeaking ? '0 0 20px rgba(24,119,242,0.6)' : 'none',
+                              transition: 'all 0.2s ease',
+                              background: pColor, position: 'relative', flexShrink: 0
+                            }}>
+                              {pPhotoUrl
+                                ? <img src={pPhotoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
+                                    {pName.slice(0, 2).toUpperCase()}
                                   </div>
-                                  {p.muted && (
-                                     <div className="w-6 h-6 bg-red-500/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-red-500/30 flex-shrink-0">
-                                       <MicOff className="w-3 h-3 text-red-400" />
-                                     </div>
-                                  )}
-                               </div>
+                              }
+                              {p.muted && (
+                                <div style={{
+                                  position: 'absolute', bottom: 3, right: 3,
+                                  background: '#dc2626', borderRadius: '50%',
+                                  width: 20, height: 20,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  border: '2px solid #080c14'
+                                }}>
+                                  <MicOff size={10} color="white" />
+                                </div>
+                              )}
+                              {!p.isLocal && (
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity" style={{
+                                  position: 'absolute', top: 4, right: 4,
+                                  background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: 3
+                                }}>
+                                  <Settings size={10} color="white" />
+                                </div>
+                              )}
                             </div>
+                            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600, maxWidth: 80, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {pName}
+                            </span>
+                            {targetRole === 'owner' && (
+                              <span style={{ background: '#6c47ff', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, marginTop: -4 }}>
+                                Owner
+                              </span>
+                            )}
+                          </div>
                         );
                     })}
                   </div>
