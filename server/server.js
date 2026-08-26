@@ -59,6 +59,7 @@ let runtimeConfig = {
 // Rooms Database State
 let rooms = [];
 const socketToIdentity = new Map();
+const authenticatedOnline = new Set();
 
 const purgeEmptyRooms = () => {
   const before = rooms.length;
@@ -153,6 +154,69 @@ const evictStalePingParticipants = () => {
 };
 setInterval(evictStalePingParticipants, 15000);
 
+const processMonthlyAwards = async () => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) return;
+
+  try {
+    const db = adminInstance.firestore();
+    const awardsRef = db.collection('settings').doc('awards');
+    const awardsDoc = await awardsRef.get();
+    const lastAwardedMonth = awardsDoc.exists ? awardsDoc.data().lastAwardedMonth : null;
+
+    const now = new Date();
+    
+    // Calculate what the previous month was
+    let prevYear = now.getUTCFullYear();
+    let prevMonth = now.getUTCMonth(); // 0-indexed (Jan=0, Feb=1)
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear -= 1;
+    }
+    const previousMonthId = `${prevYear}-${prevMonth.toString().padStart(2, '0')}`;
+
+    if (lastAwardedMonth !== previousMonthId) {
+      // Fetch all users to avoid missing composite index
+      const snapshot = await db.collection('users').get();
+      const usersList = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.monthlyXpId === previousMonthId && data.monthlyXp > 0) {
+          usersList.push({ id: doc.id, monthlyXp: data.monthlyXp });
+        }
+      });
+
+      if (usersList.length > 0) {
+        usersList.sort((a, b) => b.monthlyXp - a.monthlyXp);
+        const top3 = usersList.slice(0, 3);
+        
+        const batch = db.batch();
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        
+        for (const winner of top3) {
+          const userRef = db.collection('users').doc(winner.id);
+          batch.update(userRef, {
+            isPremium: true,
+            premiumPlan: 'MONTHLY_WINNER',
+            premiumExpiresAt: expiresAt
+          });
+        }
+        
+        batch.set(awardsRef, { lastAwardedMonth: previousMonthId }, { merge: true });
+        await batch.commit();
+        console.log(`[Awards] Granted premium to top ${top3.length} users for month ${previousMonthId}`);
+      } else {
+        // No users had XP last month, still mark it as awarded
+        await awardsRef.set({ lastAwardedMonth: previousMonthId }, { merge: true });
+        console.log(`[Awards] Marked month ${previousMonthId} as awarded (no eligible users).`);
+      }
+    }
+  } catch (err) {
+    console.error('[Awards] Failed to process monthly awards:', err);
+  }
+};
+setInterval(processMonthlyAwards, 1000 * 60 * 60 * 12); // run every 12 hours
+
 // --- Webhooks & Raw Routes (Must be before express.json) ---
 
 app.post('/livekit/webhook', express.raw({ type: 'application/webhook+json' }), async (req, res) => {
@@ -219,11 +283,8 @@ app.post('/api/rooms/:id/leave-beacon', express.text(), async (req, res) => {
 
 app.use(express.json({ limit: '10mb' }));
 
-const awardUserXP = async (userId, durationMs) => {
-  if (!userId || durationMs < 60000) return; // Minimum 1 minute to earn XP
-  
-  const xpEarned = Math.floor(durationMs / 60000) * 1; // 1 XP per minute
-  if (xpEarned <= 0) return;
+const awardUserXP = async (userId, xpEarned) => {
+  if (!userId || xpEarned <= 0) return;
 
   const adminInstance = initFirebaseAdmin();
   if (!adminInstance) {
@@ -279,7 +340,7 @@ const awardUserXP = async (userId, durationMs) => {
       });
     });
 
-    console.log(`Successfully awarded ${xpEarned} XP to user ${userId} for ${Math.floor(durationMs / 60000)} minutes of talking.`);
+    console.log(`Successfully awarded ${xpEarned} XP to user ${userId}.`);
   } catch (error) {
     console.error('Failed to award XP:', error);
   }
@@ -557,18 +618,27 @@ app.post('/api/rooms/:id/ping', verifyToken, (req, res) => {
   const userId = req.user.uid;
 
   const room = rooms.find(r => r.id === id);
-  if (!room) {
-    return res.status(404).json({ error: 'Room not found' });
-  }
+  if (!room) return res.status(404).json({ error: 'Room not found' });
 
   const participant = room.participants.find(p => p.id === userId);
-  if (participant) {
-    participant.lastPing = Date.now();
-    res.json({ success: true });
-  } else {
-    // Re-register if somehow cleared
-    res.status(400).json({ error: 'Participant not in room, please join again' });
+  if (!participant) return res.status(400).json({ error: 'Not in room' });
+
+  const now = Date.now();
+  const lastPing = participant.lastPing || now;
+  const secondsElapsed = (now - lastPing) / 1000;
+  participant.lastPing = now;
+
+  // Only award XP if ping interval is realistic (3-6 seconds)
+  // Prevents abuse from manual POST requests
+  if (secondsElapsed >= 3 && secondsElapsed <= 10) {
+    const isSpeaking = req.body.isSpeaking || false;
+    const xpToAward = isSpeaking ? 10 : 5; // per ~4s ping = same rate as client
+    
+    // Fire and forget
+    awardUserXP(userId, xpToAward);
   }
+
+  res.json({ success: true });
 });
 
 // API Endpoint: Leave Room
@@ -579,9 +649,11 @@ app.post('/api/rooms/:id/leave', verifyToken, (req, res) => {
   const room = rooms.find(r => r.id === id);
   if (room) {
     const participant = room.participants.find(p => p.id === userId);
-    if (participant && participant.joinedAt) {
-      const durationMs = Date.now() - participant.joinedAt;
-      awardUserXP(userId, durationMs); // Async, fire and forget
+    if (participant && participant.lastPing) {
+      const secondsSinceLastPing = (Date.now() - participant.lastPing) / 1000;
+      if (secondsSinceLastPing > 3) {
+        awardUserXP(userId, Math.floor(secondsSinceLastPing * (5 / 4)));
+      }
     }
     room.participants = room.participants.filter(p => p.id !== userId);
     saveDB();
@@ -695,9 +767,11 @@ app.post('/api/rooms/:id/kick', verifyToken, (req, res) => {
   }
 
   const targetParticipant = room.participants.find(p => p.id === targetUserId);
-  if (targetParticipant && targetParticipant.joinedAt) {
-    const durationMs = Date.now() - targetParticipant.joinedAt;
-    awardUserXP(targetUserId, durationMs); // Async, fire and forget
+  if (targetParticipant && targetParticipant.lastPing) {
+    const secondsSinceLastPing = (Date.now() - targetParticipant.lastPing) / 1000;
+    if (secondsSinceLastPing > 3) {
+      awardUserXP(targetUserId, Math.floor(secondsSinceLastPing * (5 / 4)));
+    }
   }
 
   room.participants = room.participants.filter(p => p.id !== targetUserId);
@@ -1018,8 +1092,8 @@ const broadcastOnlineStats = async () => {
   }
 
   io.emit('online-stats', {
-    online: io.engine.clientsCount || 1,
-    total: Math.max(totalUserCount, io.engine.clientsCount, 1)
+    online: authenticatedOnline.size,
+    total: totalUserCount
   });
 };
 
@@ -1031,6 +1105,14 @@ setInterval(async () => {
 io.on('connection', (socket) => {
   console.log(chalk.green(`✓ Socket connected: ${socket.id}`));
   broadcastOnlineStats();
+
+  socket.on('authenticate', (uid) => {
+    if (uid) {
+      authenticatedOnline.add(uid);
+      socket.data.uid = uid;
+      broadcastOnlineStats();
+    }
+  });
 
   socket.on('join-room', (payload) => {
     let roomId = payload;
@@ -1143,6 +1225,10 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
+    
+    if (socket.data.uid) {
+      authenticatedOnline.delete(socket.data.uid);
+    }
     
     const identity = socketToIdentity.get(socket.id);
     if (identity) {
