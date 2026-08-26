@@ -946,3 +946,11 @@ textarea:focus-visible {
   animation: flyToI 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: 0.5s;
 }
+
+.lobby-bg {
+  background-color: #0d1117;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(24,119,242,0.12) 0%, transparent 60%),
+    linear-gradient(180deg, #0d1117 0%, #0a0e18 100%);
+  min-height: 100vh;
+}

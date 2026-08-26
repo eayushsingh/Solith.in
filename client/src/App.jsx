@@ -2345,7 +2345,7 @@ export default function App() {
         </div>
 
         {/* Lobby View */}
-<div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
+<div className={view !== 'lobby' || activeRoom ? 'hidden' : "lobby-bg w-full pb-28 flex flex-col items-center min-h-screen"}>
         {/* Global Header */}
         <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 bg-bg-base/95 backdrop-blur-md sticky top-0 z-30 border-b border-border-color">
           
@@ -2569,12 +2569,12 @@ export default function App() {
               </button>
             </div>
           ) : (
-            <div className="w-full flex flex-col gap-8">
+            <div className="w-full flex flex-col gap-6">
               {/* Featured Room Card (Spans full width) */}
               <div className="w-full">
                 <RoomCard 
+                  key={filteredRooms[0].id}
                   room={filteredRooms[0]} 
-                  isFeatured={true}
                   inThisRoom={activeRoom?.id === filteredRooms[0].id} 
                   onJoin={joinVoiceRoom} 
                   userFollowing={user?.following || []}
@@ -2583,18 +2583,15 @@ export default function App() {
 
               {/* Remaining Room Cards Grid */}
               {filteredRooms.length > 1 && (
-                <div className={`grid gap-8 ${
-                  lobbyGridCols === 3 
-                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-                    : lobbyGridCols === 2 
-                      ? 'grid-cols-1 md:grid-cols-2' 
-                      : 'grid-cols-1'
-                }`}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: lobbyGridCols === 3 ? 'repeat(3,1fr)' : lobbyGridCols === 2 ? 'repeat(2,1fr)' : '1fr',
+                  gap: 16
+                }}>
                   {filteredRooms.slice(1).map(room => (
                     <RoomCard 
                       key={room.id} 
                       room={room} 
-                      isFeatured={false}
                       inThisRoom={activeRoom?.id === room.id} 
                       onJoin={joinVoiceRoom} 
                       userFollowing={user?.following || []}
