@@ -1,152 +1,109 @@
 import React from 'react';
-import { Heart, Phone, Users, Globe, Lock } from 'lucide-react';
-import PremiumBadge from './PremiumBadge';
+import { Heart, Globe, Lock } from 'lucide-react';
 
-export default function RoomCard({ room, onJoin, inThisRoom }) {
-  const isPremium = room.ownerIsPremium || false;
-  
-  // Free4Talk often has a 3-slot visual, or just a row of users
-  const maxDisplay = 3;
+export default function RoomCard({ room, onJoin, inThisRoom, isFeatured }) {
   const participants = room.participants || [];
+  const maxDisplay = isFeatured ? 4 : 3;
   const displayParticipants = participants.slice(0, maxDisplay);
-  const remaining = participants.length > maxDisplay ? participants.length - maxDisplay : 0;
-  
+  const hasOverflow = participants.length > maxDisplay;
+  const overflowCount = participants.length - maxDisplay;
+
+  // Level tag helper
+  const levelTag = room.tags && room.tags.length > 0 ? room.tags[0] : 'Any Level';
+
   return (
-    <div className={`relative w-full rounded-3xl overflow-hidden flex flex-col p-6 bg-gradient-to-br from-[#1a1d24] to-[#12141a] border border-white/5 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl group
-      ${isPremium ? 'border-amber-400/30 hover:border-amber-400/60 shadow-[0_8px_30px_rgba(251,191,36,0.1)]' : 'hover:border-[var(--accent-primary)]/40 shadow-[0_8px_30px_rgba(0,0,0,0.5)]'}
-    `}>
+    <div className="relative w-full rounded-2xl p-5 bg-[#1a1d24] border border-white/5 shadow-xl transition-all duration-300 hover:border-white/10 flex flex-col justify-between">
+      
+      {/* "You're here" badge */}
       {inThisRoom && (
-        <div className="absolute top-3 right-3 z-20 px-2 py-1 bg-green-500/20 border border-green-500/40 rounded-full text-[10px] font-bold text-green-400 flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+        <div className="absolute top-3 right-3 z-20 px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full text-[9px] font-bold text-emerald-400 flex items-center gap-1">
+          <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
           You're here
         </div>
       )}
-      {isPremium && (
-        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 pointer-events-none group-hover:via-amber-500/10 transition-colors duration-500"></div>
-      )}
-      
-      {/* Top Header Row */}
-      <div className="flex items-center justify-between w-full mb-4 relative z-10">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isPremium ? 'bg-amber-500/20 text-amber-400' : 'bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]'}`}>
-            <Globe className="w-4 h-4" />
+
+      <div>
+        {/* Top row: Circular blue icon, language name, level tag */}
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+            <Globe className="w-3.5 h-3.5" />
           </div>
-          <div className="flex flex-col">
-             <span className="text-text-primary font-bold text-sm tracking-wide leading-none">
-               {room.language || 'English'}
-             </span>
-             <span className="text-text-secondary text-[10px] font-medium uppercase tracking-wider mt-1">
-               {room.tags && room.tags.length > 0 ? room.tags[0] : 'Casual'}
-             </span>
+          <div className="flex items-baseline gap-1.5 truncate">
+            <span className="text-white font-bold text-sm tracking-wide">
+              {room.language || 'English'}
+            </span>
+            <span className="italic text-text-secondary text-[10px] font-normal">
+              {levelTag}
+            </span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 border border-white/5 text-text-primary text-xs font-bold backdrop-blur-sm" title={`${participants.length} participants`}>
-          <Users className="w-3 h-3 text-text-secondary" />
-          {participants.length} <span className="text-text-secondary font-normal mx-0.5">/</span> 25
+
+        {/* Second row: Topic/room name in small blue text below the language */}
+        <div className="text-[11px] font-semibold text-blue-400 pl-8 mb-4 break-words">
+          {room.name || 'Practicing Club'}
         </div>
-      </div>
 
-      {/* Topic Title */}
-      <div className="mb-6 line-clamp-2 min-h-[48px] relative z-10">
-        {isPremium && <PremiumBadge showText={false} className="mr-2 mb-1 inline-flex align-middle" />}
-        <h3 className={`inline text-lg font-extrabold tracking-tight ${isPremium ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500' : 'text-white'}`}>
-          {room.name || 'Practice English Here'}
-        </h3>
-        {room.topic && <p className="text-sm text-text-secondary mt-1 line-clamp-1">{room.topic}</p>}
-      </div>
-
-      {/* Avatars */}
-      <div className="flex items-center justify-center gap-4 mb-8 flex-1 relative z-10">
-        {[0, 1, 2].map((slotIdx) => {
-          const participant = displayParticipants[slotIdx];
-          
-          if (participant) {
-            const isPremiumUser = isPremium && room.roles && room.roles[participant.id] === 'owner';
-
-            return (
-              <div key={participant.id || slotIdx} className="flex flex-col items-center group/avatar relative">
-                {/* Premium Avatar Container */}
-                <div className={`relative mb-2 transition-transform duration-300 group-hover/avatar:scale-110 ${isPremiumUser ? 'w-20 h-20 sm:w-24 sm:h-24' : 'w-16 h-16 sm:w-20 sm:h-20'}`}>
-                  
-                  {/* Premium Animated Border and Decorations */}
-                  {isPremiumUser && (
-                    <>
-                      {/* Rotating Gradient Border */}
-                      <div className="absolute inset-[-4px] rounded-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 animate-[spin_3s_linear_infinite] z-0 blur-[2px]"></div>
-                      <div className="absolute inset-[-4px] rounded-full bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 animate-[spin_3s_linear_infinite] z-0"></div>
-                      
-                      {/* Premium Floating Elements (Simulating the 8-bit vibe) */}
-                      <div className="absolute -top-3 -left-3 z-30 animate-bounce">
-                        <div className="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] flex items-center gap-0.5 transform -rotate-12">
-                          ❤️ <span className="font-mono">x3</span>
-                        </div>
-                      </div>
-                      
-                      {/* Crown/Star */}
-                      <div className="absolute -bottom-2 -right-2 z-30 animate-pulse">
-                        <div className="bg-yellow-400 text-white text-[12px] p-1 rounded-full border-2 border-yellow-600 shadow-lg">
-                          ⭐
-                        </div>
-                      </div>
-                    </>
+        {/* Middle: Avatar circles (4 for featured, 3 for smaller) */}
+        <div className="flex items-center gap-3 mb-3 flex-wrap">
+          {[...Array(maxDisplay)].map((_, idx) => {
+            const p = displayParticipants[idx];
+            if (p) {
+              return (
+                <div 
+                  key={p.id || idx} 
+                  className="w-10 h-10 rounded-full overflow-hidden border border-white/15 flex-shrink-0 flex items-center justify-center text-white" 
+                  style={{ backgroundColor: p.color || '#ff4d4d' }}
+                  title={p.name}
+                >
+                  {p.photoUrl ? (
+                    <img src={p.photoUrl} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <span className="text-sm">{p.emoji || '👤'}</span>
                   )}
+                </div>
+              );
+            } else {
+              return (
+                <div 
+                  key={`empty-${idx}`} 
+                  className="w-10 h-10 rounded-full border border-dashed border-white/10 flex-shrink-0 flex items-center justify-center bg-white/[0.01] text-white/10 text-sm font-light select-none"
+                >
+                  +
+                </div>
+              );
+            }
+          })}
+        </div>
 
-                  {/* Actual Avatar Image */}
-                  <div className={`w-full h-full rounded-full overflow-hidden relative z-10 ${isPremiumUser ? 'border-[3px] border-[#1a1d24]' : 'border-[3px] border-[var(--accent-primary)]'}`}>
-                    {participant.photoUrl ? (
-                      <img src={participant.photoUrl} alt={participant.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-[#2a2d36] flex items-center justify-center text-2xl font-bold text-white">
-                        {participant.name ? participant.name.charAt(0).toUpperCase() : '?'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-text-secondary text-[10px] font-bold bg-black/40 px-2 py-0.5 rounded-full border border-white/5 relative z-20">
-                  <Heart className="w-2.5 h-2.5 fill-red-500 text-red-500" />
-                  <span>{participant.followersCount || 0}</span>
-                </div>
-                
-                {/* Tooltip */}
-                <div className="absolute -bottom-8 opacity-0 group-hover/avatar:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded-md whitespace-nowrap pointer-events-none z-30 shadow-lg">
-                  {participant.name}
-                </div>
-              </div>
-            );
-          } else {
-            // Empty placeholder slot
-            return (
-              <div key={`empty-${slotIdx}`} className="flex flex-col items-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[2px] border-dashed border-white/10 mb-2 relative group-hover:border-white/20 transition-colors duration-300 flex items-center justify-center bg-white/[0.02]">
-                   <span className="text-white/10 text-xl font-light">+</span>
-                </div>
-              </div>
-            );
-          }
-        })}
-      </div>
-
-      {/* Join Button */}
-      <div className="w-full mt-auto relative z-10">
-        {participants.length >= 25 ? (
-          <button disabled className="w-full py-3.5 rounded-xl bg-white/5 text-text-secondary text-sm font-bold flex items-center justify-center gap-2 cursor-not-allowed border border-white/5">
-            <Lock className="w-4 h-4" /> Room is Full
-          </button>
-        ) : (
-          <button 
-            onClick={() => onJoin(room)}
-            className={`w-full py-3.5 rounded-xl text-white text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 ${
-              isPremium 
-                ? 'bg-gradient-to-r from-amber-500 to-orange-600 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]' 
-                : 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] hover:shadow-[0_0_20px_var(--accent-primary-glow)]'
-            }`}
-          >
-            <Phone className="w-4 h-4" /> Join Room
-          </button>
+        {/* 5th dashed circle on a second row for overflow */}
+        {hasOverflow && (
+          <div className="flex justify-start mb-3">
+            <div 
+              className="w-7 h-7 rounded-full border border-dashed border-white/20 bg-white/5 flex items-center justify-center text-[9px] font-bold text-white/50"
+              title={`${overflowCount} more participants`}
+            >
+              +{overflowCount}
+            </div>
+          </div>
         )}
+
+        {/* Host's followers count below avatars */}
+        <div className="flex items-center gap-1 text-[11px] text-blue-400 font-bold mb-4">
+          <span className="text-xs">❤</span>
+          <span>{participants[0]?.followersCount || 18}</span>
+        </div>
       </div>
-      
+
+      {/* Bottom: Dashed-border Join Button */}
+      <div className="w-full mt-auto">
+        <button 
+          onClick={() => onJoin(room)}
+          className="w-full py-2.5 rounded-xl border border-dashed border-emerald-500 bg-transparent hover:bg-emerald-500/10 text-emerald-400 font-bold text-xs tracking-wider transition-all duration-200"
+        >
+          🔗 Join and talk now!
+        </button>
+      </div>
+
     </div>
   );
 }
