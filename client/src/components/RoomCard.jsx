@@ -7,8 +7,6 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
   const displaySlots = Array.from({ length: MAX_SLOTS }, (_, i) => participants[i] || null);
   const extraCount = participants.length > MAX_SLOTS ? participants.length - MAX_SLOTS : 0;
   const hostParticipant = participants[0];
-  const hasBg = !!hostParticipant?.photoUrl;
-
   const handleCardClick = () => {
     if (participants.length >= 25) return;
     if (anyRoomJoining) return;
@@ -20,9 +18,7 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
       onClick={handleCardClick}
       style={{
         background: '#13171f',
-        backgroundImage: participants.length === 0 ? 'linear-gradient(135deg, #0d1117 0%, #1a2035 100%)' : (hasBg ? `url(${hostParticipant.photoUrl})` : 'none'),
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        minHeight: 280,
         position: 'relative',
         overflow: 'hidden',
         border: isJoining ? '1px solid #1877f2' : '1px solid rgba(255,255,255,0.07)',
@@ -47,16 +43,6 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
         e.currentTarget.style.transform = 'none'; 
       }}
     >
-      {hasBg && (
-        <div style={{
-          position:'absolute', inset:0,
-          background:'rgba(0,0,0,0.55)',
-          backdropFilter:'blur(8px)',
-          zIndex:0
-        }}/>
-      )}
-
-      <div style={{position:'relative', zIndex:1, display: 'flex', flexDirection: 'column', gap: 16, height: '100%'}}>
       {/* You're here badge */}
       {inThisRoom && (
         <div style={{
@@ -164,7 +150,6 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
           : '🔗 Join and talk now!'
         }
       </button>
-      </div>
     </div>
   );
 }
