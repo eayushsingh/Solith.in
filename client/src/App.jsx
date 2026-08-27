@@ -846,7 +846,8 @@ export default function App() {
           topic: newRoomTopic,
           tags: tagsArray,
           accessType: newRoomAccessType,
-          isOpenMic: newRoomIsOpenMic
+          isOpenMic: newRoomIsOpenMic,
+          ownerIsPremium: !!user?.isPremium
         }),
         signal: controller.signal
       });
