@@ -103,6 +103,16 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
         </div>
       </div>
 
+      {/* Countdown for empty rooms */}
+      {participants.length === 0 && room.emptySince && (
+        <div style={{
+          fontSize: 11, color: 'rgba(255,165,0,0.7)',
+          marginBottom: 8, fontWeight: 600
+        }}>
+          ⏱ Room closes in {Math.max(0, 30 - Math.round((Date.now() - room.emptySince) / 60000))} min
+        </div>
+      )}
+
       {/* Avatar row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, minHeight: 64 }}>
         {displaySlots.map((participant, idx) =>

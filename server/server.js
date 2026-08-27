@@ -61,31 +61,38 @@ let rooms = [];
 const socketToIdentity = new Map();
 const authenticatedOnline = new Set();
 
+const ROOM_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes
+
 const purgeEmptyRooms = () => {
-  const before = rooms.length;
   const now = Date.now();
+  const before = rooms.length;
 
   rooms = rooms.filter(room => {
     if (room.participants && room.participants.length > 0) {
-      room.emptySince = null; // Room has people, reset timer
+      // Room has people — keep it, reset emptySince
+      room.emptySince = null;
       return true;
     }
     // Room is empty
     if (!room.emptySince) {
-      room.emptySince = now; // Mark as empty now
-      return true; // Keep it for now
+      // First time we notice it's empty — start the timer
+      room.emptySince = now;
+      return true; // keep for now
     }
-    // Dissolve after 30 minutes of being empty (30 * 60 * 1000 = 1800000 ms)
-    if (now - room.emptySince > 1800000) {
-      return false;
+    // Check if grace period has passed
+    const emptyDuration = now - room.emptySince;
+    if (emptyDuration < ROOM_GRACE_PERIOD_MS) {
+      return true; // still within grace period, keep it
     }
-    return true;
+    // Grace period expired — delete
+    console.log(`[purge] Room ${room.id} empty for ${Math.round(emptyDuration/60000)} mins — deleting`);
+    return false;
   });
 
   const after = rooms.length;
   if (before !== after) {
-    console.log(`[purge] Removed ${before - after} empty room(s) after 30 mins inactivity. ${after} room(s) remain.`);
-    saveDB(); // only emit if something actually changed
+    console.log(`[purge] Removed ${before - after} room(s). ${after} remain.`);
+    saveDB();
   }
 };
 
