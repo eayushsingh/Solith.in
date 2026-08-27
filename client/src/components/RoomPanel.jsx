@@ -507,55 +507,78 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                     </div>
                   )}
 
-                  {/* Bubble Content */}
-                  <div className={`relative flex flex-col max-w-[80%] rounded-2xl px-3 py-2 text-xs transition-all duration-300 ${
-                    msg.senderId === user?.id 
-                      ? 'bg-[var(--accent-primary-bg)] text-[var(--accent-primary)] rounded-br-sm' 
-                      : 'bg-white/5 text-white rounded-bl-sm border border-white/5'
-                  }`}>
-                    {/* Reply Quoted block */}
-                    {msg.replyTo && (
-                      <div 
-                        onClick={() => scrollToMessage(msg.replyTo.id)}
-                        className="bg-black/25 border-l-4 border-[var(--accent-primary)] px-2 py-1 rounded text-[10px] mb-1.5 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                  {/* Bubble Content Wrapper */}
+                  <div className={`flex flex-col ${msg.senderId === user?.id ? 'items-end' : 'items-start'}`} style={{ maxWidth: '80%' }}>
+                    <div className={`relative flex flex-col rounded-2xl px-3 py-2 text-xs transition-all duration-300 ${
+                      msg.senderId === user?.id 
+                        ? 'bg-[var(--accent-primary-bg)] text-[var(--accent-primary)] rounded-br-sm' 
+                        : 'bg-white/5 text-white rounded-bl-sm border border-white/5'
+                    }`}>
+                      {/* Reply Quoted block */}
+                      {msg.replyTo && (
+                        <div 
+                          onClick={() => scrollToMessage(msg.replyTo.id)}
+                          className="bg-black/25 border-l-4 border-[var(--accent-primary)] px-2 py-1 rounded text-[10px] mb-1.5 cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                        >
+                          <span className="font-bold block opacity-60 text-[8px]">{msg.replyTo.senderName}</span>
+                          <span className="truncate block max-w-full">
+                            {msg.replyTo.text || (msg.replyTo.fileUrl ? '📷 Photo' : '')}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Image Attachment inside Bubble */}
+                      {msg.fileUrl && (
+                        <div className="mb-1 overflow-hidden rounded-xl border border-white/10">
+                          <img 
+                            src={msg.fileUrl} 
+                            className="max-h-[160px] w-full object-cover cursor-zoom-in hover:scale-102 transition-transform duration-300"
+                            onClick={() => setLightboxImage(msg.fileUrl)}
+                            alt="Attachment" 
+                          />
+                        </div>
+                      )}
+
+                      {/* Sender Name for other users */}
+                      {msg.senderId !== user?.id && (
+                        <span className="font-bold block text-[9px] opacity-40 mb-0.5">{msg.senderName}</span>
+                      )}
+
+                      {/* Message text */}
+                      {msg.text && <span className="break-words leading-relaxed">{msg.text}</span>}
+
+                      {/* Hover Reply trigger */}
+                      <button 
+                        type="button"
+                        onClick={() => setReplyingTo(msg)}
+                        className="absolute top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/60 backdrop-blur-md text-white/60 hover:text-white hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10 scale-90"
+                        style={msg.senderId === user?.id ? { left: '-38px' } : { right: '-38px' }}
+                        title="Reply"
                       >
-                        <span className="font-bold block opacity-60 text-[8px]">{msg.replyTo.senderName}</span>
-                        <span className="truncate block max-w-full">
-                          {msg.replyTo.text || (msg.replyTo.fileUrl ? '📷 Photo' : '')}
-                        </span>
+                        <CornerUpLeft className="w-3 h-3" />
+                      </button>
+                    </div>
+                    
+                    {/* Reaction Row */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-3 mt-1" style={{fontSize: 12}}>
+                      <div style={{display:'flex', gap:4}}>
+                        {['❤️','😂','😮','😢','😡','👍'].map(emoji => (
+                          <button key={emoji} style={{
+                            background:'none', border:'none', cursor:'pointer',
+                            fontSize:14, padding:'2px 4px', borderRadius:6,
+                            transition:'background 0.1s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'}
+                          onMouseLeave={e => e.currentTarget.style.background='none'}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
                       </div>
-                    )}
-
-                    {/* Image Attachment inside Bubble */}
-                    {msg.fileUrl && (
-                      <div className="mb-1 overflow-hidden rounded-xl border border-white/10">
-                        <img 
-                          src={msg.fileUrl} 
-                          className="max-h-[160px] w-full object-cover cursor-zoom-in hover:scale-102 transition-transform duration-300"
-                          onClick={() => setLightboxImage(msg.fileUrl)}
-                          alt="Attachment" 
-                        />
-                      </div>
-                    )}
-
-                    {/* Sender Name for other users */}
-                    {msg.senderId !== user?.id && (
-                      <span className="font-bold block text-[9px] opacity-40 mb-0.5">{msg.senderName}</span>
-                    )}
-
-                    {/* Message text */}
-                    {msg.text && <span className="break-words leading-relaxed">{msg.text}</span>}
-
-                    {/* Hover Reply trigger */}
-                    <button 
-                      type="button"
-                      onClick={() => setReplyingTo(msg)}
-                      className="absolute top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-black/60 backdrop-blur-md text-white/60 hover:text-white hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10 scale-90"
-                      style={msg.senderId === user?.id ? { left: '-38px' } : { right: '-38px' }}
-                      title="Reply"
-                    >
-                      <CornerUpLeft className="w-3 h-3" />
-                    </button>
+                      <button style={{color:'#60a5fa',fontSize:11,fontWeight:600,background:'none',border:'none',cursor:'pointer'}}>PM</button>
+                      <button style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>React</button>
+                      <button style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>Reply</button>
+                    </div>
                   </div>
                 </div>
               ))}
