@@ -12,6 +12,7 @@ import Sidebar from './components/Sidebar';
 import CommunityFeed from './components/CommunityFeed';
 import PremiumSubscription from './components/PremiumSubscription';
 import RoomPanel from './components/RoomPanel';
+import SocialUserRow from './components/SocialUserRow';
 
 import StaticModals from './components/StaticModals';
 import { 
@@ -148,6 +149,8 @@ export default function App() {
   const [followListState, setFollowListState] = useState({ isOpen: false, type: 'followers', ids: [], title: '' });
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDevModal, setShowDevModal] = useState(false);
+  const [showSocialPanel, setShowSocialPanel] = useState(false);
+  const [socialTab, setSocialTab] = useState('All');
   
   // Create Room fields
   const [newRoomName, setNewRoomName] = useState('');
@@ -2149,6 +2152,90 @@ export default function App() {
         activeModal={activeModal} 
         closeModal={() => setActiveModal(null)} 
       />
+
+      {showSocialPanel && (
+        <div style={{
+          position: 'fixed', right: 16, bottom: 80, width: 320,
+          background: '#111827', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 16, zIndex: 100, overflow: 'hidden',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Users size={16} color="#1877f2" />
+              <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>Social</span>
+            </div>
+            <button onClick={() => setShowSocialPanel(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
+              <X size={16} />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{
+            display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)',
+            padding: '0 16px'
+          }}>
+            {['All', 'Following'].map(tab => (
+              <button key={tab}
+                onClick={() => setSocialTab(tab)}
+                style={{
+                  padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer',
+                  color: socialTab === tab ? '#1877f2' : 'rgba(255,255,255,0.4)',
+                  fontWeight: socialTab === tab ? 700 : 500, fontSize: 13,
+                  borderBottom: socialTab === tab ? '2px solid #1877f2' : '2px solid transparent',
+                  marginBottom: -1
+                }}>
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <input
+              placeholder="Search by Name"
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8,
+                padding: '8px 12px', color: 'white', fontSize: 13, outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {/* User list */}
+          <div style={{ maxHeight: 360, overflowY: 'auto', padding: '8px 0' }}>
+            {(socialTab === 'Following' ? (user?.following || []) : []).length === 0 && (
+              <div style={{ padding: '20px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+                {socialTab === 'Following' ? 'You are not following anyone yet.' : 'No users to show.'}
+              </div>
+            )}
+            {/* Map following users */}
+            {(user?.following || []).slice(0, 20).map(followedId => (
+              <SocialUserRow
+                key={followedId}
+                userId={followedId}
+                currentUser={user}
+                openUserProfile={(id) => {
+                  setShowSocialPanel(false);
+                  openUserProfile(id);
+                }}
+                onDM={(id, profile) => {
+                  setActiveDm({ id, profile });
+                  setMsgTab('direct');
+                  setView('messages');
+                  setShowSocialPanel(false);
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -2553,6 +2640,19 @@ export default function App() {
                 title="Leaderboard"
               >
                 <Trophy className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+              <button
+                onClick={() => setShowSocialPanel(!showSocialPanel)}
+                style={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: showSocialPanel ? '#1877f2' : 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}
+                title="Social"
+              >
+                <Users size={18} color="white" />
               </button>
               
               <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
