@@ -1316,7 +1316,11 @@ export default function App() {
     onlineStats
   };
 
-    const renderAppLayout = (children) => (
+  const usersInRooms = rooms.flatMap(r => 
+    (r.participants || []).map(p => ({ ...p, roomName: r.name, roomId: r.id }))
+  );
+
+  const renderAppLayout = (children) => (
     <div className="layout-container lobby-bg relative min-h-[100dvh] overflow-x-hidden">
 
       {!activeRoom && <Sidebar {...layoutProps} />}
@@ -2184,7 +2188,7 @@ export default function App() {
             display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)',
             padding: '0 16px'
           }}>
-            {['All', 'Following'].map(tab => (
+            {['All', 'Following', 'In Room'].map(tab => (
               <button key={tab}
                 onClick={() => setSocialTab(tab)}
                 style={{
@@ -2214,13 +2218,42 @@ export default function App() {
 
           {/* User list */}
           <div style={{ maxHeight: 360, overflowY: 'auto', padding: '8px 0' }}>
-            {(socialTab === 'Following' ? (user?.following || []) : []).length === 0 && (
+            {socialTab === 'In Room' && usersInRooms.length === 0 && (
+              <div style={{ padding: '20px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+                No users currently in rooms.
+              </div>
+            )}
+            {socialTab === 'In Room' && usersInRooms.map(p => (
+              <div key={p.id} style={{
+                display:'flex', alignItems:'center', justifyContent:'space-between',
+                padding:'10px 16px'
+              }}>
+                <div style={{display:'flex', alignItems:'center', gap:10}}>
+                  <img src={p.photoUrl || `https://api.dicebear.com/7.x/lorelei/svg?seed=${p.id}`}
+                    style={{width:36,height:36,borderRadius:'50%',objectFit:'cover'}} alt="" />
+                  <div>
+                    <div style={{color:'white',fontSize:13,fontWeight:600}}>{p.name}</div>
+                    <div style={{color:'rgba(255,255,255,0.3)',fontSize:11}}>in {p.roomName}</div>
+                  </div>
+                </div>
+                <button onClick={() => {
+                  const room = rooms.find(r => r.id === p.roomId);
+                  if (room) { joinVoiceRoom(room); setShowSocialPanel(false); }
+                }} style={{
+                  background:'rgba(24,119,242,0.15)',border:'1px solid rgba(24,119,242,0.3)',
+                  borderRadius:8,padding:'5px 10px',color:'#60a5fa',
+                  fontSize:11,fontWeight:700,cursor:'pointer'
+                }}>Join</button>
+              </div>
+            ))}
+            
+            {socialTab !== 'In Room' && (socialTab === 'Following' ? (user?.following || []) : []).length === 0 && (
               <div style={{ padding: '20px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
                 {socialTab === 'Following' ? 'You are not following anyone yet.' : 'No users to show.'}
               </div>
             )}
             {/* Map following users */}
-            {(user?.following || []).slice(0, 20).map(followedId => (
+            {socialTab !== 'In Room' && (user?.following || []).slice(0, 20).map(followedId => (
               <SocialUserRow
                 key={followedId}
                 userId={followedId}
