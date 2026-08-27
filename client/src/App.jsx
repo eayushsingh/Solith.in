@@ -2236,6 +2236,27 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Floating Social button — bottom right, always visible in lobby */}
+      {!activeRoom && (
+        <button
+          onClick={() => setShowSocialPanel(!showSocialPanel)}
+          style={{
+            position: 'fixed', bottom: 24, right: 24, zIndex: 90,
+            width: 52, height: 52, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #1877f2, #6c47ff)',
+            border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 8px 25px rgba(24,119,242,0.4)',
+            transition: 'transform 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+          title="Social"
+        >
+          <Users size={22} color="white" />
+        </button>
+      )}
     </div>
   );
 
