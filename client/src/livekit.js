@@ -243,25 +243,19 @@ export const LiveKitService = {
     return true;
   },
 
-  setLocalScreenShare: async (enabled, isReal) => {
-    if (!isReal) {
-      console.log(`LiveKitService: Set mock screen share to ${enabled}`);
-      LiveKitService.isScreenSharingMock = enabled;
-      LiveKitService.triggerMockParticipantsList();
-      return enabled;
-    }
-
-    if (roomObject) {
-      try {
-        await roomObject.localParticipant.setScreenShareEnabled(enabled);
-        updateParticipantsList();
-        return enabled;
-      } catch (err) {
-        console.error('Failed to set screen share state:', err);
-        throw err;
+  setLocalScreenShare: async (enable, isRealCall) => {
+    if (!isRealCall) return false;
+    try {
+      if (enable) {
+        await roomObject.localParticipant.setScreenShareEnabled(true);
+      } else {
+        await roomObject.localParticipant.setScreenShareEnabled(false);
       }
+      return enable;
+    } catch (err) {
+      console.error('Screen share error:', err);
+      return false;
     }
-    return false;
   }
 };
 
