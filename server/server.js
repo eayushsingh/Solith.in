@@ -63,10 +63,28 @@ const authenticatedOnline = new Set();
 
 const purgeEmptyRooms = () => {
   const before = rooms.length;
-  rooms = rooms.filter(room => room.participants && room.participants.length > 0);
+  const now = Date.now();
+
+  rooms = rooms.filter(room => {
+    if (room.participants && room.participants.length > 0) {
+      room.emptySince = null; // Room has people, reset timer
+      return true;
+    }
+    // Room is empty
+    if (!room.emptySince) {
+      room.emptySince = now; // Mark as empty now
+      return true; // Keep it for now
+    }
+    // Dissolve after 30 minutes of being empty (30 * 60 * 1000 = 1800000 ms)
+    if (now - room.emptySince > 1800000) {
+      return false;
+    }
+    return true;
+  });
+
   const after = rooms.length;
   if (before !== after) {
-    console.log(`[purge] Removed ${before - after} empty room(s). ${after} room(s) remain.`);
+    console.log(`[purge] Removed ${before - after} empty room(s) after 30 mins inactivity. ${after} room(s) remain.`);
     saveDB(); // only emit if something actually changed
   }
 };
@@ -487,20 +505,8 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     return res.status(500).json({ error: 'LiveKit configuration is missing. Cannot create real rooms.' });
   }
 
-  let ownerIsPremium = false;
-  const adminInstance = initFirebaseAdmin();
-  if (adminInstance && req.user) {
-    try {
-      const db = adminInstance.firestore();
-      const userDoc = await db.collection('users').doc(req.user.uid).get();
-      if (userDoc.exists) {
-        const data = userDoc.data();
-        ownerIsPremium = !!data.isPremium && (!data.premiumExpiresAt || data.premiumExpiresAt.toDate().getTime() > Date.now());
-      }
-    } catch (e) {
-      console.error('Failed to fetch user premium status:', e);
-    }
-  }
+  const ownerIsPremium = !!req.body.ownerIsPremium;
+
 
   const newRoom = {
     id: roomId,
