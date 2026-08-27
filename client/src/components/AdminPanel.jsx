@@ -1,3 +1,4 @@
+import { auth } from '../firebase';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ShieldAlert, Check, X, AlertCircle, Users, LayoutDashboard, Flag, Activity, Trash2, Shield, Search, Award, Settings } from 'lucide-react';
 
@@ -34,12 +35,12 @@ export default function AdminPanel({ onBack, user }) {
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', action: null });
 
   const fetchWithToken = async (endpoint, options = {}) => {
-    if (!user || !user.token) return null;
+    if (!user || !(await getFreshToken())) return null;
     const res = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers: {
         ...options.headers,
-        'Authorization': `Bearer ${user.token}`,
+        'Authorization': `Bearer ${(await getFreshToken())}`,
         'Content-Type': 'application/json'
       }
     });
@@ -85,6 +86,11 @@ export default function AdminPanel({ onBack, user }) {
   }, [activeTab]);
 
   const requestConfirm = (title, message, action) => {
+  const getFreshToken = async () => {
+    if (!auth?.currentUser) return user?.token || '';
+    return await auth.currentUser.getIdToken(false);
+  };
+
     setConfirmDialog({ isOpen: true, title, message, action });
   };
 
