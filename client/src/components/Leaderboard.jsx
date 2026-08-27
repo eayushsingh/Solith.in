@@ -225,7 +225,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                       <div className="font-black text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-br from-white to-white/60 drop-shadow-sm leading-none mb-1">
                         {activeTab === 'daily' ? leader.dailyXpVal : (activeTab === 'weekly' ? leader.weeklyXpVal : (activeTab === 'monthly' ? leader.monthlyXpVal : leader.allTimeXpVal))}
                       </div>
-                      <div className="text-[11px] text-[var(--accent-primary)] font-extrabold uppercase tracking-[0.2em]">{activeTab === 'daily' ? 'MINS' : 'XP'}</div>
+                      <div className="text-[11px] text-[var(--accent-primary)] font-extrabold uppercase tracking-[0.2em]">XP</div>
                     </div>
                   </div>
                 ))

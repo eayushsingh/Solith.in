@@ -1,3 +1,4 @@
+import { auth } from '../firebase';
 import React, { useState, useEffect } from 'react';
 import { Crown, ShieldCheck, Check, ArrowLeft, Star, Zap, Image as ImageIcon, Search } from 'lucide-react';
 import { Meteors } from './Meteors';
@@ -34,10 +35,10 @@ export default function PremiumSubscription({ onBack, user }) {
   };
 
   const fetchPaymentStatus = async () => {
-    if (!user || !user.token) return;
+    if (!user || !(await getFreshToken())) return;
     try {
       const res = await fetch(`${API_URL}/api/payments/status`, {
-        headers: { 'Authorization': `Bearer ${user.token}` }
+        headers: { 'Authorization': `Bearer ${(await getFreshToken())}` }
       });
       const data = await res.json();
       if (data.hasRequest) {
@@ -70,7 +71,7 @@ export default function PremiumSubscription({ onBack, user }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${(await getFreshToken())}`
         },
         body: JSON.stringify({ utr: utr.trim(), plan: selectedPlan })
       });

@@ -40,7 +40,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const EMOJIS = ['😊', '🦊', '🐼', '🦁', '🚀', '🎮', '🎧', '☕', '🎨', '🍕', '🌍', '🐱', '🥑', '👾', '🦄', '🧙‍♂️'];
 const AVATAR_COLORS = ['#ff4d4d', '#ff944d', '#ffd11a', '#4da6ff', '#a64dff', '#ff4da6', '#33cc33', '#33cccc', '#f43f5e', '#8b5cf6'];
-const LANGUAGES = ['All Languages', 'English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean', 'Hindi', 'Telugu', 'Marathi', 'Arabic', 'Bengali', 'Indonesian', 'Vietnamese', 'Urdu', 'Tamil', 'Uzbek', 'Turkish'];
+const LANGUAGES = [
+  'All Languages', 'English', 'Spanish', 'French', 'German', 'Japanese',
+  'Chinese', 'Portuguese', 'Korean', 'Hindi', 'Arabic',
+  'Bengali', 'Indonesian', 'Vietnamese', 'Urdu', 'Tamil',
+  'Telugu', 'Marathi', 'Uzbek', 'Turkish'
+];
 // A smart lazy loader that refreshes the page if a chunk fails to load (e.g. after a new deployment)
 const lazyWithRetry = (componentImport) =>
   lazy(async () => {
@@ -569,7 +574,7 @@ export default function App() {
       const res = await fetch(`${API_URL}/api/users/${targetProfile.id}/toggle-follow`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${await getFreshToken()}`
         }
       });
       if (!res.ok) throw new Error('Failed to toggle follow on server');
@@ -1034,7 +1039,7 @@ export default function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || user.token}`
+          'Authorization': `Bearer ${await getFreshToken()}`
         },
         body: JSON.stringify({ userId: user.id })
       });
@@ -1190,7 +1195,7 @@ export default function App() {
     try {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/promote`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${await getFreshToken()}` },
         body: JSON.stringify({ targetUserId: targetId, role })
       });
     } catch (e) { console.error('Promote failed', e); }
@@ -1200,7 +1205,7 @@ export default function App() {
     try {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/kick`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${await getFreshToken()}` },
         body: JSON.stringify({ targetUserId: targetId })
       });
     } catch (e) { console.error('Kick failed', e); }
@@ -1210,7 +1215,7 @@ export default function App() {
     try {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/mute`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${await getFreshToken()}` },
         body: JSON.stringify({ targetUserId: targetId })
       });
     } catch (e) { console.error('Mute failed', e); }
@@ -1220,7 +1225,7 @@ export default function App() {
     try {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${user.token}` }
+        headers: { 'Authorization': `Bearer ${await getFreshToken()}` }
       });
     } catch (e) { console.error('End room failed', e); }
   };
@@ -1414,7 +1419,7 @@ export default function App() {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${user.token}`
+                              'Authorization': `Bearer ${await getFreshToken()}`
                             },
                             body: JSON.stringify({ targetUserId: activeActionUser.id })
                           });
@@ -1435,7 +1440,7 @@ export default function App() {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${user.token}`
+                              'Authorization': `Bearer ${await getFreshToken()}`
                             },
                             body: JSON.stringify({ targetUserId: activeActionUser.id })
                           });
@@ -1461,7 +1466,7 @@ export default function App() {
                                 method: 'POST',
                                 headers: {
                                   'Content-Type': 'application/json',
-                                  'Authorization': `Bearer ${user.token}`
+                                  'Authorization': `Bearer ${await getFreshToken()}`
                                 },
                                 body: JSON.stringify({ targetUserId: activeActionUser.id, role: newRole })
                               });
@@ -1482,7 +1487,7 @@ export default function App() {
                                 method: 'POST',
                                 headers: {
                                   'Content-Type': 'application/json',
-                                  'Authorization': `Bearer ${user.token}`
+                                  'Authorization': `Bearer ${await getFreshToken()}`
                                 },
                                 body: JSON.stringify({ targetUserId: activeActionUser.id })
                               });
@@ -1506,7 +1511,7 @@ export default function App() {
                               method: 'POST',
                               headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${user.token}`
+                                'Authorization': `Bearer ${await getFreshToken()}`
                               },
                               body: JSON.stringify({ targetUserId: activeActionUser.id })
                             });
