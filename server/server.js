@@ -461,7 +461,7 @@ app.get('/api/rooms', async (req, res) => {
   res.json(publicAndFriendsRooms);
 });
 
-const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean'];
+const SUPPORTED_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean', 'Hindi', 'Telugu', 'Marathi', 'Arabic', 'Bengali', 'Indonesian', 'Vietnamese', 'Urdu', 'Tamil', 'Uzbek', 'Turkish'];
 
 function isJunkText(str) {
   if (!str) return true;
