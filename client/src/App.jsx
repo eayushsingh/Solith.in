@@ -179,6 +179,35 @@ export default function App() {
   const [onlineStats, setOnlineStats] = useState({ online: 1, total: 1 });
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
+  const [joinEvents, setJoinEvents] = useState([]);
+  const prevParticipantsRef = useRef([]);
+
+  useEffect(() => {
+    const prev = prevParticipantsRef.current;
+    const now = participants;
+    const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+    now.forEach(p => {
+      if (!prev.find(pp => pp.id === p.id) && !p.isLocal) {
+        setJoinEvents(e => [...e.slice(-19), {
+          text: `[${time}] ${p.name} joined.`,
+          initials: p.name?.slice(0,2).toUpperCase() || '??',
+          color: p.color || '#333'
+        }]);
+      }
+    });
+    prev.forEach(p => {
+      if (!now.find(pp => pp.id === p.id) && !p.isLocal) {
+        setJoinEvents(e => [...e.slice(-19), {
+          text: `[${time}] ${p.name} left.`,
+          initials: p.name?.slice(0,2).toUpperCase() || '??',
+          color: p.color || '#333'
+        }]);
+      }
+    });
+
+    prevParticipantsRef.current = now;
+  }, [participants]);
   const [chatInput, setChatInput] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [isRealCall, setIsRealCall] = useState(false);
@@ -2883,6 +2912,7 @@ export default function App() {
             setChatInput={setChatInput}
             chatEndRef={chatEndRef}
             participants={participants}
+            joinEvents={joinEvents}
             activeRoom={activeRoom}
             user={user}
             setUser={setUser}

@@ -17,6 +17,7 @@ export default function RoomPanel({
   setChatInput,
   chatEndRef,
   participants,
+  joinEvents,
   activeRoom,
   user,
   setUser,
@@ -452,6 +453,36 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
         {/* 1. CHAT TAB */}
         {activeTab === 'chat' && (
           <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Room Info */}
+            <div style={{
+              background:'#111827', padding:'10px 16px',
+              borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0
+            }}>
+              <div style={{color:'rgba(255,255,255,0.9)',fontSize:12,fontWeight:700,marginBottom:4}}>Room Info</div>
+              <div style={{color:'rgba(255,255,255,0.4)',fontSize:11}}>Language: {activeRoom?.language}</div>
+              {activeRoom?.topic && <div style={{color:'rgba(255,255,255,0.4)',fontSize:11,marginTop:2}}>Topic: {activeRoom.topic}</div>}
+            </div>
+
+            {/* Join/Leave Feed */}
+            {joinEvents && joinEvents.length > 0 && (
+              <div style={{borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0}}>
+                {joinEvents.map((ev, i) => (
+                  <div key={i} style={{
+                    display:'flex', alignItems:'center', justifyContent:'space-between',
+                    padding:'6px 16px', fontSize:11, color:'rgba(255,255,255,0.3)'
+                  }}>
+                    <span>{ev.text}</span>
+                    <div style={{
+                      width:20, height:20, borderRadius:'50%',
+                      background: ev.color || '#333',
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      fontSize:8, fontWeight:700, color:'white', flexShrink:0
+                    }}>{ev.initials}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Messages Scroll View */}
             <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3" id="chat-container">
               {chatMessages.length === 0 && (
@@ -564,13 +595,18 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
               </button>
 
               {/* Chat Input Text */}
-              <input 
-                type="text" 
-                placeholder="Send message..." 
-                value={chatInput} 
-                onChange={e => setChatInput(e.target.value)}
-                className="flex-1 bg-white/5 text-white rounded-full border border-white/5 px-4 py-2.5 text-xs outline-none focus:border-[var(--accent-primary)] focus:bg-white/10 transition-all placeholder:text-white/20"
-              />
+              <div className="flex-1 flex flex-col">
+                <input 
+                  type="text" 
+                  placeholder="Type a message..." 
+                  value={chatInput} 
+                  onChange={e => setChatInput(e.target.value)}
+                  className="w-full bg-white/5 text-white rounded-full border border-white/5 px-4 py-2.5 text-xs outline-none focus:border-[var(--accent-primary)] focus:bg-white/10 transition-all placeholder:text-white/20"
+                />
+                <div style={{color:'rgba(255,255,255,0.2)', fontSize:10, marginTop:2, marginLeft:12}}>
+                  Type @ to mention someone.
+                </div>
+              </div>
 
               {/* Submit Button */}
               <button 
