@@ -582,12 +582,17 @@ textarea:focus-visible {
 .filter-pill {
   border: 1.5px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 8px 20px;
+  padding: 0 20px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 100px;
   transition: all 0.2s ease;
   background: var(--bg-base);
   cursor: pointer;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .filter-pill.active {
