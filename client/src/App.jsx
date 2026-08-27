@@ -2808,7 +2808,7 @@ export default function App() {
 
             // Default view: Circular participant avatars anchored at the bottom center
             return (
-              <div className="flex-1 w-full h-full relative bg-[#0b0d11] flex flex-col items-center justify-end overflow-hidden" style={{ paddingBottom: 140 }}>
+              <div className="flex-1 w-full h-full relative flex flex-col items-center justify-end overflow-hidden" style={{ paddingBottom: 140 }}>
                 {/* Circular participant avatars */}
                 <div style={{
                   position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
