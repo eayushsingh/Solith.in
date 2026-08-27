@@ -69,7 +69,7 @@ test('Guidelines page loads', async ({ page }) => {
 test('Messages page loads', async ({ page }) => {
   await page.goto(`${BASE_URL}/#messages`);
   await page.waitForLoadState('domcontentloaded');
-  await expect(page.locator('text=Global Chat')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('text=Global Chat').first()).toBeVisible({ timeout: 15000 });
 });
 
 // ─── ROOM CARD TESTS ─────────────────────────────────────────────────────────

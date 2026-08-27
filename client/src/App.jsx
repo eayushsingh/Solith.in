@@ -876,9 +876,8 @@ export default function App() {
       setNewRoomTags('Casual');
       setIsCreatingRoom(false);
       
-      // Join newly created room in current tab and update URL for easy sharing
-      window.history.pushState({}, '', `/?room=${newRoom.id}`);
-      await joinVoiceRoom(newRoom);
+      // Open in a new tab
+      window.open(`/?room=${newRoom.id}`, '_blank');
     } catch (err) {
       console.error('Error creating room:', err);
       alert(err.message || 'Failed to create new practice room.');
@@ -2789,7 +2788,7 @@ export default function App() {
                   key={room.id} 
                   room={room} 
                   inThisRoom={activeRoom?.id === room.id} 
-                  onJoin={joinVoiceRoom} 
+                  onJoin={(room) => window.open(`/?room=${room.id}`, '_blank')} 
                   userFollowing={user?.following || []}
                   isJoining={joiningRoomId === room.id}
                   anyRoomJoining={!!joiningRoomId}
