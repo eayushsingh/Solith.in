@@ -2610,40 +2610,22 @@ export default function App() {
               </button>
             </div>
           ) : (
-            <div className="w-full flex flex-col gap-6">
-              {/* Featured Room Card (Spans full width) */}
-              <div className="w-full">
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: lobbyGridCols === 3 ? 'repeat(3,1fr)' : lobbyGridCols === 2 ? 'repeat(2,1fr)' : '1fr',
+              gap: 16
+            }}>
+              {filteredRooms.map(room => (
                 <RoomCard 
-                  key={filteredRooms[0].id}
-                  room={filteredRooms[0]} 
-                  inThisRoom={activeRoom?.id === filteredRooms[0].id} 
+                  key={room.id} 
+                  room={room} 
+                  inThisRoom={activeRoom?.id === room.id} 
                   onJoin={joinVoiceRoom} 
                   userFollowing={user?.following || []}
-                  isJoining={joiningRoomId === filteredRooms[0].id}
+                  isJoining={joiningRoomId === room.id}
                   anyRoomJoining={!!joiningRoomId}
                 />
-              </div>
-
-              {/* Remaining Room Cards Grid */}
-              {filteredRooms.length > 1 && (
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: lobbyGridCols === 3 ? 'repeat(3,1fr)' : lobbyGridCols === 2 ? 'repeat(2,1fr)' : '1fr',
-                  gap: 16
-                }}>
-                  {filteredRooms.slice(1).map(room => (
-                    <RoomCard 
-                      key={room.id} 
-                      room={room} 
-                      inThisRoom={activeRoom?.id === room.id} 
-                      onJoin={joinVoiceRoom} 
-                      userFollowing={user?.following || []}
-                      isJoining={joiningRoomId === room.id}
-                      anyRoomJoining={!!joiningRoomId}
-                    />
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
           )}
         </div>
