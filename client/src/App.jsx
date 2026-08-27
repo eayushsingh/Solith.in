@@ -2646,7 +2646,7 @@ export default function App() {
         const hasRaisedHand = speakingQueue.includes(user?.id);
 
         return (
-        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 bg-bg-base flex flex-col z-50 overflow-hidden">
+        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-col z-50 overflow-hidden">
           
           {/* Top Floating Controls — icon-only pill */}
            <div style={{
