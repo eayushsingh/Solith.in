@@ -3062,6 +3062,13 @@ export default function App() {
             getRole={getRole}
             API_URL={API_URL}
             getAvatarUrl={getAvatarUrl}
+            rooms={rooms}
+            onlineUserIds={onlineUserIds}
+            setActiveDm={setActiveDm}
+            setMsgTab={setMsgTab}
+            setView={setView}
+            joinVoiceRoom={joinVoiceRoom}
+            openUserProfile={openUserProfile}
           />
 
           {/* Bottom Floating Controls */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import SocialUserRow from './SocialUserRow';
 import { 
   MessageSquare, Users, LayoutGrid, Settings, Maximize2, Minimize2, ChevronDown, 
   Send, CornerUpLeft, Image, X, Mic, MicOff, Camera, Shield, Youtube, 
@@ -25,9 +26,17 @@ export default function RoomPanel({
   ytVideoId,
   getRole,
   API_URL,
-  getAvatarUrl
+  getAvatarUrl,
+  rooms,
+  onlineUserIds,
+  setActiveDm,
+  setMsgTab,
+  setView,
+  joinVoiceRoom,
+  openUserProfile
 }) {
-  const [activeTab, setActiveTab] = useState('chat'); // chat, users, tools, settings
+  const [activeTab, setActiveTab] = useState('chat'); // chat, users, tools, settings, social
+  const [socialTab, setSocialTab] = useState('Following');
   const [isExpanded, setIsExpanded] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [activeTool, setActiveTool] = useState(null); // mock-interview, notetaker, whiteboard, magic-mic, magic-camera, ip-shield, youtube
@@ -418,6 +427,16 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
             title="Identity Settings"
           >
             <Settings className="w-4 h-4" />
+          </button>
+
+          {/* Tab 5: Social */}
+          <button 
+            type="button"
+            onClick={() => { setActiveTab('social'); setActiveTool(null); }}
+            className={`p-2 rounded-xl transition-all ${activeTab === 'social' ? 'bg-white/10 text-white shadow-md' : 'text-white/40 hover:text-white/80'}`}
+            title="Social"
+          >
+            <Users className="w-4 h-4" />
           </button>
         </div>
 
@@ -1209,6 +1228,70 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* SOCIAL TAB CONTENT */}
+        {activeTab === 'social' && (
+          <div style={{flex:1, overflowY:'auto'}}>
+            {/* Tabs: Following / In Room */}
+            <div style={{display:'flex', borderBottom:'1px solid rgba(255,255,255,0.07)', padding:'0 12px'}}>
+              {['Following','In Room'].map(tab => (
+                <button key={tab} onClick={() => setSocialTab(tab)} style={{
+                  padding:'8px 10px', background:'none', border:'none', cursor:'pointer',
+                  color: socialTab===tab ? '#1877f2' : 'rgba(255,255,255,0.4)',
+                  fontWeight: socialTab===tab ? 700 : 500, fontSize:12,
+                  borderBottom: socialTab===tab ? '2px solid #1877f2' : '2px solid transparent',
+                  marginBottom:-1
+                }}>{tab}</button>
+              ))}
+            </div>
+
+            {/* Following list */}
+            {socialTab === 'Following' && (user?.following || []).map(followedId => (
+              <SocialUserRow
+                key={followedId}
+                userId={followedId}
+                currentUser={user}
+                onlineUserIds={onlineUserIds}
+                openUserProfile={openUserProfile}
+                onDM={(id, profile) => {
+                  setActiveDm({id, profile});
+                  setMsgTab('direct');
+                  setView('messages');
+                }}
+              />
+            ))}
+
+            {/* In Room list */}
+            {socialTab === 'In Room' && rooms && rooms.flatMap(r => 
+                (r.participants || []).map(p => ({ ...p, roomName: r.name, roomId: r.id }))
+              )
+              .filter(p => p.id !== user?.id)
+              .map(p => (
+                <div key={p.id} style={{
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                  padding:'10px 12px'
+                }}>
+                  <div style={{display:'flex', alignItems:'center', gap:8}}>
+                    <img src={p.photoUrl || `https://api.dicebear.com/7.x/lorelei/svg?seed=${p.id}`}
+                      style={{width:32,height:32,borderRadius:'50%',objectFit:'cover'}} alt="" />
+                    <div>
+                      <div style={{color:'white',fontSize:12,fontWeight:600}}>{p.name}</div>
+                      <div style={{color:'rgba(255,255,255,0.3)',fontSize:10}}>{p.roomName}</div>
+                    </div>
+                  </div>
+                  <button onClick={() => {
+                    const room = rooms.find(r => r.id === p.roomId);
+                    if (room) joinVoiceRoom(room);
+                  }} style={{
+                    background:'rgba(24,119,242,0.15)',border:'1px solid rgba(24,119,242,0.3)',
+                    borderRadius:6,padding:'4px 8px',color:'#60a5fa',
+                    fontSize:10,fontWeight:700,cursor:'pointer'
+                  }}>Join</button>
+                </div>
+              ))
+            }
           </div>
         )}
 
