@@ -870,17 +870,15 @@ export default function App() {
       }
 
       setRooms(prev => [...prev, newRoom]);
+      setShowCreateModal(false);
+      setNewRoomName('');
+      setNewRoomTopic('');
+      setNewRoomTags('Casual');
+      setIsCreatingRoom(false);
       
       // Join newly created room in current tab and update URL for easy sharing
       window.history.pushState({}, '', `/?room=${newRoom.id}`);
-      const success = await joinVoiceRoom(newRoom);
-      if (success) {
-        setShowCreateModal(false);
-        // Reset form
-        setNewRoomName('');
-        setNewRoomTopic('');
-        setNewRoomTags('Casual');
-      }
+      await joinVoiceRoom(newRoom);
     } catch (err) {
       console.error('Error creating room:', err);
       alert(err.message || 'Failed to create new practice room.');
