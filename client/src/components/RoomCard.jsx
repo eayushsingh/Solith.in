@@ -6,6 +6,8 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
   const MAX_SLOTS = 4;
   const displaySlots = Array.from({ length: MAX_SLOTS }, (_, i) => participants[i] || null);
   const extraCount = participants.length > MAX_SLOTS ? participants.length - MAX_SLOTS : 0;
+  const hostParticipant = participants[0];
+  const hasBg = !!hostParticipant?.photoUrl;
 
   const handleCardClick = () => {
     if (participants.length >= 25) return;
@@ -18,6 +20,11 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
       onClick={handleCardClick}
       style={{
         background: '#13171f',
+        backgroundImage: participants.length === 0 ? 'linear-gradient(135deg, #0d1117 0%, #1a2035 100%)' : (hasBg ? `url(${hostParticipant.photoUrl})` : 'none'),
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        position: 'relative',
+        overflow: 'hidden',
         border: isJoining ? '1px solid #1877f2' : '1px solid rgba(255,255,255,0.07)',
         borderRadius: 16,
         padding: 20,
@@ -26,7 +33,6 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
         gap: 16,
         transition: 'border-color 0.2s, transform 0.2s',
         cursor: (participants.length >= 25 || anyRoomJoining) ? 'not-allowed' : 'pointer',
-        position: 'relative',
         transform: isJoining ? 'scale(0.98)' : 'none',
         opacity: (anyRoomJoining && !isJoining) ? 0.6 : 1
       }}
@@ -41,10 +47,20 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
         e.currentTarget.style.transform = 'none'; 
       }}
     >
+      {hasBg && (
+        <div style={{
+          position:'absolute', inset:0,
+          background:'rgba(0,0,0,0.55)',
+          backdropFilter:'blur(8px)',
+          zIndex:0
+        }}/>
+      )}
+
+      <div style={{position:'relative', zIndex:1, display: 'flex', flexDirection: 'column', gap: 16, height: '100%'}}>
       {/* You're here badge */}
       {inThisRoom && (
         <div style={{
-          position: 'absolute', top: 12, right: 12,
+          position: 'absolute', top: -8, right: -8,
           background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)',
           borderRadius: 20, padding: '3px 10px',
           display: 'flex', alignItems: 'center', gap: 5
@@ -83,17 +99,19 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
         {displaySlots.map((participant, idx) =>
           participant ? (
             <div key={participant.id || idx} style={{
-              width: 52, height: 52, borderRadius: '50%',
+              width: idx === 0 ? 90 : 52, height: idx === 0 ? 90 : 52, borderRadius: '50%',
               overflow: 'hidden', background: participant.color || '#1877f2',
-              border: '2px solid #13171f',
-              boxShadow: '0 0 0 1px rgba(255,255,255,0.1)',
+              border: idx === 0 ? '3px solid rgba(255,255,255,0.3)' : '2px solid #13171f',
+              boxShadow: idx === 0 ? '0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(24,119,242,0.3)' : '0 0 0 1px rgba(255,255,255,0.1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 18, fontWeight: 700, color: 'white', flexShrink: 0
             }}>
-              {participant.photoUrl
-                ? <img src={participant.photoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                : participant.name?.slice(0, 2).toUpperCase()
-              }
+              {(() => {
+                const avatarSrc = participant.photoUrl && participant.photoUrl.trim() !== ''
+                  ? participant.photoUrl
+                  : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(participant.id || participant.name || 'user')}`;
+                return <img src={avatarSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />;
+              })()}
             </div>
           ) : (
             <div key={`empty-${idx}`} style={{
@@ -130,24 +148,23 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
         disabled={participants.length >= 25 || anyRoomJoining}
         style={{
           width: '100%', padding: '12px 0',
-          background: isJoining ? 'rgba(24,119,242,0.12)' : 'transparent',
-          border: isJoining ? '1.5px solid #1877f2' : '1.5px dashed rgba(24,119,242,0.5)',
+          background: 'transparent',
+          border: '1.5px dashed rgba(24,119,242,0.5)',
           borderRadius: 10, cursor: (participants.length >= 25 || anyRoomJoining) ? 'not-allowed' : 'pointer',
           color: '#1877f2', fontSize: 13, fontWeight: 700,
-          display: 'flex', alignItems: 'center', justifycontent: 'center', gap: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           transition: 'all 0.2s',
-          justifyContent: 'center'
+          marginTop: 'auto'
         }}
         onMouseEnter={e => { if (participants.length < 25 && !anyRoomJoining) e.currentTarget.style.background = 'rgba(24,119,242,0.08)'; }}
-        onMouseLeave={e => e.currentTarget.style.background = isJoining ? 'rgba(24,119,242,0.12)' : 'transparent'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
       >
         {participants.length >= 25 
           ? '🔒 Room Full' 
-          : isJoining 
-            ? '⏳ Connecting...' 
-            : '🔗 Join and talk now!'
+          : '🔗 Join and talk now!'
         }
       </button>
+      </div>
     </div>
   );
 }
