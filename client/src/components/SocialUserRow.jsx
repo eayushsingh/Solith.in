@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, doc, getDoc } from '../firebase';
 
-export default function SocialUserRow({ userId, currentUser, onDM, openUserProfile }) {
+export default function SocialUserRow({ userId, currentUser, onDM, openUserProfile, onlineUserIds }) {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
@@ -15,6 +15,8 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
   const convoId = currentUser.id < userId
     ? `${currentUser.id}_${userId}`
     : `${userId}_${currentUser.id}`;
+
+  const isOnline = onlineUserIds && onlineUserIds.has(userId);
 
   return (
     <div style={{
@@ -31,11 +33,12 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
             style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
             alt=""
           />
-          {/* Online indicator — green dot if they're in a room */}
+          {/* Online indicator */}
           <span style={{
             position: 'absolute', bottom: 1, right: 1,
             width: 9, height: 9, borderRadius: '50%',
-            background: '#22c55e', border: '2px solid #111827'
+            background: isOnline ? '#22c55e' : 'rgba(255,255,255,0.2)', 
+            border: '2px solid #111827'
           }} />
         </div>
         <div>

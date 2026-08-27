@@ -1111,9 +1111,11 @@ const broadcastOnlineStats = async () => {
     totalUserCount = 1;
   }
 
+  const onlineUserIds = [...authenticatedOnline];
   io.emit('online-stats', {
     online: authenticatedOnline.size,
-    total: totalUserCount
+    total: totalUserCount,
+    onlineUserIds
   });
 };
 
