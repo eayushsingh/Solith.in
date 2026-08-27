@@ -1315,7 +1315,7 @@ io.on('connection', (socket) => {
     // Broadcast immediately to everyone else in the room
     socket.to(roomId).emit('chat-message', message);
 
-    // Save to persistence
+    // Save to memory (ephemeral, not written to disk)
     const room = rooms.find(r => r.id === roomId);
     if (room) {
       if (!room.messages) room.messages = [];
@@ -1325,7 +1325,6 @@ io.on('connection', (socket) => {
       if (room.messages.length > 50) {
         room.messages = room.messages.slice(-50);
       }
-      saveDB();
     }
   });
 
