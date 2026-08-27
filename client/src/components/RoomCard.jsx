@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Globe, Heart } from 'lucide-react';
 
 export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJoining }) {
+  const [copied, setCopied] = useState(false);
   const participants = room.participants || [];
   const MAX_SLOTS = 4;
   const displaySlots = Array.from({ length: MAX_SLOTS }, (_, i) => participants[i] || null);
@@ -55,6 +56,28 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
           <span style={{ color: '#22c55e', fontSize: 10, fontWeight: 700 }}>You're here</span>
         </div>
       )}
+
+      {/* Share button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          const url = `${window.location.origin}/?room=${room.id}`;
+          navigator.clipboard.writeText(url);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }}
+        style={{
+          position: 'absolute', top: 12, right: 44,
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 8, padding: '4px 8px',
+          color: 'rgba(255,255,255,0.5)', fontSize: 11,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
+        }}
+        title="Copy room link"
+      >
+        {copied ? '✓ Copied' : '🔗 Share'}
+      </button>
 
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
