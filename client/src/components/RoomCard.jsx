@@ -17,11 +17,11 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
     <div 
       onClick={handleCardClick}
       style={{
-        background: '#13171f',
-        minHeight: 280,
+        background: '#161b27',
+        minHeight: 240,
         position: 'relative',
         overflow: 'hidden',
-        border: isJoining ? '1px solid #1877f2' : '1px solid rgba(255,255,255,0.07)',
+        border: isJoining ? '1px solid #1877f2' : '1px solid rgba(255,255,255,0.06)',
         borderRadius: 16,
         padding: 20,
         display: 'flex',
@@ -81,27 +81,36 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
       </div>
 
       {/* Avatar row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minHeight: 52 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, minHeight: 64 }}>
         {displaySlots.map((participant, idx) =>
           participant ? (
-            <div key={participant.id || idx} style={{
-              width: idx === 0 ? 90 : 52, height: idx === 0 ? 90 : 52, borderRadius: '50%',
-              overflow: 'hidden', background: participant.color || '#1877f2',
-              border: idx === 0 ? '3px solid rgba(255,255,255,0.3)' : '2px solid #13171f',
-              boxShadow: idx === 0 ? '0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(24,119,242,0.3)' : '0 0 0 1px rgba(255,255,255,0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 18, fontWeight: 700, color: 'white', flexShrink: 0
-            }}>
-              {(() => {
-                const avatarSrc = participant.photoUrl && participant.photoUrl.trim() !== ''
-                  ? participant.photoUrl
-                  : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(participant.id || participant.name || 'user')}`;
-                return <img src={avatarSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />;
-              })()}
+            <div key={participant.id || idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{
+                width: idx === 0 ? 90 : 64, height: idx === 0 ? 90 : 64, borderRadius: '50%',
+                overflow: 'hidden', background: participant.color || '#1877f2',
+                border: idx === 0 ? '3px solid rgba(255,255,255,0.3)' : '2px solid #13171f',
+                boxShadow: idx === 0 ? '0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(24,119,242,0.3)' : '0 0 0 1px rgba(255,255,255,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 700, color: 'white', flexShrink: 0
+              }}>
+                {(() => {
+                  const avatarSrc = participant.photoUrl && participant.photoUrl.trim() !== ''
+                    ? participant.photoUrl
+                    : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(participant.id || participant.name || 'user')}`;
+                  return <img src={avatarSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />;
+                })()}
+              </div>
+              <div style={{
+                fontSize: 9, color: 'rgba(255,255,255,0.3)',
+                fontWeight: 700, letterSpacing: '0.05em',
+                textTransform: 'uppercase', marginTop: 2
+              }}>
+                Unverified
+              </div>
             </div>
           ) : (
             <div key={`empty-${idx}`} style={{
-              width: 52, height: 52, borderRadius: '50%',
+              width: 64, height: 64, borderRadius: '50%',
               border: '2px dashed rgba(255,255,255,0.1)',
               flexShrink: 0
             }} />
@@ -109,10 +118,10 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
         )}
         {extraCount > 0 && (
           <div style={{
-            width: 52, height: 52, borderRadius: '50%',
+            width: 64, height: 64, borderRadius: '50%',
             background: 'rgba(255,255,255,0.05)',
             border: '2px dashed rgba(255,255,255,0.1)',
-            display: 'flex', alignItems: 'center', justifycontent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 700
           }}>
             +{extraCount}
