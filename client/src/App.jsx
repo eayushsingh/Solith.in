@@ -180,6 +180,7 @@ export default function App() {
   const [activeActionUser, setActiveActionUser] = useState(null);
   const [kickModalInfo, setKickModalInfo] = useState({ kicked: false, by: '' });
   const [onlineStats, setOnlineStats] = useState({ online: 1, total: 1 });
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set());
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
   const [joinEvents, setJoinEvents] = useState([]);
@@ -633,6 +634,9 @@ export default function App() {
 
     const handleOnlineStats = (stats) => {
       setOnlineStats(stats);
+      if (stats.onlineUserIds) {
+        setOnlineUserIds(new Set(stats.onlineUserIds));
+      }
     };
 
     const handleRoomsUpdated = (payload) => {
@@ -2221,6 +2225,7 @@ export default function App() {
                 key={followedId}
                 userId={followedId}
                 currentUser={user}
+                onlineUserIds={onlineUserIds}
                 openUserProfile={(id) => {
                   setShowSocialPanel(false);
                   openUserProfile(id);
