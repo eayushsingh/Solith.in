@@ -831,6 +831,9 @@ export default function App() {
     const tagsArray = newRoomTags.split(',').map(t => t.trim()).filter(t => t.length >= 3).slice(0, 5);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const res = await fetch(`${API_URL}/api/rooms`, {
         method: 'POST',
         headers: { 
@@ -845,7 +848,10 @@ export default function App() {
           accessType: newRoomAccessType,
           isOpenMic: newRoomIsOpenMic
         }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (res.status === 429) {
         throw new Error("Too many requests. Please wait a moment and try again.");
