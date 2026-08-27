@@ -594,9 +594,9 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                           </button>
                         ))}
                       </div>
-                      <button style={{color:'#60a5fa',fontSize:11,fontWeight:600,background:'none',border:'none',cursor:'pointer'}}>PM</button>
-                      <button style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>React</button>
-                      <button style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>Reply</button>
+                      <button onClick={() => alert('Direct messages coming soon!')} style={{color:'#60a5fa',fontSize:11,fontWeight:600,background:'none',border:'none',cursor:'pointer'}}>PM</button>
+                      <button onClick={() => alert('Reactions coming soon!')} style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>React</button>
+                      <button onClick={() => setReplyingTo(msg)} style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>Reply</button>
                     </div>
                   </div>
                 </div>
