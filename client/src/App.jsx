@@ -39,7 +39,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const EMOJIS = ['😊', '🦊', '🐼', '🦁', '🚀', '🎮', '🎧', '☕', '🎨', '🍕', '🌍', '🐱', '🥑', '👾', '🦄', '🧙‍♂️'];
 const AVATAR_COLORS = ['#ff4d4d', '#ff944d', '#ffd11a', '#4da6ff', '#a64dff', '#ff4da6', '#33cc33', '#33cccc', '#f43f5e', '#8b5cf6'];
-const LANGUAGES = ['All Languages', 'English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean'];
+const LANGUAGES = ['All Languages', 'English', 'Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Portuguese', 'Korean', 'Hindi', 'Telugu', 'Marathi', 'Tamil', 'Bengali', 'Gujarati', 'Urdu', 'Malayalam', 'Kannada', 'Punjabi'];
 // A smart lazy loader that refreshes the page if a chunk fails to load (e.g. after a new deployment)
 const lazyWithRetry = (componentImport) =>
   lazy(async () => {
