@@ -5,6 +5,7 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
+    if (!userId) return;
     getDoc(doc(db, 'users', userId)).then(snap => {
       if (snap.exists()) setProfile({ id: snap.id, ...snap.data() });
     });
