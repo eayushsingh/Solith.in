@@ -127,7 +127,7 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
                 fontSize: 18, fontWeight: 700, color: 'white', flexShrink: 0
               }}>
                 {(() => {
-                  const seed = participant.id || participant.name || Math.random().toString(36);
+                  const seed = participant?.id || participant?.name || `slot-${idx}`;
                   const avatarSrc = participant.photoUrl?.trim() 
                     ? participant.photoUrl 
                     : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;

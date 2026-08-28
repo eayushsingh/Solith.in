@@ -167,6 +167,7 @@ const evictStalePingParticipants = () => {
     if (!room.participants) return;
     const before = room.participants.length;
     room.participants = room.participants.filter(p => {
+      if (p == null || p.id == null) return false;
       // Evict participants whose last ping is older than 30 seconds
       return !(p.lastPing && (now - p.lastPing > 30000));
     });
@@ -414,7 +415,7 @@ async function syncWithLiveKit() {
       const liveIds = new Set(liveParticipants.map(p => p.identity));
 
       const before = room.participants.length;
-      room.participants = room.participants.filter(p => liveIds.has(p.id));
+      room.participants = room.participants.filter(p => p != null && p.id != null && liveIds.has(p.id));
       if (room.participants.length !== before) changed = true;
     }
 
@@ -619,6 +620,9 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
     joinedAt: Date.now(),
     lastPing: Date.now()
   };
+  if (!participant || !participant.id) {
+    return res.status(400).json({ error: 'Invalid participant data' });
+  }
   room.participants.push(participant);
   saveDB();
 
@@ -1654,7 +1658,7 @@ io.on('connection', (socket) => {
     if (identity) {
       for (const room of rooms) {
         const before = room.participants.length;
-        room.participants = room.participants.filter(p => p.id !== identity);
+        room.participants = room.participants.filter(p => p != null && p.id != null && p.id !== identity);
         if (room.participants.length !== before) break;
       }
       socketToIdentity.delete(socket.id);

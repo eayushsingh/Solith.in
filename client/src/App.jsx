@@ -192,8 +192,8 @@ export default function App() {
   const prevParticipantsRef = useRef([]);
 
   useEffect(() => {
-    const prev = prevParticipantsRef.current;
-    const now = participants;
+    const prev = prevParticipantsRef.current || [];
+    const now = (participants || []).filter(p => p != null && p.id != null);
     const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
     now.forEach(p => {
@@ -2804,6 +2804,7 @@ export default function App() {
         if (!activeRoom) return null;
         
         const currentRoomData = rooms.find(r => r.id === activeRoom.id) || activeRoom;
+        const safeParticipants = (participants || []).filter(p => p != null && p.id != null);
         const speakingQueue = currentRoomData.speakingQueue || [];
         const allowedSpeakers = currentRoomData.allowedSpeakers || [];
         const isOpenMic = currentRoomData.isOpenMic;
@@ -2860,7 +2861,7 @@ export default function App() {
 
           {/* Participant Grid / Presenter View */}
           {(() => {
-            const screenSharingParticipant = participants.find(p => p.isScreenSharing);
+            const screenSharingParticipant = safeParticipants.find(p => p.isScreenSharing);
             const hasPresenterContent = screenSharingParticipant || ytVideoId || activeGame;
             
             if (hasPresenterContent) {
@@ -2911,7 +2912,7 @@ export default function App() {
                   </div>
                   {/* Side Participant List */}
                   <div className="w-full lg:w-[240px] flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
-                    {participants.map(p => {
+                    {safeParticipants.map(p => {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                         const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
                         const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
@@ -2982,7 +2983,7 @@ export default function App() {
                   position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
                   display: 'flex', alignItems: 'flex-end', gap: 20, zIndex: 10
                 }}>
-                  {participants.map(p => {
+                  {safeParticipants.map(p => {
                       const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                       const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
                       const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
@@ -3061,7 +3062,7 @@ export default function App() {
             chatInput={chatInput}
             setChatInput={setChatInput}
             chatEndRef={chatEndRef}
-            participants={participants}
+            participants={safeParticipants}
             joinEvents={joinEvents}
             activeRoom={activeRoom}
             user={user}
