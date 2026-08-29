@@ -62,7 +62,7 @@ export default function ChessGame({ activeGame, socket, roomId, currentUser, myP
       // Detect game over and emit game-end after 5 seconds delay
       if (gameCopy.isGameOver()) {
         setTimeout(() => {
-          socket.emit('game-end', { roomId });
+          socket.emit('game-end', { roomId, userId: currentUser.id });
         }, 5000);
       }
       

@@ -4,19 +4,21 @@ import ChessGame from './ChessGame';
 import TicTacToe from './TicTacToe';
 import Connect4 from './Connect4';
 import UnoGame from './UnoGame';
+import ScrabbleGame from './ScrabbleGame';
 
 const playerRules = {
   chess: { min: 2, max: 2, name: 'Chess', emoji: '♟️' },
   tictactoe: { min: 2, max: 2, name: 'Tic-Tac-Toe', emoji: '❌' },
   connect4: { min: 2, max: 2, name: 'Connect 4', emoji: '🔴' },
-  uno: { min: 2, max: 6, name: 'UNO', emoji: '🃏' }
+  uno: { min: 2, max: 6, name: 'UNO', emoji: '🃏' },
+  scrabble: { min: 2, max: 4, name: 'Scrabble', emoji: '🔤' }
 };
 
 export default function GameContainer({ activeGame, socket, roomId, currentUser }) {
   if (!activeGame) return null;
 
   const handleClose = () => {
-    socket.emit('game-end', { roomId });
+    socket.emit('game-end', { roomId, userId: currentUser.id });
   };
 
   const gameType = activeGame.type;
@@ -183,6 +185,8 @@ export default function GameContainer({ activeGame, socket, roomId, currentUser 
         return <Connect4 {...gameProps} />;
       case 'uno':
         return <UnoGame {...gameProps} />;
+      case 'scrabble':
+        return <ScrabbleGame {...gameProps} />;
       default:
         return <div className="text-white text-center p-8">Unknown game type: {activeGame.type}</div>;
     }
