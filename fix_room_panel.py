@@ -1,18 +1,65 @@
 import re
 
-with open("client/src/components/RoomPanel.jsx", "r") as f:
+file_path = 'client/src/components/RoomPanel.jsx'
+with open(file_path, 'r') as f:
     content = f.read()
 
-# Replace the PM, React, Reply buttons block
-old_buttons = """<button style={{color:'#60a5fa',fontSize:11,fontWeight:600,background:'none',border:'none',cursor:'pointer'}}>PM</button>
-                      <button style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>React</button>
-                      <button style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>Reply</button>"""
+# Add compressImage function
+compress_fn = """
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_SIZE = 800;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+"""
 
-new_buttons = """<button onClick={() => alert('Direct messages coming soon!')} style={{color:'#60a5fa',fontSize:11,fontWeight:600,background:'none',border:'none',cursor:'pointer'}}>PM</button>
-                      <button onClick={() => alert('Reactions coming soon!')} style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>React</button>
-                      <button onClick={() => setReplyingTo(msg)} style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>Reply</button>"""
+if 'const compressImage =' not in content:
+    content = content.replace("const handleFileChange = (e) => {", compress_fn + "\n  const handleFileChange = async (e) => {")
+else:
+    content = content.replace("const handleFileChange = (e) => {", "const handleFileChange = async (e) => {")
 
-content = content.replace(old_buttons, new_buttons)
+handle_file_old = """    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64data = reader.result;
+      // Send message with photo
+      sendChatMessageWithPayload({ text: '', fileUrl: base64data });
+    };
+    reader.readAsDataURL(file);"""
 
-with open("client/src/components/RoomPanel.jsx", "w") as f:
+handle_file_new = """    const base64data = await compressImage(file);
+    // Send message with photo
+    sendChatMessageWithPayload({ text: '', fileUrl: base64data });"""
+
+content = content.replace(handle_file_old, handle_file_new)
+
+with open(file_path, 'w') as f:
     f.write(content)
+
+print("RoomPanel.jsx updated")
