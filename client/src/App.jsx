@@ -21,6 +21,9 @@ import {
   Monitor, Youtube, Gamepad2, Crown, BarChart2
 } from 'lucide-react';
 import GameContainer from './components/games/GameContainer';
+import GameLobby from './components/games/GameLobby';
+import GameSelector from './components/games/GameSelector';
+import ScrabbleGame from './components/games/ScrabbleGame';
 import { LiveKitService } from './livekit';
 import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, db, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, setPersistence, inMemoryPersistence, getCountFromServer, onSnapshot } from './firebase';
 import socket from './socket';
@@ -77,7 +80,12 @@ const getLevelInfo = (xp) => {
   return { title: 'C2 Fluent Master 👑', min: 1500, max: 99999, level: 6, next: 'MAX' };
 };
 
-const ADMIN_EMAILS = ['ayushfun01@gmail.com', 'hacksejeet@gmail.com', 'ayush.singh.something@klh.edu.in'];
+const ADMIN_EMAILS = [
+  'ayushfun01@gmail.com',
+  'hacksejeet@gmail.com',
+  'ayush.singh.something@klh.edu.in',
+  'ayushsinghe07@gmail.com'
+];
 
 const VideoTrack = ({ track }) => {
   const ref = useRef(null);
@@ -96,7 +104,10 @@ export default function App() {
   // Navigation / Layout state
   const [activeModal, setActiveModal] = useState(null);
   const [user, setUser] = useState(null);
-  const isAdmin = user && (user.role === 'admin' || ADMIN_EMAILS.includes(user.email));
+  const isAdmin = user && (
+    user.role === 'admin' ||
+    ADMIN_EMAILS.includes(user.email)
+  );
   const [view, setView] = useState(() => {
     const hash = window.location.hash.replace('#', '');
     const path = window.location.pathname.replace('/', '');
@@ -222,6 +233,7 @@ export default function App() {
   const [isRealCall, setIsRealCall] = useState(false);
   const [xpFloater, setXpFloater] = useState(null); // { amount: number, key: number }
   const [activeGame, setActiveGame] = useState(null);
+  const [gameLobby, setGameLobby] = useState(null);
   const [showGameSelector, setShowGameSelector] = useState(false);
   const [lobbyGridCols, setLobbyGridCols] = useState(3);
   const [joiningRoomId, setJoiningRoomId] = useState(null);
@@ -661,10 +673,22 @@ export default function App() {
     socket.on('online-stats', handleOnlineStats);
     socket.on('rooms-updated', handleRoomsUpdated);
 
-    const handleGameState = (state) => setActiveGame(state);
-    const handleGameEnded = () => setActiveGame(null);
-    socket.on('game-state', handleGameState);
-    socket.on('game-ended', handleGameEnded);
+    socket.on('game-lobby-updated', (lobby) => {
+      setGameLobby(lobby);
+      if (!lobby) setActiveGame(null);
+    });
+    socket.on('game-state', (game) => {
+      setActiveGame(game);
+      setGameLobby(null);
+    });
+    socket.on('game-ended', () => {
+      setActiveGame(null);
+      setGameLobby(null);
+      setShowGameSelector(false);
+    });
+    socket.on('game-error', ({ message }) => {
+      setToastMessage(message);
+    });
 
     return () => {
       socket.off('chat-history', handleChatHistory);
@@ -675,8 +699,10 @@ export default function App() {
       socket.off('owner-transferred', handleOwnerTransferred);
       socket.off('online-stats', handleOnlineStats);
       socket.off('rooms-updated', handleRoomsUpdated);
-      socket.off('game-state', handleGameState);
-      socket.off('game-ended', handleGameEnded);
+      socket.off('game-lobby-updated');
+      socket.off('game-state');
+      socket.off('game-ended');
+      socket.off('game-error');
     };
   }, []);
 
@@ -1015,15 +1041,18 @@ export default function App() {
     fetchRooms();
   };
 
-  const startGame = (type) => {
-    if (!activeRoom || !user) return;
-    socket.emit('game-start', { 
-      roomId: activeRoom.id, 
-      gameType: type, 
-      initialState: {}, // Base state, games handle their own initial state
-      player: { id: user.id, name: user.name, photoUrl: user.photoUrl, color: user.color } 
-    });
+  const handleGameSelect = (gameType) => {
     setShowGameSelector(false);
+    socket.emit('game-invite', {
+      roomId: activeRoom.id,
+      gameType,
+      initiator: {
+        id: user.id,
+        name: user.name,
+        photoUrl: user.photoUrl,
+        color: user.color
+      }
+    });
   };
 
   // Leave Voice Room trigger
@@ -2553,13 +2582,17 @@ export default function App() {
             >
               <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
             </button>
-            <button 
+            {/* This button must be in the header for ALL users (logged in or not): */}
+            <button
               onClick={() => { setView('premium'); window.location.hash = 'premium'; }}
-              className="hidden lg:flex px-3.5 py-2 bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-400/30 text-amber-400 font-bold rounded-xl text-[13px] items-center gap-2 hover:bg-amber-500/20 hover:scale-105 transition-all whitespace-nowrap shadow-[0_0_15px_rgba(251,191,36,0.15)]"
-              title="Get Premium"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm"
+              style={{
+                background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.15))',
+                border: '1px solid rgba(251,191,36,0.4)',
+                color: '#fbbf24'
+              }}
             >
-              <Crown className="w-4 h-4 text-amber-400" />
-              Go Premium
+              <Crown className="w-4 h-4" /> Go Premium
             </button>
           </div>
 
@@ -2859,6 +2892,36 @@ export default function App() {
              </button>
            </div>
 
+          {/* Game lobby overlay */}
+          {gameLobby && !activeGame && (
+            <GameLobby
+              gameLobby={gameLobby}
+              currentUser={user}
+              onAccept={() => socket.emit('game-accept', {
+                roomId: activeRoom.id,
+                player: { id: user.id, name: user.name, photoUrl: user.photoUrl, color: user.color }
+              })}
+              onCancel={() => socket.emit('game-cancel', { roomId: activeRoom.id, userId: user.id })}
+              onStart={() => socket.emit('game-start', { roomId: activeRoom.id, userId: user.id })}
+            />
+          )}
+
+          {/* Active game scrabble full screen view */}
+          {activeGame && activeGame.type === 'scrabble' && (
+            <div style={{ position: 'absolute', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.85)', overflow: 'auto' }}>
+              <ScrabbleGame
+                activeGame={activeGame}
+                currentUser={user}
+                socket={socket}
+                roomId={activeRoom.id}
+              />
+              <button onClick={() => socket.emit('game-end', { roomId: activeRoom.id, userId: user.id })}
+                style={{ position: 'absolute', top: 12, right: 12, background: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 12px', color: 'white', cursor: 'pointer', fontWeight: 700 }}>
+                End Game
+              </button>
+            </div>
+          )}
+
           {/* Participant Grid / Presenter View */}
           {(() => {
             const screenSharingParticipant = safeParticipants.find(p => p.isScreenSharing);
@@ -2934,7 +2997,15 @@ export default function App() {
                               background: pColor, position: 'relative', flexShrink: 0
                             }}>
                               {pPhotoUrl
-                                ? <img src={pPhotoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                ? <img 
+                                    src={pPhotoUrl} 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    alt="" 
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
+                                    }}
+                                  />
                                 : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
                                     {pName.slice(0, 2).toUpperCase()}
                                   </div>
@@ -3005,7 +3076,15 @@ export default function App() {
                             background: pColor, position: 'relative', flexShrink: 0
                           }}>
                             {pPhotoUrl
-                              ? <img src={pPhotoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                              ? <img 
+                                  src={pPhotoUrl} 
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                  alt="" 
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
+                                  }}
+                                />
                               : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
                                   {pName.slice(0, 2).toUpperCase()}
                                 </div>
@@ -3104,23 +3183,12 @@ export default function App() {
                    color: 'rgba(255,255,255,0.5)' }}>
                  <MoreVertical size={20}/>
                </button>
-               {/* Game Selector Dropdown */}
+               {/* Replace old game selector */}
                {showGameSelector && (
-                  <div className="absolute bottom-[125%] left-1/2 -translate-x-1/2 bg-[#12141c] border border-white/10 rounded-2xl p-2 flex flex-col gap-1 shadow-2xl min-w-[160px] animate-fade-in z-[100]">
-                    <div className="text-[10px] font-bold text-white/40 uppercase px-2 py-1 tracking-wider mb-1">Select a Game</div>
-                    {['chess', 'uno', 'connect4', 'tictactoe'].map(game => (
-                      <button 
-                        key={game} 
-                        onClick={(e) => { e.stopPropagation(); startGame(game); setShowGameSelector(false); }}
-                        className="text-left px-3 py-2 text-xs text-white/70 hover:bg-white/10 rounded-xl capitalize font-medium flex items-center gap-2"
-                      >
-                        {game === 'chess' && '♟️ Chess'}
-                        {game === 'uno' && '🃏 UNO'}
-                        {game === 'connect4' && '🔴 Connect 4'}
-                        {game === 'tictactoe' && '❌ Tic-Tac-Toe'}
-                      </button>
-                    ))}
-                  </div>
+                 <GameSelector
+                   onSelect={handleGameSelect}
+                   onClose={() => setShowGameSelector(false)}
+                 />
                )}
              </div>
           </div>

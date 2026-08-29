@@ -97,6 +97,28 @@ const purgeEmptyRooms = () => {
 };
 
 // Load rooms from Firestore or fallback to db.json if exists
+const setAdminRoles = async () => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) return;
+  const db = adminInstance.firestore();
+  const adminEmails = [
+    'ayushfun01@gmail.com',
+    'ayushsinghe07@gmail.com'
+  ];
+  try {
+    const usersSnap = await db.collection('users').get();
+    for (const userDoc of usersSnap.docs) {
+      const data = userDoc.data();
+      if (adminEmails.includes(data.email) && data.role !== 'admin') {
+        await db.collection('users').doc(userDoc.id).update({ role: 'admin', isPremium: true });
+        console.log(`✓ Set admin role for ${data.email}`);
+      }
+    }
+  } catch (e) {
+    console.error('setAdminRoles error:', e);
+  }
+};
+
 const loadDB = async () => {
   const adminInstance = initFirebaseAdmin();
   if (adminInstance) {
@@ -105,6 +127,7 @@ const loadDB = async () => {
       const snapshot = await db.collection('rooms').get();
       rooms = snapshot.docs.map(doc => doc.data());
       console.log(`✓ Loaded ${rooms.length} rooms from Firestore.`);
+      await setAdminRoles();
       return;
     } catch (err) {
       console.error('Error loading rooms from Firestore, fallback to local DB:', err);
@@ -612,11 +635,11 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
 
   const participant = {
     id: userId,
-    name,
-    color: color || '#ff4d4d',
+    name: name || 'Anonymous',
+    color: color || '#1877f2',
     emoji: emoji || '😊',
-    photoUrl: photoUrl || '',
-    followersCount,
+    photoUrl: photoUrl || '',  // empty string not undefined
+    followersCount: followersCount || 0,
     joinedAt: Date.now(),
     lastPing: Date.now()
   };
@@ -1347,295 +1370,323 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('clear-canvas', data);
   });
 
-  // --- MULTIPLAYER GAMES SYNC ---
-  // Socket: game-invite
+  // UNO deck builder
+  function buildUnoInitialState(players) {
+    const colors = ['red', 'green', 'blue', 'yellow'];
+    const values = ['0','1','2','3','4','5','6','7','8','9','skip','reverse','draw2'];
+    let deck = [];
+    colors.forEach(color => {
+      values.forEach(value => {
+        deck.push({ color, value, id: `${color}-${value}-a` });
+        if (value !== '0') deck.push({ color, value, id: `${color}-${value}-b` });
+      });
+    });
+    // Wild cards
+    for (let i = 0; i < 4; i++) {
+      deck.push({ color: 'wild', value: 'wild', id: `wild-${i}` });
+      deck.push({ color: 'wild', value: 'wild4', id: `wild4-${i}` });
+    }
+    // Shuffle
+    deck = deck.sort(() => Math.random() - 0.5);
+
+    const hands = {};
+    players.forEach(p => {
+      hands[p.id] = deck.splice(0, 7);
+    });
+
+    // First non-wild card becomes top
+    let topCard = deck.shift();
+    while (topCard.color === 'wild') {
+      deck.push(topCard);
+      topCard = deck.shift();
+    }
+
+    return {
+      hands,
+      deck,
+      topCard,
+      discardPile: [topCard],
+      direction: 1,
+      handCounts: Object.fromEntries(players.map(p => [p.id, 7]))
+    };
+  }
+
+  // Scrabble initial state
+  function buildScrabbleInitialState(players) {
+    const letterDistribution = {
+      A:9,B:2,C:2,D:4,E:12,F:2,G:3,H:2,I:9,J:1,K:1,L:4,M:2,
+      N:6,O:8,P:2,Q:1,R:6,S:4,T:6,U:4,V:2,W:2,X:1,Y:2,Z:1,' ':2
+    };
+    const letterValues = {
+      A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,
+      N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10,' ':0
+    };
+
+    let bag = [];
+    Object.entries(letterDistribution).forEach(([letter, count]) => {
+      for (let i = 0; i < count; i++) {
+        bag.push({ letter, value: letterValues[letter], id: `${letter}-${i}` });
+      }
+    });
+    bag = bag.sort(() => Math.random() - 0.5);
+
+    const racks = {};
+    players.forEach(p => {
+      racks[p.id] = bag.splice(0, 7);
+    });
+
+    // 15x15 board
+    const board = Array(15).fill(null).map(() => Array(15).fill(null));
+
+    // Premium squares
+    const premiumSquares = {
+      tripleWord: [[0,0],[0,7],[0,14],[7,0],[7,14],[14,0],[14,7],[14,14]],
+      doubleWord: [[1,1],[2,2],[3,3],[4,4],[10,10],[11,11],[12,12],[13,13],[1,13],[2,12],[3,11],[4,10],[10,4],[11,3],[12,2],[13,1],[7,7]],
+      tripleLetter: [[1,5],[1,9],[5,1],[5,5],[5,9],[5,13],[9,1],[9,5],[9,9],[9,13],[13,5],[13,9]],
+      doubleLetter: [[0,3],[0,11],[2,6],[2,8],[3,0],[3,7],[3,14],[6,2],[6,6],[6,8],[6,12],[7,3],[7,11],[8,2],[8,6],[8,8],[8,12],[11,0],[11,7],[11,14],[12,6],[12,8],[14,3],[14,11]]
+    };
+
+    return {
+      board,
+      bag,
+      racks,
+      scores: Object.fromEntries(players.map(p => [p.id, 0])),
+      premiumSquares,
+      rackCounts: Object.fromEntries(players.map(p => [p.id, 7])),
+      lastMove: null,
+      passCount: 0
+    };
+  }
+
+  // ─── GAME INVITE ──────────────────────────────────────────────────────────────
   socket.on('game-invite', (data) => {
     const { roomId, gameType, initiator } = data;
     const room = rooms.find(r => r.id === roomId);
-    if (room) {
-      room.activeGame = {
-        type: gameType,
-        status: 'lobby',
-        initiator,
-        players: [initiator],
-        createdAt: Date.now()
-      };
-      broadcastGameState(roomId, room.activeGame);
-    }
+    if (!room) return;
+
+    // Cancel any existing game or invite
+    room.activeGame = null;
+    room.gameLobby = {
+      gameType,
+      initiator,
+      players: [initiator], // initiator is player 1
+      status: 'waiting',    // waiting | started | finished
+      createdAt: Date.now()
+    };
+    
+    io.in(roomId).emit('game-lobby-updated', room.gameLobby);
   });
 
-  // Socket: game-join-lobby
-  socket.on('game-join-lobby', (data) => {
-    const { roomId, gameType, player } = data;
+  // ─── ACCEPT GAME INVITE ───────────────────────────────────────────────────────
+  socket.on('game-accept', (data) => {
+    const { roomId, player } = data;
     const room = rooms.find(r => r.id === roomId);
-    if (room && room.activeGame && room.activeGame.status === 'lobby') {
-      const maxPlayers = {
-        chess: 2,
-        tictactoe: 2,
-        connect4: 2,
-        uno: 6
-      }[gameType] || 2;
-      
-      const exists = room.activeGame.players.some(p => p.id === player.id);
-      if (!exists && room.activeGame.players.length < maxPlayers) {
-        room.activeGame.players.push(player);
-        broadcastGameState(roomId, room.activeGame);
-      }
-    }
+    
+    if (!room?.gameLobby || room.gameLobby.status !== 'waiting') return;
+    
+    const MAX_PLAYERS = { chess: 2, tictactoe: 2, connect4: 2, uno: 6, scrabble: 4 };
+    const max = MAX_PLAYERS[room.gameLobby.gameType] || 2;
+    
+    // Don't add duplicate
+    if (room.gameLobby.players.find(p => p.id === player.id)) return;
+    
+    if (room.gameLobby.players.length >= max) return;
+    
+    room.gameLobby.players.push(player);
+    io.in(roomId).emit('game-lobby-updated', room.gameLobby);
   });
 
-  // Socket: game-start
-  socket.on('game-start', (data) => {
-    const { roomId, gameType, players } = data;
-    const room = rooms.find(r => r.id === roomId);
-    if (room) {
-      let initialState = 'start';
-      let hands = null;
-      let deck = null;
-
-      if (gameType === 'tictactoe') {
-        initialState = { board: Array(9).fill(null), xIsNext: true };
-      } else if (gameType === 'connect4') {
-        initialState = { board: Array.from({ length: 7 }, () => []), redIsNext: true };
-      } else if (gameType === 'uno') {
-        deck = generateDeck();
-        hands = {};
-        players.forEach(p => {
-          hands[p.id] = deck.splice(0, 7);
-        });
-        
-        let discard = deck.pop();
-        while (discard.color === 'black') {
-          deck.unshift(discard);
-          discard = deck.pop();
-        }
-        
-        initialState = {
-          discardPile: [discard],
-          currentColor: discard.color,
-          direction: 1,
-          turnIndex: 0,
-          winner: null,
-          players: players.map(p => ({ id: p.id, name: p.name, handSize: 7 }))
-        };
-      }
-
-      room.activeGame = {
-        type: gameType,
-        status: 'started',
-        players,
-        currentTurnId: players[0].id,
-        state: initialState,
-        startedAt: Date.now()
-      };
-
-      if (gameType === 'uno') {
-        room.activeGame.hands = hands;
-        room.activeGame.deck = deck;
-      }
-
-      broadcastGameState(roomId, room.activeGame);
-
-      // Send private hands for UNO
-      if (gameType === 'uno' && hands) {
-        players.forEach(p => {
-          sendPrivateUnoHand(roomId, p.id, hands[p.id]);
-        });
-      }
-    }
-  });
-
-  // Socket: game-cancel
+  // ─── DECLINE / CANCEL INVITE ──────────────────────────────────────────────────
   socket.on('game-cancel', (data) => {
-    const { roomId } = data;
+    const { roomId, userId } = data;
     const room = rooms.find(r => r.id === roomId);
-    if (room) {
-      room.activeGame = null;
-      io.in(roomId).emit('game-ended');
-    }
+    if (!room?.gameLobby) return;
+    
+    // Only initiator can cancel
+    if (room.gameLobby.initiator.id !== userId) return;
+    
+    room.gameLobby = null;
+    room.activeGame = null;
+    io.in(roomId).emit('game-lobby-updated', null);
+    io.in(roomId).emit('game-ended', { reason: 'cancelled' });
   });
 
-  // Socket: game-end
-  socket.on('game-end', (data) => {
-    const { roomId } = data;
+  // ─── START GAME ───────────────────────────────────────────────────────────────
+  socket.on('game-start', (data) => {
+    const { roomId, userId } = data;
     const room = rooms.find(r => r.id === roomId);
-    if (room) {
-      room.activeGame = null;
-      io.in(roomId).emit('game-ended');
+    
+    if (!room?.gameLobby) return;
+    if (room.gameLobby.initiator.id !== userId) return;
+    
+    const MIN_PLAYERS = { chess: 2, tictactoe: 2, connect4: 2, uno: 2, scrabble: 2 };
+    const min = MIN_PLAYERS[room.gameLobby.gameType] || 2;
+    
+    if (room.gameLobby.players.length < min) {
+      socket.emit('game-error', { message: `Need at least ${min} players to start` });
+      return;
     }
+
+    const players = room.gameLobby.players;
+    const gameType = room.gameLobby.gameType;
+    
+    // Build initial state per game type
+    let initialState = {};
+    let currentTurnId = players[0].id;
+
+    if (gameType === 'chess') {
+      initialState = {
+        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        moves: []
+      };
+    }
+    
+    if (gameType === 'tictactoe') {
+      initialState = {
+        board: Array(9).fill(null),
+        winner: null
+      };
+    }
+    
+    if (gameType === 'connect4') {
+      initialState = {
+        board: Array(6).fill(null).map(() => Array(7).fill(null)),
+        winner: null
+      };
+    }
+    
+    if (gameType === 'uno') {
+      initialState = buildUnoInitialState(players);
+      
+      // Emit private hands to each player
+      players.forEach(player => {
+        const playerSocket = [...socketToIdentity.entries()]
+          .find(([sid, uid]) => uid === player.id)?.[0];
+          
+        if (playerSocket) {
+          io.to(playerSocket).emit('uno-hand', {
+            hand: initialState.hands[player.id],
+            topCard: initialState.topCard
+          });
+        }
+      });
+      
+      // Remove private hands from broadcast state
+      const publicState = { ...initialState };
+      delete publicState.hands;
+      initialState = publicState;
+    }
+    
+    if (gameType === 'scrabble') {
+      initialState = buildScrabbleInitialState(players);
+      
+      // Emit private racks to each player
+      players.forEach(player => {
+        const playerSocket = [...socketToIdentity.entries()]
+          .find(([sid, uid]) => uid === player.id)?.[0];
+          
+        if (playerSocket) {
+          io.to(playerSocket).emit('scrabble-rack', {
+            rack: initialState.racks[player.id]
+          });
+        }
+      });
+      
+      const publicState = { ...initialState };
+      delete publicState.racks;
+      initialState = publicState;
+    }
+
+    room.activeGame = {
+      type: gameType,
+      players,
+      currentTurnId,
+      state: initialState,
+      status: 'active',
+      startedAt: Date.now(),
+      winner: null
+    };
+    
+    room.gameLobby = { ...room.gameLobby, status: 'started' };
+    
+    io.in(roomId).emit('game-state', room.activeGame);
   });
 
-  // Socket: game-action
+  // ─── GAME ACTION (move) ───────────────────────────────────────────────────────
   socket.on('game-action', (data) => {
-    const { roomId, action, playerId } = data;
+    const { roomId, playerId, action, newState } = data;
     const room = rooms.find(r => r.id === roomId);
-    if (!room || !room.activeGame) return;
-
+    
+    if (!room?.activeGame || room.activeGame.status !== 'active') return;
+    
     // Validate turn
     if (room.activeGame.currentTurnId !== playerId) {
       socket.emit('game-error', { message: 'Not your turn' });
       return;
     }
-
-    const { type, players } = room.activeGame;
-
-    if (type === 'uno') {
-      const gameAction = action;
-      const playerIndex = players.findIndex(p => p.id === playerId);
-      if (playerIndex === -1) return;
-
-      const hands = room.activeGame.hands;
-      const deck = room.activeGame.deck;
-      const gameState = room.activeGame.state;
-
-      if (!hands || !deck || !gameState) return;
-
-      if (gameAction.type === 'draw') {
-        // Draw card
-        if (deck.length === 0) {
-          const top = gameState.discardPile.pop();
-          room.activeGame.deck = gameState.discardPile.sort(() => Math.random() - 0.5);
-          gameState.discardPile = [top];
-        }
-        const card = room.activeGame.deck.pop();
-        hands[playerId].push(card);
-
-        // Advance turn
-        const direction = gameState.direction || 1;
-        const nextTurnIndex = (gameState.turnIndex + direction + players.length) % players.length;
-        gameState.turnIndex = nextTurnIndex;
-        room.activeGame.currentTurnId = players[nextTurnIndex].id;
-
-        sendPrivateUnoHand(roomId, playerId, hands[playerId]);
-        broadcastGameState(roomId, room.activeGame);
-        
-      } else if (gameAction.type === 'play') {
-        const cardIndex = gameAction.cardIndex;
-        const playerHand = hands[playerId];
-        if (!playerHand || cardIndex < 0 || cardIndex >= playerHand.length) return;
-
-        const card = playerHand[cardIndex];
-        const topCard = gameState.discardPile[gameState.discardPile.length - 1];
-        const isPlayable = card.color === 'black' || card.color === gameState.currentColor || card.value === topCard.value;
-        if (!isPlayable) {
-          socket.emit('game-error', { message: 'Illegal card play' });
-          return;
-        }
-
-        playerHand.splice(cardIndex, 1);
-        gameState.discardPile.push(card);
-
-        let nextTurnOffset = gameState.direction || 1;
-        let newColor = card.color;
-
-        if (card.color === 'black') {
-          newColor = gameAction.chosenColor || ['red', 'blue', 'green', 'yellow'][Math.floor(Math.random() * 4)];
-        }
-
-        if (card.value === 'reverse') {
-          gameState.direction *= -1;
-          if (players.length === 2) {
-            nextTurnOffset = gameState.direction * 2;
-          } else {
-            nextTurnOffset = gameState.direction;
-          }
-        } else if (card.value === 'skip') {
-          nextTurnOffset = gameState.direction * 2;
-        } else if (card.value === '+2') {
-          nextTurnOffset = gameState.direction * 2;
-          const targetIndex = (gameState.turnIndex + gameState.direction + players.length) % players.length;
-          const targetPlayerId = players[targetIndex].id;
-          for (let i = 0; i < 2; i++) {
-            if (room.activeGame.deck.length === 0) {
-              const top = gameState.discardPile.pop();
-              room.activeGame.deck = gameState.discardPile.sort(() => Math.random() - 0.5);
-              gameState.discardPile = [top];
-            }
-            if (room.activeGame.deck.length > 0) {
-              hands[targetPlayerId].push(room.activeGame.deck.pop());
-            }
-          }
-          sendPrivateUnoHand(roomId, targetPlayerId, hands[targetPlayerId]);
-        } else if (card.value === 'wild+4') {
-          nextTurnOffset = gameState.direction * 2;
-          const targetIndex = (gameState.turnIndex + gameState.direction + players.length) % players.length;
-          const targetPlayerId = players[targetIndex].id;
-          for (let i = 0; i < 4; i++) {
-            if (room.activeGame.deck.length === 0) {
-              const top = gameState.discardPile.pop();
-              room.activeGame.deck = gameState.discardPile.sort(() => Math.random() - 0.5);
-              gameState.discardPile = [top];
-            }
-            if (room.activeGame.deck.length > 0) {
-              hands[targetPlayerId].push(room.activeGame.deck.pop());
-            }
-          }
-          sendPrivateUnoHand(roomId, targetPlayerId, hands[targetPlayerId]);
-        }
-
-        gameState.currentColor = newColor;
-        gameState.turnIndex = (gameState.turnIndex + nextTurnOffset + players.length) % players.length;
-        room.activeGame.currentTurnId = players[gameState.turnIndex].id;
-
-        if (playerHand.length === 0) {
-          gameState.winner = players[playerIndex].name;
-          broadcastGameState(roomId, room.activeGame);
-          setTimeout(() => {
-            if (room.activeGame && room.activeGame.type === 'uno' && room.activeGame.state?.winner) {
-              room.activeGame = null;
-              io.in(roomId).emit('game-ended');
-            }
-          }, 5000);
-          return;
-        }
-
-        sendPrivateUnoHand(roomId, playerId, playerHand);
-        broadcastGameState(roomId, room.activeGame);
-      }
-    } else {
-      room.activeGame.state = data.newState;
-
-      const nextTurnIndex = (players.findIndex(p => p.id === playerId) + 1) % players.length;
-      room.activeGame.currentTurnId = players[nextTurnIndex].id;
-
-      if (type === 'tictactoe') {
-        const board = data.newState.board;
-        const winner = calculateTicTacToeWinner(board);
-        const isDraw = !winner && board.every(square => square !== null);
-        if (winner || isDraw) {
-          room.activeGame.winner = winner || 'draw';
-          broadcastGameState(roomId, room.activeGame);
-          setTimeout(() => {
-            if (room.activeGame && room.activeGame.type === 'tictactoe') {
-              room.activeGame = null;
-              io.in(roomId).emit('game-ended');
-            }
-          }, 5000);
-          return;
-        }
-      } else if (type === 'connect4') {
-        const board = data.newState.board;
-        const winner = checkConnect4Winner(board);
-        const isDraw = !winner && board.every(col => col.length === 6);
-        if (winner || isDraw) {
-          room.activeGame.winner = winner || 'draw';
-          broadcastGameState(roomId, room.activeGame);
-          setTimeout(() => {
-            if (room.activeGame && room.activeGame.type === 'connect4') {
-              room.activeGame = null;
-              io.in(roomId).emit('game-ended');
-            }
-          }, 5000);
-          return;
-        }
-      }
-
-      broadcastGameState(roomId, room.activeGame);
+    
+    // Validate player is in this game
+    if (!room.activeGame.players.find(p => p.id === playerId)) {
+      socket.emit('game-error', { message: 'You are not in this game' });
+      return;
     }
+
+    // Apply new state
+    room.activeGame.state = newState;
+    
+    // Check for winner
+    if (newState.winner) {
+      room.activeGame.status = 'finished';
+      room.activeGame.winner = newState.winner;
+      io.in(roomId).emit('game-state', room.activeGame);
+      io.in(roomId).emit('game-ended', { winner: newState.winner, reason: 'winner' });
+      return;
+    }
+
+    // Advance turn (skip logic handled per game in newState.skipNextPlayer)
+    const players = room.activeGame.players;
+    const currentIndex = players.findIndex(p => p.id === playerId);
+    
+    // Handle UNO reverse
+    if (newState.direction === -1 && !room.activeGame.direction) {
+      room.activeGame.direction = -1;
+    }
+    const direction = room.activeGame.direction || 1;
+    
+    // Handle skip
+    const skipCount = newState.skipCount || 1;
+    let nextIndex = (currentIndex + (direction * skipCount) + players.length) % players.length;
+    
+    room.activeGame.currentTurnId = players[nextIndex].id;
+
+    // For UNO: if draw cards were assigned, emit private hand update
+    if (data.gameType === 'uno' && newState.drawnCards) {
+      Object.entries(newState.drawnCards).forEach(([uid, cards]) => {
+        const playerSocket = [...socketToIdentity.entries()]
+          .find(([sid, id]) => id === uid)?.[0];
+        if (playerSocket) {
+          io.to(playerSocket).emit('uno-draw', { cards });
+        }
+      });
+      delete room.activeGame.state.drawnCards;
+    }
+
+    io.in(roomId).emit('game-state', room.activeGame);
   });
 
-
-  // Socket: uno-request-hand
+  // ─── GAME END (manual) ───────────────────────────────────────────────────────
+  socket.on('game-end', (data) => {
+    const { roomId, userId } = data;
+    const room = rooms.find(r => r.id === roomId);
+    
+    if (!room?.activeGame) return;
+    if (!room.activeGame.players.find(p => p.id === userId)) return;
+    
+    room.activeGame = null;
+    room.gameLobby = null;
+    io.in(roomId).emit('game-ended', { reason: 'manual' });
+    io.in(roomId).emit('game-lobby-updated', null);
+  });
   socket.on('uno-request-hand', (data) => {
     const { roomId } = data;
     const room = rooms.find(r => r.id === roomId);
@@ -1671,27 +1722,29 @@ io.on('connection', (socket) => {
 
 // Global Public Settings Endpoint
 app.get('/api/settings/public', async (req, res) => {
-  const adminInstance = initFirebaseAdmin();
-  if (!adminInstance) {
-    return res.json({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: "/qr-placeholder.png", premiumVisibilityBoost: true });
-  }
-  
+  const fallback = {
+    premiumPrice: 99,
+    premiumDurationDays: 30,
+    qrCodeUrl: '/qr-placeholder.png',
+    premiumVisibilityBoost: true
+  };
+
   try {
+    const adminInstance = initFirebaseAdmin();
+    if (!adminInstance) return res.json(fallback);
     const db = adminInstance.firestore();
     const doc = await db.collection('settings').doc('global').get();
-    if (!doc.exists) {
-      return res.json({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: "/qr-placeholder.png", premiumVisibilityBoost: true });
-    }
+    if (!doc.exists) return res.json(fallback);
     const data = doc.data();
     res.json({
-      premiumPrice: data.premiumPrice || 99,
-      premiumDurationDays: data.premiumDurationDays || 30,
-      qrCodeUrl: data.qrCodeUrl || "/qr-placeholder.png",
-      premiumVisibilityBoost: data.premiumVisibilityBoost ?? true
+      premiumPrice: data.premiumPrice || fallback.premiumPrice,
+      premiumDurationDays: data.premiumDurationDays || fallback.premiumDurationDays,
+      qrCodeUrl: data.qrCodeUrl || fallback.qrCodeUrl,
+      premiumVisibilityBoost: data.premiumVisibilityBoost ?? fallback.premiumVisibilityBoost
     });
   } catch (error) {
-    console.error('Error fetching public settings:', error);
-    res.status(500).json({ error: 'Failed to fetch settings' });
+    console.error('Settings fetch error:', error);
+    res.json(fallback); // Always return fallback, never 500
   }
 });
 

@@ -3,7 +3,7 @@ import { Globe, Heart } from 'lucide-react';
 
 export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJoining }) {
   const [copied, setCopied] = useState(false);
-  const participants = room.participants || [];
+  const participants = (room.participants || []).filter(p => p != null && p.id != null);
   const MAX_SLOTS = 4;
   const displaySlots = Array.from({ length: MAX_SLOTS }, (_, i) => participants[i] || null);
   const extraCount = participants.length > MAX_SLOTS ? participants.length - MAX_SLOTS : 0;
@@ -115,41 +115,53 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
 
       {/* Avatar row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, minHeight: 64 }}>
-        {displaySlots.map((participant, idx) =>
-          participant ? (
-            <div key={participant.id || idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{
-                width: idx === 0 ? 90 : 64, height: idx === 0 ? 90 : 64, borderRadius: '50%',
-                overflow: 'hidden', background: participant.color || '#1877f2',
-                border: idx === 0 ? '3px solid rgba(255,255,255,0.3)' : '2px solid #13171f',
-                boxShadow: idx === 0 ? '0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(24,119,242,0.3)' : '0 0 0 1px rgba(255,255,255,0.1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, fontWeight: 700, color: 'white', flexShrink: 0
+        {displaySlots.map((participant, idx) => {
+          if (participant) {
+            const seed = participant.id || participant.name || `slot-${idx}`;
+            const avatarSrc = (participant.photoUrl && participant.photoUrl.trim() !== '')
+              ? participant.photoUrl
+              : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+
+            return (
+              <div key={participant.id || idx} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4
               }}>
-                {(() => {
-                  const seed = participant?.id || participant?.name || `slot-${idx}`;
-                  const avatarSrc = participant.photoUrl?.trim() 
-                    ? participant.photoUrl 
-                    : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
-                  return <img src={avatarSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />;
-                })()}
+                <div style={{
+                  width: idx === 0 ? 90 : 64, height: idx === 0 ? 90 : 64, borderRadius: '50%',
+                  overflow: 'hidden', flexShrink: 0,
+                  border: idx === 0 ? '3px solid rgba(255,255,255,0.3)' : '2px solid rgba(255,255,255,0.15)',
+                  boxShadow: idx === 0 ? '0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(24,119,242,0.3)' : '0 0 0 1px rgba(255,255,255,0.1)',
+                  background: participant.color || '#1877f2'
+                }}>
+                  <img
+                    src={avatarSrc}
+                    alt={participant.name || ''}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      // If image fails, show initials
+                      e.target.style.display = 'none';
+                      e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:white">${(participant.name || '?').slice(0,2).toUpperCase()}</div>`;
+                    }}
+                  />
+                </div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  color: '#60a5fa', fontSize: 10, fontWeight: 600
+                }}>
+                  ❤️ {participant.followersCount || 0}
+                </div>
               </div>
-              <div style={{
-                fontSize: 9, color: 'rgba(255,255,255,0.3)',
-                fontWeight: 700, letterSpacing: '0.05em',
-                textTransform: 'uppercase', marginTop: 2
-              }}>
-                Unverified
-              </div>
-            </div>
-          ) : (
-            <div key={`empty-${idx}`} style={{
-              width: 64, height: 64, borderRadius: '50%',
-              border: '2px dashed rgba(255,255,255,0.1)',
-              flexShrink: 0
-            }} />
-          )
-        )}
+            );
+          } else {
+            return (
+              <div key={`empty-${idx}`} style={{
+                width: 64, height: 64, borderRadius: '50%',
+                border: '2px dashed rgba(255,255,255,0.1)',
+                flexShrink: 0
+              }} />
+            );
+          }
+        })}
         {extraCount > 0 && (
           <div style={{
             width: 64, height: 64, borderRadius: '50%',
