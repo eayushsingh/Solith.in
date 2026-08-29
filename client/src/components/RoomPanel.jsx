@@ -912,13 +912,24 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
 
                 {/* TOOL: DESIGN WHITEBOARD */}
                 {activeTool === 'whiteboard' && (
-                  <div className="flex-1 flex flex-col overflow-hidden p-4">
+                  <div className="fixed inset-0 z-[100] flex flex-col p-4 bg-[#0a0a0a]/95 backdrop-blur-md">
+                    {/* Full Screen Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-white font-bold text-lg">Design Whiteboard</h2>
+                      <button 
+                        type="button" 
+                        onClick={() => setActiveTool(null)}
+                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-bold transition-colors"
+                      >
+                        Exit Fullscreen
+                      </button>
+                    </div>
                     {/* Whiteboard High-Res Canvas */}
-                    <div className="flex-1 rounded-2xl border border-white/10 overflow-hidden relative bg-[#0f1115] shadow-inner min-h-[180px]">
+                    <div className="flex-1 rounded-2xl border border-white/10 overflow-hidden relative bg-[#0f1115] shadow-inner">
                       <canvas 
                         ref={canvasRef}
-                        width={600}
-                        height={400}
+                        width={1920}
+                        height={1080}
                         onMouseDown={startDrawing}
                         onMouseMove={draw}
                         onMouseUp={stopDrawing}
