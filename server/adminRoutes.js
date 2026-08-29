@@ -1,10 +1,10 @@
 import express from 'express';
-import { initFirebaseAdmin, verifyAdmin } from './firebaseAdmin.js';
+import { initFirebaseAdmin, verifyAdmin, verifyToken } from './firebaseAdmin.js';
 
 export default function setupAdminRoutes(app, getRooms, saveDB, io) {
   const router = express.Router();
 
-  router.use(verifyAdmin); // All routes in this router require admin role
+  router.use(verifyToken, verifyAdmin); // All routes in this router require admin role
 
   // Helper to log admin actions
   const logAdminAction = async (db, adminId, adminEmail, action, targetId, details) => {

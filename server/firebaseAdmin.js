@@ -90,41 +90,30 @@ export async function verifyToken(req, res, next) {
   }
 }
 
-export async function verifyAdmin(req, res, next) {
-  verifyToken(req, res, async () => {
+export const verifyAdmin = async (req, res, next) => {
+  const ADMIN_EMAILS = [
+    'ayushfun01@gmail.com',
+    'hacksejeet@gmail.com',
+    'ayush.singh.something@klh.edu.in',
+    'ayushsinghe07@gmail.com'
+  ];
+
+  if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
+
+  // Check by email
+  if (ADMIN_EMAILS.includes(req.user.email)) return next();
+
+  // Check by Firestore role
+  try {
     const adminInstance = initFirebaseAdmin();
-    if (!adminInstance) {
-      if (isProduction) {
-        return res.status(503).json({ error: 'Authentication service unavailable' });
-      }
-
-      console.warn('Bypassing verifyAdmin - no Firebase Admin SDK');
-      req.adminData = { role: 'admin', email: req.user?.email || 'ayushfun01@gmail.com', id: req.user?.uid || 'local-dev-user' };
-      return next();
-    }
-    if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    try {
+    if (adminInstance) {
       const db = adminInstance.firestore();
       const userDoc = await db.collection('users').doc(req.user.uid).get();
-      
-      if (!userDoc.exists) {
-        return res.status(403).json({ error: 'Forbidden: User not found in database' });
-      }
-
-      const userData = userDoc.data();
-      if (userData.role !== 'admin') {
-        return res.status(403).json({ error: 'Forbidden: Admin access required' });
-      }
-
-      // User is verified as admin
-      req.adminData = userData; 
-      next();
-    } catch (error) {
-      console.error('Error verifying admin role:', error);
-      res.status(500).json({ error: 'Internal server error during role verification' });
+      if (userDoc.exists && userDoc.data().role === 'admin') return next();
     }
-  });
-}
+  } catch (e) {
+    console.error('Admin check error:', e);
+  }
+
+  return res.status(403).json({ error: 'Forbidden: Admin access required' });
+};
