@@ -243,6 +243,19 @@ export const LiveKitService = {
     return true;
   },
 
+  setLocalCamera: async (enable, isRealCall) => {
+    if (!isRealCall) return false;
+    try {
+      if (roomObject && roomObject.localParticipant) {
+        await roomObject.localParticipant.setCameraEnabled(enable);
+      }
+      return enable;
+    } catch (err) {
+      console.error('Camera error:', err);
+      return false;
+    }
+  },
+
   setLocalScreenShare: async (enable, isRealCall) => {
     if (!isRealCall) return false;
     try {
@@ -274,6 +287,10 @@ function updateParticipantsList() {
     const screenSharePub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.ScreenShare) : null;
     const isScreenSharing = !!screenSharePub;
     const screenShareTrack = screenSharePub?.track;
+
+    const cameraPub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.Camera) : null;
+    const isCameraOn = !!cameraPub;
+    const cameraTrack = cameraPub?.track;
     let meta = {};
     try { if (roomObject.localParticipant.metadata) meta = JSON.parse(roomObject.localParticipant.metadata); } catch(e){}
     list.push({
@@ -283,6 +300,8 @@ function updateParticipantsList() {
       muted: isMuted,
       isScreenSharing: isScreenSharing,
       screenShareTrack: screenShareTrack,
+      isCameraOn: isCameraOn,
+      cameraTrack: cameraTrack,
       photoUrl: meta.photoUrl || '',
       color: meta.color || '#ff4d4d',
       emoji: meta.emoji || '👤'
@@ -297,6 +316,10 @@ function updateParticipantsList() {
       const screenSharePub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.ScreenShare) : null;
       const isScreenSharing = !!screenSharePub;
       const screenShareTrack = screenSharePub?.track;
+
+      const cameraPub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.Camera) : null;
+      const isCameraOn = !!cameraPub;
+      const cameraTrack = cameraPub?.track;
       let meta = {};
       try { if (p.metadata) meta = JSON.parse(p.metadata); } catch(e){}
       list.push({
@@ -306,6 +329,8 @@ function updateParticipantsList() {
         muted: isMuted,
         isScreenSharing: isScreenSharing,
         screenShareTrack: screenShareTrack,
+        isCameraOn: isCameraOn,
+        cameraTrack: cameraTrack,
         photoUrl: meta.photoUrl || '',
         color: meta.color || '#ff4d4d',
         emoji: meta.emoji || '👤'
