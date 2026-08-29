@@ -1289,6 +1289,11 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
             </div>
 
             {/* Following list */}
+            {socialTab === 'Following' && (user?.following || []).length === 0 && (
+              <div style={{ padding: '20px 12px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>
+                You are not following anyone yet.
+              </div>
+            )}
             {socialTab === 'Following' && (user?.following || []).map(followedId => (
               <SocialUserRow
                 key={followedId}

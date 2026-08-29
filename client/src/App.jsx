@@ -555,7 +555,7 @@ export default function App() {
     try {
       const snap = await getDoc(doc(db, 'users', userId));
       if (snap.exists()) {
-        setTargetProfile(snap.data());
+        setTargetProfile({ id: userId, ...snap.data() });
       } else {
         alert("User not found.");
         setShowTargetProfileModal(false);

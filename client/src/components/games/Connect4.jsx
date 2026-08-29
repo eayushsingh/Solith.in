@@ -4,6 +4,29 @@ import confetti from 'canvas-confetti';
 const ROWS = 6;
 const COLS = 7;
 
+function calculateConnect4Winner(board) {
+  // Check horizontal, vertical, and diagonal for 4 in a row
+  const get = (c, r) => (board[c] && board[c][r]) || null;
+  
+  for (let c = 0; c < COLS; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      const token = get(c, r);
+      if (!token) continue;
+      // Horizontal
+      if (c + 3 < COLS && token === get(c+1,r) && token === get(c+2,r) && token === get(c+3,r)) return token;
+      // Vertical
+      if (r + 3 < ROWS && token === get(c,r+1) && token === get(c,r+2) && token === get(c,r+3)) return token;
+      // Diagonal up-right
+      if (c + 3 < COLS && r + 3 < ROWS && token === get(c+1,r+1) && token === get(c+2,r+2) && token === get(c+3,r+3)) return token;
+      // Diagonal down-right
+      if (c + 3 < COLS && r - 3 >= 0 && token === get(c+1,r-1) && token === get(c+2,r-2) && token === get(c+3,r-3)) return token;
+    }
+  }
+  // Check draw — all columns full
+  if (board.every(col => col.length >= ROWS)) return 'draw';
+  return null;
+}
+
 export default function Connect4({ activeGame, socket, roomId, currentUser, myPlayerId, currentTurnId }) {
   // Board is an array of columns, where each column is an array of up to ROWS tokens (red or yellow)
   const [board, setBoard] = useState(Array.from({ length: COLS }, () => []));
@@ -49,10 +72,17 @@ export default function Connect4({ activeGame, socket, roomId, currentUser, myPl
     setBoard(newBoard);
     setRedIsNext(!redIsNext);
 
+    // Check for winner or draw after this move
+    const result = calculateConnect4Winner(newBoard);
+
     socket.emit('game-action', {
       roomId,
       action: 'move',
-      newState: { board: newBoard, redIsNext: !redIsNext },
+      newState: { 
+        board: newBoard, 
+        redIsNext: !redIsNext,
+        ...(result ? { winner: result } : {})
+      },
       playerId: currentUser.id
     });
   };
