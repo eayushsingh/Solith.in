@@ -167,7 +167,8 @@ export default function App() {
   const [showDevModal, setShowDevModal] = useState(false);
   const [showSocialPanel, setShowSocialPanel] = useState(false);
   const [socialTab, setSocialTab] = useState('All');
-  
+  const [allSocialUsers, setAllSocialUsers] = useState([]);
+  const [socialSearch, setSocialSearch] = useState('');
   // Create Room fields
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomLanguage, setNewRoomLanguage] = useState('English');
@@ -812,6 +813,17 @@ export default function App() {
     }
   };
 
+  // Fetch all users when Social panel opens on "All" tab
+  useEffect(() => {
+    if (showSocialPanel && socialTab === 'All' && allSocialUsers.length === 0) {
+      fetch(`${API_URL}/api/users/all`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.users) setAllSocialUsers(data.users);
+        })
+        .catch(err => console.error('Failed to fetch social users:', err));
+    }
+  }, [showSocialPanel, socialTab]);
 
 
   const saveDevSettings = async () => {
@@ -2257,6 +2269,8 @@ export default function App() {
           <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <input
               placeholder="Search by Name"
+              value={socialSearch}
+              onChange={e => setSocialSearch(e.target.value)}
               style={{
                 width: '100%', background: 'rgba(255,255,255,0.06)',
                 border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8,
@@ -2297,30 +2311,59 @@ export default function App() {
               </div>
             ))}
             
-            {socialTab !== 'In Room' && (socialTab === 'Following' ? (user?.following || []) : []).length === 0 && (
-              <div style={{ padding: '20px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
-                {socialTab === 'Following' ? 'You are not following anyone yet.' : 'No users to show.'}
-              </div>
-            )}
-            {/* Map following users */}
-            {socialTab !== 'In Room' && (user?.following || []).slice(0, 20).map(followedId => (
-              <SocialUserRow
-                key={followedId}
-                userId={followedId}
-                currentUser={user}
-                onlineUserIds={onlineUserIds}
-                openUserProfile={(id) => {
-                  setShowSocialPanel(false);
-                  openUserProfile(id);
-                }}
-                onDM={(id, profile) => {
-                  setActiveDm({ id, profile });
-                  setMsgTab('direct');
-                  setView('messages');
-                  setShowSocialPanel(false);
-                }}
-              />
-            ))}
+            {socialTab === 'All' && (() => {
+              const filtered = allSocialUsers.filter(u => u.id !== user?.id && u.name.toLowerCase().includes(socialSearch.toLowerCase()));
+              if (filtered.length === 0) return (
+                <div style={{ padding: '20px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+                  No users to show.
+                </div>
+              );
+              return filtered.map(u => (
+                <SocialUserRow
+                  key={u.id}
+                  userId={u.id}
+                  currentUser={user}
+                  onlineUserIds={onlineUserIds}
+                  openUserProfile={(id) => {
+                    setShowSocialPanel(false);
+                    openUserProfile(id);
+                  }}
+                  onDM={(id, profile) => {
+                    setActiveDm({ id, profile });
+                    setMsgTab('direct');
+                    setView('messages');
+                    setShowSocialPanel(false);
+                  }}
+                />
+              ));
+            })()}
+
+            {socialTab === 'Following' && (() => {
+              const followingIds = (user?.following || []);
+              if (followingIds.length === 0) return (
+                <div style={{ padding: '20px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+                  You are not following anyone yet.
+                </div>
+              );
+              return followingIds.slice(0, 20).map(followedId => (
+                <SocialUserRow
+                  key={followedId}
+                  userId={followedId}
+                  currentUser={user}
+                  onlineUserIds={onlineUserIds}
+                  openUserProfile={(id) => {
+                    setShowSocialPanel(false);
+                    openUserProfile(id);
+                  }}
+                  onDM={(id, profile) => {
+                    setActiveDm({ id, profile });
+                    setMsgTab('direct');
+                    setView('messages');
+                    setShowSocialPanel(false);
+                  }}
+                />
+              ));
+            })()}
           </div>
         </div>
       )}
