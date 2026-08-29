@@ -992,6 +992,31 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
   }
 });
 
+// ─── GET ALL USERS (for Social "All" tab) ────────────────────────────────────
+app.get('/api/users/all', async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) {
+    return res.status(503).json({ error: 'Firestore Admin not initialized.' });
+  }
+  try {
+    const db = adminInstance.firestore();
+    const snapshot = await db.collection('users').orderBy('xp', 'desc').limit(100).get();
+    const users = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name || 'Unknown',
+        photoUrl: data.photoUrl || '',
+        xp: data.xp || 0
+      };
+    });
+    res.json({ users });
+  } catch (error) {
+    console.error('Error fetching all users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
 app.get('/api/users/profiles', async (req, res) => {
   const adminInstance = initFirebaseAdmin();
   if (!adminInstance) {
