@@ -87,7 +87,7 @@ const ADMIN_EMAILS = [
   'ayushsinghe07@gmail.com'
 ];
 
-const VideoTrack = ({ track }) => {
+const VideoTrack = ({ track, className = "w-full h-full object-contain rounded-2xl bg-black" }) => {
   const ref = useRef(null);
   useEffect(() => {
     if (track && ref.current) {
@@ -97,7 +97,7 @@ const VideoTrack = ({ track }) => {
       };
     }
   }, [track]);
-  return <video ref={ref} autoPlay playsInline className="w-full h-full object-contain rounded-2xl bg-black" />;
+  return <video ref={ref} autoPlay playsInline className={className} />;
 };
 
 export default function App() {
@@ -188,6 +188,7 @@ export default function App() {
   const [roomJoinTime, setRoomJoinTime] = useState(null);
   const [isMuted, setIsMuted] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(false);
   const [ytVideoId, setYtVideoId] = useState(null);
   const [ytSharingUser, setYtSharingUser] = useState(null);
   const [showYtModal, setShowYtModal] = useState(false);
@@ -1095,6 +1096,17 @@ export default function App() {
     } catch (err) {
       console.error('Failed to set screen share:', err);
       alert('Could not start screen sharing: ' + err.message);
+    }
+  };
+
+  const toggleCamera = async () => {
+    try {
+      const nextCameraOn = !isCameraOn;
+      const resolved = await LiveKitService.setLocalCamera(nextCameraOn, isRealCall);
+      setIsCameraOn(resolved);
+    } catch (err) {
+      console.error('Failed to set camera:', err);
+      alert('Could not start camera: ' + err.message);
     }
   };
 
@@ -2867,6 +2879,14 @@ export default function App() {
                {isMuted ? <MicOff size={20} color="white"/> : <Mic size={20} color="white"/>}
              </button>
 
+             <button onClick={toggleCamera} style={{
+               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+               background: isCameraOn ? '#1877f2' : 'rgba(255,255,255,0.08)',
+               display: 'flex', alignItems: 'center', justifyContent: 'center'
+             }}>
+               <Camera size={20} color="white"/>
+             </button>
+
              <button onClick={toggleScreenShare} style={{
                width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
                background: isScreenSharing ? '#1877f2' : 'rgba(255,255,255,0.08)',
@@ -2997,8 +3017,10 @@ export default function App() {
                               transition: 'all 0.2s ease',
                               background: pColor, position: 'relative', flexShrink: 0
                             }}>
-                              {pPhotoUrl
-                                ? <img 
+                              {p.isCameraOn && p.cameraTrack ? (
+                                <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover" />
+                              ) : pPhotoUrl ? (
+                                <img 
                                     src={pPhotoUrl} 
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                                     alt="" 
@@ -3007,10 +3029,11 @@ export default function App() {
                                       e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
                                     }}
                                   />
-                                : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
+                              ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
                                     {pName.slice(0, 2).toUpperCase()}
                                   </div>
-                              }
+                              )}
                               {p.muted && (
                                 <div style={{
                                   position: 'absolute', bottom: 3, right: 3,
@@ -3076,8 +3099,10 @@ export default function App() {
                             transition: 'all 0.2s ease',
                             background: pColor, position: 'relative', flexShrink: 0
                           }}>
-                            {pPhotoUrl
-                              ? <img 
+                            {p.isCameraOn && p.cameraTrack ? (
+                              <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover" />
+                            ) : pPhotoUrl ? (
+                              <img 
                                   src={pPhotoUrl} 
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                                   alt="" 
@@ -3086,10 +3111,11 @@ export default function App() {
                                     e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
                                   }}
                                 />
-                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
+                            ) : (
+                              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
                                   {pName.slice(0, 2).toUpperCase()}
                                 </div>
-                            }
+                            )}
                             {p.muted && (
                               <div style={{
                                 position: 'absolute', bottom: 3, right: 3,
