@@ -34,6 +34,11 @@ export default function AdminPanel({ onBack, user }) {
   
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', action: null });
 
+  const getFreshToken = async () => {
+    if (!auth?.currentUser) return user?.token || '';
+    return await auth.currentUser.getIdToken(false);
+  };
+
   const fetchWithToken = async (endpoint, options = {}) => {
     if (!user || !(await getFreshToken())) return null;
     const res = await fetch(`${API_URL}${endpoint}`, {
@@ -86,11 +91,6 @@ export default function AdminPanel({ onBack, user }) {
   }, [activeTab]);
 
   const requestConfirm = (title, message, action) => {
-  const getFreshToken = async () => {
-    if (!auth?.currentUser) return user?.token || '';
-    return await auth.currentUser.getIdToken(false);
-  };
-
     setConfirmDialog({ isOpen: true, title, message, action });
   };
 

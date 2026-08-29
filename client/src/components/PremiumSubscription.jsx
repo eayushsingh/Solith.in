@@ -24,6 +24,11 @@ export default function PremiumSubscription({ onBack, user }) {
     fetchPaymentStatus();
   }, [user]);
 
+  const getFreshToken = async () => {
+    if (!auth?.currentUser) return user?.token || '';
+    return await auth.currentUser.getIdToken(false);
+  };
+
   const fetchSettings = async () => {
     try {
       const res = await fetch(`${API_URL}/api/settings/public`);
