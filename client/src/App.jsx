@@ -2750,9 +2750,8 @@ export default function App() {
                   border: '1px solid rgba(255,255,255,0.1)',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.2s'
-                }}
-                title="Social"
-              >
+                  }}
+                title="Social">
                 <Users size={18} color="white" />
               </button>
               
@@ -2811,11 +2810,13 @@ export default function App() {
               </button>
             </div>
           ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: lobbyGridCols === 3 ? 'repeat(3,1fr)' : lobbyGridCols === 2 ? 'repeat(2,1fr)' : '1fr',
-              gap: 16
-            }}>
+            <div className={`grid gap-4 ${
+              lobbyGridCols === 3 
+                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                : lobbyGridCols === 2 
+                  ? 'grid-cols-1 md:grid-cols-2' 
+                  : 'grid-cols-1'
+            }`}>
               {filteredRooms.map(room => (
                 <RoomCard 
                   key={room.id} 
