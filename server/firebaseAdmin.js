@@ -101,7 +101,10 @@ export const verifyAdmin = async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
 
   // Check by email
-  if (ADMIN_EMAILS.includes(req.user.email)) return next();
+  if (ADMIN_EMAILS.includes(req.user.email)) {
+    req.adminData = { role: 'admin', email: req.user.email, id: req.user.uid };
+    return next();
+  }
 
   // Check by Firestore role
   try {
@@ -109,7 +112,10 @@ export const verifyAdmin = async (req, res, next) => {
     if (adminInstance) {
       const db = adminInstance.firestore();
       const userDoc = await db.collection('users').doc(req.user.uid).get();
-      if (userDoc.exists && userDoc.data().role === 'admin') return next();
+      if (userDoc.exists && userDoc.data().role === 'admin') {
+        req.adminData = { ...userDoc.data(), id: req.user.uid };
+        return next();
+      }
     }
   } catch (e) {
     console.error('Admin check error:', e);

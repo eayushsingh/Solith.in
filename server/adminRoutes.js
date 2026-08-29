@@ -323,10 +323,11 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
 
         // Update user to premium
         const userRef = db.collection('users').doc(data.userId);
+        const isOwnerPlan = data.plan === 'OWNER';
         transaction.update(userRef, {
           isPremium: true,
-          premiumPlan: 'PREMIUM',
-          premiumExpiresAt: expiresAt
+          premiumPlan: data.plan || 'PREMIUM',
+          premiumExpiresAt: isOwnerPlan ? new Date(now.getTime() + (100 * 365 * 24 * 60 * 60 * 1000)) : expiresAt
         });
         
         logAdminAction(db, req.adminData.id, req.adminData.email, 'payment_approve', id, `Approved payment ${id} for user ${data.userId}`);
