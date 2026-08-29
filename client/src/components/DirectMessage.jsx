@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, orderBy, onSnapshot, db, updateDoc, doc, serverTimestamp } from '../firebase';
-import { ArrowLeft, Send, Shield, Flag, MoreVertical, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Shield, Flag, MoreVertical, Loader2, Image as ImageIcon, X } from 'lucide-react';
 import ReportModal from './ReportModal';
 import { playSound } from '../utils/sounds';
 
@@ -11,6 +11,9 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
   const [sending, setSending] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  
+  const fileInputRef = useRef(null);
   
   const endOfMessagesRef = useRef(null);
   const previousMessagesLength = useRef(0);
@@ -54,12 +57,51 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_SIZE = 800;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     const text = newMessage.trim();
-    if (!text || text.length > 2000) return;
+    if (!text && !selectedImage) return;
+    if (text.length > 2000) return;
 
     setSending(true);
+    let imageUrl = null;
+    if (selectedImage) {
+      imageUrl = await compressImage(selectedImage);
+    }
+    
     playSound('message');
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     
@@ -73,7 +115,8 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
         body: JSON.stringify({
           conversationId,
           receiverId: targetProfile.id,
-          text
+          text,
+          imageUrl
         })
       });
 
@@ -82,6 +125,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
         alert(data.error || 'Failed to send message');
       } else {
         setNewMessage('');
+        setSelectedImage(null);
       }
     } catch (err) {
       console.error(err);
@@ -199,13 +243,16 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
                 )}
                 <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
                   <div 
-                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed break-words shadow-sm ${
+                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed break-words shadow-sm flex flex-col gap-2 ${
                       isMe 
                         ? 'bg-blue-600 text-text-primary rounded-br-sm' 
                         : 'bg-[var(--bg-secondary)] border border-[var(--line-subtle)] text-text-primary rounded-bl-sm'
                     }`}
                   >
-                    {msg.text}
+                    {msg.imageUrl && (
+                      <img src={msg.imageUrl} alt="attachment" className="max-w-full rounded-xl object-contain max-h-[300px]" />
+                    )}
+                    {msg.text && <span>{msg.text}</span>}
                   </div>
                 </div>
               </React.Fragment>
@@ -216,23 +263,58 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-[var(--line-subtle)] bg-[var(--bg)] shrink-0">
-        <form onSubmit={handleSendMessage} className="relative flex items-center max-w-4xl mx-auto">
+      <div className="p-4 border-t border-[var(--line-subtle)] bg-[var(--bg)] shrink-0 flex flex-col gap-2 relative">
+        {selectedImage && (
+          <div className="max-w-4xl mx-auto w-full relative">
+            <div className="relative inline-block rounded-xl overflow-hidden border border-[var(--line-subtle)] w-24 h-24 bg-black/20">
+              <img src={URL.createObjectURL(selectedImage)} className="w-full h-full object-cover" alt="Preview" />
+              <button 
+                type="button" 
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        <form onSubmit={handleSendMessage} className="relative flex items-center max-w-4xl mx-auto w-full gap-2">
           <input 
-            type="text" 
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))} // Client side limit
-            placeholder="Type a message..." 
-            className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-full pl-5 pr-12 py-3.5 text-[15px] text-text-primary placeholder-[var(--ink-tertiary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all min-w-0"
-            autoFocus
+            type="file" 
+            accept="image/*" 
+            ref={fileInputRef} 
+            className="hidden" 
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                setSelectedImage(e.target.files[0]);
+              }
+            }}
           />
           <button 
-            type="submit"
-            disabled={sending || !newMessage.trim()}
-            className="absolute right-2 w-10 h-10 rounded-full flex items-center justify-center text-blue-500 hover:bg-blue-500/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-text-secondary hover:text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10 transition-colors"
           >
-            {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            <ImageIcon className="w-5 h-5" />
           </button>
+          
+          <div className="relative flex-1">
+            <input 
+              type="text" 
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))} // Client side limit
+              placeholder="Type a message..." 
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-full pl-5 pr-12 py-3.5 text-[15px] text-text-primary placeholder-[var(--ink-tertiary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all min-w-0"
+              autoFocus={!selectedImage}
+            />
+            <button 
+              type="submit"
+              disabled={sending || (!newMessage.trim() && !selectedImage)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-blue-500 hover:bg-blue-500/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+            >
+              {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            </button>
+          </div>
         </form>
       </div>
 

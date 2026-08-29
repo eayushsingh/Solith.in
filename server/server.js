@@ -8,6 +8,7 @@ import axios from 'axios';
 import { AccessToken, RoomServiceClient, WebhookReceiver } from 'livekit-server-sdk';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import admin from 'firebase-admin';
 import { initFirebaseAdmin, verifyToken, verifyAdmin } from './firebaseAdmin.js';
 import chalk from 'chalk';
 import helmet from 'helmet';
@@ -399,7 +400,7 @@ const awardUserXP = async (userId, xpEarned) => {
       }
 
       transaction.update(userRef, {
-        xp: adminInstance.firestore.FieldValue.increment(xpEarned),
+        xp: admin.firestore.FieldValue.increment(xpEarned),
         weeklyXp: newWeeklyXp,
         weeklyXpId: currentWeekId,
         monthlyXp: newMonthlyXp,
@@ -958,18 +959,18 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
 
       if (isFollowing) {
         // Unfollow
-        transaction.set(userRef, { following: adminInstance.firestore.FieldValue.arrayRemove(targetId) }, { merge: true });
-        transaction.set(targetRef, { followers: adminInstance.firestore.FieldValue.arrayRemove(userId) }, { merge: true });
+        transaction.set(userRef, { following: admin.firestore.FieldValue.arrayRemove(targetId) }, { merge: true });
+        transaction.set(targetRef, { followers: admin.firestore.FieldValue.arrayRemove(userId) }, { merge: true });
         transaction.delete(followDocRef);
         didFollow = false;
       } else {
         // Follow
-        transaction.set(userRef, { following: adminInstance.firestore.FieldValue.arrayUnion(targetId) }, { merge: true });
-        transaction.set(targetRef, { followers: adminInstance.firestore.FieldValue.arrayUnion(userId) }, { merge: true });
+        transaction.set(userRef, { following: admin.firestore.FieldValue.arrayUnion(targetId) }, { merge: true });
+        transaction.set(targetRef, { followers: admin.firestore.FieldValue.arrayUnion(userId) }, { merge: true });
         transaction.set(followDocRef, {
           followerId: userId,
           followingId: targetId,
-          createdAt: adminInstance.firestore.FieldValue.serverTimestamp()
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
         });
         didFollow = true;
       }
@@ -1044,7 +1045,7 @@ app.post('/api/users/:targetId/block', verifyToken, async (req, res) => {
     
     // Add to blockedUsers array
     await userRef.set({
-      blockedUsers: adminInstance.firestore.FieldValue.arrayUnion(targetId)
+      blockedUsers: admin.firestore.FieldValue.arrayUnion(targetId)
     }, { merge: true });
 
     res.json({ success: true });
@@ -1059,10 +1060,10 @@ app.post('/api/messages/send', verifyToken, async (req, res) => {
   if (!adminInstance) return res.status(503).json({ error: 'Firestore Admin not initialized.' });
 
   const userId = req.user.uid;
-  const { conversationId, receiverId, text } = req.body;
+  const { conversationId, receiverId, text, imageUrl } = req.body;
 
-  if (!text || typeof text !== 'string' || text.trim().length === 0 || text.trim().length > 2000) {
-    return res.status(400).json({ error: 'Message must be between 1 and 2000 characters.' });
+  if (!imageUrl && (!text || typeof text !== 'string' || text.trim().length === 0 || text.trim().length > 2000)) {
+    return res.status(400).json({ error: 'Message text or image is required.' });
   }
 
   if (!receiverId) {
@@ -1098,25 +1099,29 @@ app.post('/api/messages/send', verifyToken, async (req, res) => {
       if (!convoDoc.exists) {
         transaction.set(convoRef, {
           participants: [userId, receiverId],
-          lastMessageAt: adminInstance.firestore.FieldValue.serverTimestamp(),
-          lastMessageText: text.trim(),
+          lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastMessageText: text ? text.trim() : (imageUrl ? '[Image]' : ''),
           lastMessageSenderId: userId
         });
       } else {
         transaction.update(convoRef, {
-          lastMessageAt: adminInstance.firestore.FieldValue.serverTimestamp(),
-          lastMessageText: text.trim(),
+          lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+          lastMessageText: text ? text.trim() : (imageUrl ? '[Image]' : ''),
           lastMessageSenderId: userId
         });
       }
 
       const messageRef = convoRef.collection('messages').doc();
-      transaction.set(messageRef, {
+      const msgData = {
         senderId: userId,
-        text: text.trim(),
-        sentAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+        text: text ? text.trim() : '',
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
         readAt: null
-      });
+      };
+      if (imageUrl) {
+        msgData.imageUrl = imageUrl;
+      }
+      transaction.set(messageRef, msgData);
     });
 
     res.json({ success: true, conversationId: convoId });
