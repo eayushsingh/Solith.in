@@ -226,14 +226,16 @@ const processMonthlyAwards = async () => {
     const previousMonthId = `${prevYear}-${prevMonth.toString().padStart(2, '0')}`;
 
     if (lastAwardedMonth !== previousMonthId) {
-      // Fetch all users to avoid missing composite index
-      const snapshot = await db.collection('users').get();
+      // Use where clause to avoid fetching the entire collection!
+      const snapshot = await db.collection('users')
+        .where('monthlyXpId', '==', previousMonthId)
+        .where('monthlyXp', '>', 0)
+        .get();
+      
       const usersList = [];
       snapshot.forEach(doc => {
         const data = doc.data();
-        if (data.monthlyXpId === previousMonthId && data.monthlyXp > 0) {
-          usersList.push({ id: doc.id, monthlyXp: data.monthlyXp });
-        }
+        usersList.push({ id: doc.id, monthlyXp: data.monthlyXp });
       });
 
       if (usersList.length > 0) {
@@ -1214,8 +1216,9 @@ const broadcastOnlineStats = async () => {
   if (adminInstance) {
     try {
       const db = adminInstance.firestore();
-      const snapshot = await db.collection('users').get();
-      totalUserCount = snapshot.size;
+      // Optimization: use count() instead of fetching entire collection
+      const snapshot = await db.collection('users').count().get();
+      totalUserCount = snapshot.data().count;
     } catch (err) {
       console.warn('Failed to query total user count from Firestore:', err.message);
     }
