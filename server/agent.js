@@ -66,25 +66,18 @@ export default defineAgent({
       llm: model,
     });
     
-    const session = agent.session;
-    await session.start({ agent, room: ctx.room });
-
+    const agentSession = new voice.AgentSession();
+    await agentSession.start({ agent, room: ctx.room });
 
     // Initial greeting
-    session.conversation.item.create({
-      type: 'message',
-      role: 'user',
-      content: [{ type: 'input_text', text: 'You have just joined a Solith voice room. Say a quick, casual hello to start the conversation.' }],
+    agent.session.generateReply({
+      userInput: 'You have just joined a Solith voice room. Say a quick, casual hello to start the conversation.'
     });
-    session.response.create();
 
     ctx.room.on('participantConnected', (p) => {
-        session.conversation.item.create({
-          type: 'message',
-          role: 'user',
-          content: [{ type: 'input_text', text: `A new user named ${p.name || 'someone'} just joined the room. Acknowledge them naturally.` }],
+        agent.session.generateReply({
+          userInput: `A new user named ${p.name || 'someone'} just joined the room. Acknowledge them naturally.`
         });
-        session.response.create();
     });
     
     ctx.room.on('participantDisconnected', (p) => {
