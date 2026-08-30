@@ -488,7 +488,7 @@ app.get('/api/rooms', async (req, res) => {
 
 const SUPPORTED_LANGUAGES = [
   'English', 'Spanish', 'French', 'German', 'Japanese',
-  'Chinese', 'Portuguese', 'Korean', 'Hindi', 'Arabic',
+  'Chinese', 'Portuguese', 'Korean', 'Hindi', 'Arabic', 'Russian',
   'Bengali', 'Indonesian', 'Vietnamese', 'Urdu', 'Tamil',
   'Telugu', 'Marathi', 'Uzbek', 'Turkish'
 ];
