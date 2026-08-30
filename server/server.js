@@ -1962,21 +1962,38 @@ const PORT = process.env.PORT || 3000;
 loadDB();
 
 let agentWorker = null;
+let agentRestartCount = 0;
+
 const startAgentWorker = () => {
-  console.log(chalk.yellow('[Agent Worker] Starting...'));
-  agentWorker = spawn('node', ['agent.js', 'start'], {
+  if (agentRestartCount > 10) {
+    console.error(chalk.red('[agent-worker] Too many restarts — giving up'));
+    return;
+  }
+
+  console.log(chalk.yellow(`[agent-worker] Starting (attempt ${agentRestartCount + 1})...`));
+
+  const agentPath = path.join(__dirname, 'agent.js');
+  agentWorker = spawn('node', [agentPath, 'start'], {
     stdio: 'inherit',
-    env: process.env
+    env: { ...process.env }
+  });
+
+  agentWorker.on('spawn', () => {
+    agentRestartCount = 0;
+    console.log(chalk.green('[agent-worker] ✓ Spawned successfully'));
   });
 
   agentWorker.on('exit', (code, signal) => {
-    console.warn(chalk.red(`[Agent Worker] Exited with code ${code}, signal ${signal}. Restarting in 3s...`));
+    console.warn(chalk.red(`[agent-worker] Exited — code: ${code}, signal: ${signal}`));
     agentWorker = null;
-    setTimeout(startAgentWorker, 3000); // auto-restart
+    agentRestartCount++;
+    const delay = Math.min(3000 * agentRestartCount, 30000);
+    console.log(chalk.yellow(`[agent-worker] Restarting in ${delay}ms...`));
+    setTimeout(startAgentWorker, delay);
   });
 
   agentWorker.on('error', (err) => {
-    console.error(chalk.red(`[Agent Worker] Spawn error: ${err.message}`));
+    console.error(chalk.red(`[agent-worker] Spawn error: ${err.message}`));
   });
 };
 
