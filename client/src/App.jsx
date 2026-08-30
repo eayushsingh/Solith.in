@@ -2012,79 +2012,160 @@ export default function App() {
           </div>
         </div>
       )}
-      {/* AUTH MODAL */}
+      {/* AUTH MODAL — Full Page Split Layout */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl p-4" onClick={() => setShowAuthModal(false)}>
-          <div className="w-full max-w-[400px] rounded-3xl animate-fade-in text-center relative overflow-hidden" onClick={e => e.stopPropagation()}
-            style={{ background: 'linear-gradient(180deg, #1a1d28 0%, #12141c 100%)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 80px rgba(59,130,246,0.08)' }}
-          >
-            {/* Top accent glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-[var(--accent-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="fixed inset-0 z-50 flex animate-fade-in" style={{ background: '#0a0b0e' }}>
 
-            <div className="relative z-10 px-8 pt-10 pb-8">
-              {/* Logo */}
-              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center text-3xl"
-                style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))', border: '1px solid rgba(59,130,246,0.2)' }}>
-                🌍
+          {/* Left Side — Login */}
+          <div className="flex-1 flex flex-col justify-between px-8 sm:px-16 lg:px-20 py-10 relative overflow-hidden">
+            {/* Background subtle pattern */}
+            <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.02' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E\")" }}></div>
+
+            {/* Top — Brand */}
+            <div className="relative z-10">
+              <div className="flex items-center gap-0.5">
+                <span className="text-xl font-black text-white tracking-tight">solith</span>
+                <span className="text-xl font-black text-[#3B82F6]">.in</span>
               </div>
+              <p className="text-[11px] text-white/30 mt-1 font-medium">Practice languages. Live.</p>
+            </div>
 
-              <h3 className="text-2xl font-extrabold text-white tracking-tight mb-2">Welcome to Solith.in</h3>
-              <p className="text-sm text-white/50 mb-8 leading-relaxed max-w-[280px] mx-auto">
-                Join live voice rooms, practice languages with native speakers, and track your progress.
+            {/* Center — Login Form */}
+            <div className="relative z-10 max-w-[380px]">
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-white tracking-tight leading-[1.1] mb-4">
+                Login to Your<br />Account!
+              </h1>
+              <p className="text-sm text-white/40 mb-10 leading-relaxed max-w-[320px]">
+                Join live voice rooms, connect with native speakers worldwide, and track your language learning journey.
               </p>
 
-              {/* Sign in button */}
+              {/* Google Sign In Button */}
               <button
                 onClick={handleLogin}
-                className="w-full py-3.5 px-6 text-sm font-bold flex items-center justify-center gap-3 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)', color: 'white', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}
+                className="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ background: '#1a1d28', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
               >
-                <svg className="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                Continue with Google
+                Login With Google
               </button>
 
-              {/* Features row */}
-              <div className="flex items-center justify-center gap-6 mt-7 mb-5">
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg">🎙️</span>
-                  <span className="text-[10px] text-white/40 font-medium">Voice Rooms</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg">🔥</span>
-                  <span className="text-[10px] text-white/40 font-medium">Streaks</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg">🏆</span>
-                  <span className="text-[10px] text-white/40 font-medium">Leagues</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-lg">⚡</span>
-                  <span className="text-[10px] text-white/40 font-medium">XP System</span>
-                </div>
+              {/* Divider */}
+              <div className="flex items-center gap-4 my-8">
+                <div className="flex-1 h-px bg-white/5"></div>
+                <span className="text-[11px] text-white/20 font-medium uppercase tracking-widest">or</span>
+                <div className="flex-1 h-px bg-white/5"></div>
               </div>
 
-              {/* Divider */}
-              <div className="w-full h-px bg-white/5 mb-4"></div>
+              {/* Continue as Guest */}
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="w-full py-4 px-6 rounded-xl text-sm font-bold transition-all hover:bg-white/5"
+                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}
+              >
+                Continue as Guest
+              </button>
 
-              <p className="text-[10px] text-white/30 mb-3">
-                By continuing, you agree to our{' '}
-                <button onClick={() => { setShowAuthModal(false); setView('guidelines'); }} className="underline hover:text-white/60 transition-colors">
+              <p className="mt-8 text-[10px] text-white/20 leading-relaxed">
+                By signing in, you agree to our{' '}
+                <button onClick={() => { setShowAuthModal(false); setView('guidelines'); }} className="underline hover:text-white/40 transition-colors">
                   Community Guidelines
                 </button>
               </p>
-              <button
-                onClick={() => setShowAuthModal(false)}
-                className="text-white/30 hover:text-white/60 text-xs font-semibold transition-colors"
-              >
-                Cancel
-              </button>
+            </div>
+
+            {/* Bottom — Footer */}
+            <div className="relative z-10 flex items-center gap-4 text-[11px] text-white/15 font-medium">
+              <span>© 2025 solith.in</span>
+              <span>·</span>
+              <button onClick={() => { setShowAuthModal(false); setActiveModal('privacy'); }} className="hover:text-white/30 transition-colors">Privacy</button>
+              <span>·</span>
+              <button onClick={() => { setShowAuthModal(false); setActiveModal('contact'); }} className="hover:text-white/30 transition-colors">Contact</button>
             </div>
           </div>
+
+          {/* Right Side — Feature Showcase (hidden on mobile) */}
+          <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f1118 0%, #161923 50%, #0f1118 100%)' }}>
+            {/* Decorative glow */}
+            <div className="absolute top-1/4 right-1/4 w-80 h-80 rounded-full blur-[100px] pointer-events-none" style={{ background: 'rgba(59,130,246,0.06)' }}></div>
+            <div className="absolute bottom-1/4 left-1/4 w-60 h-60 rounded-full blur-[80px] pointer-events-none" style={{ background: 'rgba(249,115,22,0.04)' }}></div>
+
+            {/* Floating Cards */}
+            <div className="relative w-[420px] h-[500px]">
+
+              {/* Card 1: Live Room Preview */}
+              <div className="absolute top-0 right-0 w-[260px] rounded-2xl p-5 animate-slide-up"
+                style={{ background: 'linear-gradient(135deg, #1e2030, #181a26)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+                <div className="text-[10px] text-white/30 font-semibold mb-1">12:30 - 15:45</div>
+                <div className="text-base font-bold text-white mb-3">Live English Room</div>
+                <div className="flex items-center gap-1">
+                  <div className="w-7 h-7 rounded-full" style={{ background: 'linear-gradient(135deg, #60a5fa, #2563eb)' }}></div>
+                  <div className="w-7 h-7 rounded-full -ml-2" style={{ background: 'linear-gradient(135deg, #4ade80, #16a34a)' }}></div>
+                  <div className="w-7 h-7 rounded-full -ml-2" style={{ background: 'linear-gradient(135deg, #c084fc, #7c3aed)' }}></div>
+                  <div className="w-6 h-6 rounded-full bg-[#3B82F6] text-[9px] font-bold text-white flex items-center justify-center -ml-1">+8</div>
+                </div>
+              </div>
+
+              {/* Card 2: XP / Progress Card */}
+              <div className="absolute top-[120px] left-0 w-[240px] rounded-2xl p-5 animate-slide-up-delayed"
+                style={{ background: 'linear-gradient(135deg, #1a1d2e, #141620)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'linear-gradient(135deg, #fb923c, #eab308)' }}>🔥</div>
+                  <span className="text-[11px] text-white/40 font-medium">Your Progress</span>
+                </div>
+                <div className="text-3xl font-black text-white mb-1 tracking-tight">2,450 <span className="text-base font-bold text-[#3B82F6]">XP</span></div>
+                <div className="text-xs text-white/30 font-medium">Gold League</div>
+                <div className="mt-3 flex items-center gap-1">
+                  <span className="text-[10px] text-white/20">⭐⭐⭐⭐</span>
+                  <span className="text-xs font-bold text-white/40 ml-1">Level 4</span>
+                </div>
+              </div>
+
+              {/* Card 3: Streak Week Chart */}
+              <div className="absolute bottom-[80px] left-[40px] w-[200px] rounded-2xl p-4 animate-slide-up-delayed-2"
+                style={{ background: 'linear-gradient(135deg, #1c1f2e, #161824)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+                <div className="flex items-end justify-between gap-1 h-16 mb-2">
+                  {[40, 70, 55, 85, 30, 60, 75].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-t-md transition-all" style={{ height: `${h}%`, background: i === 3 ? '#3B82F6' : 'rgba(59,130,246,0.2)' }}></div>
+                  ))}
+                </div>
+                <div className="flex justify-between text-[8px] font-bold text-white/20">
+                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => <span key={d}>{d}</span>)}
+                </div>
+              </div>
+
+              {/* Card 4: Chat Bubble */}
+              <div className="absolute bottom-0 right-[10px] w-[250px] rounded-2xl p-4 animate-slide-up-delayed"
+                style={{ background: 'linear-gradient(135deg, #1a1c2a, #151720)', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>S</div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white">Solith.in</span>
+                      <span className="text-[9px] text-white/20">2 Min Ago</span>
+                    </div>
+                    <p className="text-[11px] text-white/40 mt-0.5">Hey there! Start practicing now 🌍</p>
+                  </div>
+                </div>
+                <button className="mt-3 ml-auto block px-4 py-1.5 rounded-lg text-[10px] font-bold text-white bg-[#3B82F6] hover:bg-[#2563EB] transition-colors">
+                  Join Now
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Close Button */}
+          <button
+            onClick={() => setShowAuthModal(false)}
+            className="absolute top-5 right-5 w-10 h-10 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all z-10"
+            style={{ background: 'rgba(255,255,255,0.05)' }}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
       )}
 
