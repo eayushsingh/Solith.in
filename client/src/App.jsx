@@ -964,6 +964,10 @@ export default function App() {
     setJoiningRoomId(room.id);
     setIsMuted(true);
     setChatMessages([]);
+    
+    // Optimistically show room UI for zero-latency feel
+    setActiveRoom(room);
+    setIsChatOpen(true);
 
     try {
       const res = await fetch(`${API_URL}/api/rooms/${room.id}/join`, {
@@ -990,7 +994,6 @@ export default function App() {
         throw new Error(data.error || "Failed to join room.");
       }
 
-      setActiveRoom(room);
       setIsRealCall(data.isRealConnection);
 
       // Join Socket.IO room for chat
