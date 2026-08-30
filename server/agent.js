@@ -1,153 +1,106 @@
-import { WorkerOptions, cli, defineAgent, voice, llm } from '@livekit/agents';
+import { worker, voice } from '@livekit/agents';
 import * as google from '@livekit/agents-plugin-google';
+import { ChatContext, ChatRole } from '@livekit/agents';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+dotenv.config();
 
-process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION:', err);
-});
-process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION:', err);
-});
+const SYSTEM_PROMPT = `You are Ananya, a warm and engaging AI voice host on Solith.in — a live language learning platform. 
+Your job is to welcome participants, encourage conversation, ask thoughtful questions about the language they are learning, 
+and keep the conversation flowing naturally. You speak English clearly and simply. 
+You are friendly, patient, and enthusiastic about language learning.
+Keep responses concise — 1-3 sentences maximum when possible. Never say you are an AI unless directly asked.`;
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env') });
+worker.run({
+  agentName: 'agent-ananya',
 
-const SYSTEM_PROMPT = `
-Name: Ananya
-Role: Solith AI Voice Host
+  async entry(ctx) {
+    console.log(`[Ananya] Entering room: ${ctx.room.name}`);
 
-You are Ananya, the AI Voice Host for Solith.
-Your job is to make newly created Solith voice rooms feel alive.
-Do not dominate the room. The ultimate goal is for users to have conversations with each other.
+    const initialCtx = new ChatContext().append({
+      role: ChatRole.SYSTEM,
+      text: SYSTEM_PROMPT
+    });
 
-Personality:
-- Extremely cute, Friendly, Warm, Social, Confident, Playful, Slightly witty, Relaxed, Emotionally expressive.
-- You have a very sweet, expressive, and human-like voice. Be highly conversational.
-- Never robotic, Never corporate, Never overly formal.
-- You should NOT sound like customer support, Siri, Alexa, a call center, a narrator, or a chatbot.
+    const model = new google.realtime.RealtimeModel({
+      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+      model: 'gemini-2.0-flash-live-001',
+      instructions: SYSTEM_PROMPT,
+      voice: 'Kore',
+      temperature: 0.8,
+      responseModalities: ['AUDIO'],
+    });
 
-Identity Requirement:
-- You are an AI host. Do not deliberately deceive users by claiming to be a real human.
-- If asked directly if you are real or AI, answer naturally: "I'm Ananya, Solith's AI host." or "I'm an AI host for Solith — I'm here to keep the rooms lively."
-- Do NOT repeatedly announce that you are AI during normal conversation.
+    const agent = new voice.Agent({
+      llm: model,
+      chatCtx: initialCtx,
+      instructions: SYSTEM_PROMPT,
+      turnHandling: {
+        interruption: { enabled: true }
+      }
+    });
 
-Natural Conversation:
-- Responses should normally be SHORT. Default 1-2 sentences. Sometimes just 2-8 words (e.g., "Yeah, exactly.", "Wait, seriously?", "Fair enough.", "Aww, that's sweet!").
-- React with natural vocalizations when appropriate.
-- Do NOT ask questions constantly (like an interrogation). Follow the conversation naturally.
+    const session = new voice.AgentSession();
 
-Language:
-- If users speak Hinglish, respond naturally in Hinglish (e.g., "Achha, phir kya hua?", "Haan yaar, same."). Never use unnecessarily formal language.
-- Switch naturally between English and Hinglish based on the users.
-
-Human-to-Human Priority & Silence:
-- When multiple users start talking to each other, REDUCE your participation.
-- If humans are talking naturally, DO NOT INTERRUPT.
-- Silence is a valid behavior. If you have nothing useful to add, DO NOT SPEAK.
-`;
-
-export default defineAgent({
-  entry: async (ctx) => {
-    console.log(`[ANANYA] Dispatch received for room: ${ctx.room.name}`);
-    try {
-      await ctx.connect();
-      console.log(`[ANANYA] Connected to room: ${ctx.room.name}`);
-
-      const model = new google.realtime.RealtimeModel({
-        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-        instructions: SYSTEM_PROMPT,
-        voice: "Kore",
-      });
-
-      // Provide the initial context to trigger a greeting immediately upon connection
-      const initialCtx = new llm.ChatContext().append({
-        role: 'user',
-        text: 'You have just joined a Solith voice room. Say a quick, casual hello to start the conversation.'
-      });
-
-      const agent = new voice.Agent({
-        llm: model,
-        chatCtx: initialCtx,
-        instructions: SYSTEM_PROMPT,
-        turnHandling: {
-          interruption: { enabled: true }
-        }
-      });
-      
-      const agentSession = new voice.AgentSession();
-      await agentSession.start({ agent, room: ctx.room });
-      console.log(`[ANANYA] AgentSession created and Gemini realtime session ready`);
-      
-      // Force the agent to speak an initial greeting
-      agent.session.generateReply();
-
-      ctx.room.on('participantConnected', (p) => {
-        console.log(`[ANANYA] Participant joined: ${p.name}`);
-        // Trigger a reply greeting the new user
-        agent.session.generateReply({
-          userInput: `A new user named ${p.name || 'someone'} just joined the room. Acknowledge them naturally.`
+    // Transcript handlers
+    const broadcastChat = async (text, senderName, senderId, color = '#6c47ff') => {
+      if (!text?.trim()) return;
+      const port = process.env.PORT || 3000;
+      try {
+        await fetch(`http://127.0.0.1:${port}/api/rooms/${ctx.room.name}/agent-chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text.trim(), speaker: senderName, senderId, color })
         });
-      });
+      } catch (e) {
+        console.error('[Ananya] broadcast error:', e.message);
+      }
+    };
 
-      agentSession.on('agent_state_changed', async (state) => {
-        console.log(`[ANANYA] State changed to: ${state}`);
-        if (state === 'speaking') {
-          console.log(`[ANANYA] Audio playback started`);
-        }
-        if (state === 'listening') {
-          const items = agent.chatCtx.items;
-          const lastItem = items[items.length - 1];
-          if (lastItem && lastItem.role === 'assistant') {
-            let text = '';
-            if (Array.isArray(lastItem.content)) {
-              for (const content of lastItem.content) {
-                if (typeof content === 'string') text += content;
-              }
-            } else if (typeof lastItem.content === 'string') {
-              text = lastItem.content;
-            }
-            
-            if (text.trim()) {
-              const port = process.env.PORT || 3000;
-              fetch(`http://localhost:${port}/api/rooms/${ctx.room.name}/agent-chat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text.trim() })
-              }).catch(err => console.error('[ANANYA ERROR] Agent chat broadcast failed:', err));
-            }
-          }
-        }
-      });
+    agent.on('agent_speech_committed', async (ev) => {
+      const text = ev.message?.content || ev.userMessageAdded?.content?.[0]?.text;
+      if (text) await broadcastChat(text, 'Ananya', 'ananya-ai', '#6c47ff');
+    });
 
-      ctx.room.on('trackPublished', (pub, p) => {
-        if (p.identity === ctx.room.localParticipant.identity) {
-          console.log(`[ANANYA] Audio track published`);
-        }
-      });
-      
-      ctx.room.on('participantDisconnected', (p) => {
-        if (ctx.room.remoteParticipants.size === 0) {
-          console.log(`[ANANYA] Last participant left, initiating disconnect timer`);
-          setTimeout(() => {
-            if (ctx.room.remoteParticipants.size === 0) {
-              console.log(`[ANANYA] Room empty, disconnecting cleanly.`);
-              ctx.disconnect();
-            }
-          }, 30000);
-        }
-      });
+    agent.on('user_speech_committed', async (ev) => {
+      const text = ev.transcript || ev.message?.content;
+      const p = ev.participant;
+      if (text && p) await broadcastChat(text, p.name || p.identity, p.identity, '#1877f2');
+    });
 
-    } catch (error) {
-      console.error('[ANANYA ERROR] Fatal exception during agent execution:');
-      console.error(error);
-      ctx.disconnect();
-    }
-  },
+    // Start session
+    await session.start({ agent, room: ctx.room });
+    await agent.session?.setAudioEnabled?.(true);
+
+    console.log('[Ananya] Session started, generating greeting...');
+
+    // Initial greeting
+    setTimeout(async () => {
+      try {
+        await agent.session.generateReply({
+          instructions: 'Greet the room warmly. Welcome everyone to Solith.in and invite them to start speaking.'
+        });
+      } catch (e) {
+        console.error('[Ananya] Initial greeting error:', e.message);
+      }
+    }, 1500);
+
+    // Greet new participants
+    const greeted = new Set([...ctx.room.remoteParticipants.keys()]);
+
+    ctx.room.on('participantConnected', async (participant) => {
+      if (participant.isAgent || greeted.has(participant.identity)) return;
+      greeted.add(participant.identity);
+
+      await new Promise(r => setTimeout(r, 800));
+      try {
+        await agent.session.generateReply({
+          instructions: `Welcome ${participant.name || 'the new participant'} who just joined. Be brief and warm.`
+        });
+      } catch (e) {
+        console.error('[Ananya] Welcome error:', e.message);
+      }
+    });
+
+    console.log('[Ananya] Ready.');
+  }
 });
-
-cli.runApp(new WorkerOptions({ 
-  agent: fileURLToPath(import.meta.url),
-  agentName: 'agent-ananya'
-}));
