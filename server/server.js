@@ -116,7 +116,7 @@ const setAdminRoles = async () => {
       }
     }
   } catch (e) {
-    console.error('setAdminRoles error:', e);
+    console.warn(`[Firestore] setAdminRoles skipped: ${e.message}`);
   }
 };
 
@@ -131,7 +131,7 @@ const loadDB = async () => {
       await setAdminRoles();
       return;
     } catch (err) {
-      console.error('Error loading rooms from Firestore, fallback to local DB:', err);
+      console.warn(`[Firestore] Error loading rooms (fallback to local DB): ${err.message}`);
     }
   }
   loadLocalDB();
