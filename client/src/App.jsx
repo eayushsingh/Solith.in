@@ -2759,7 +2759,7 @@ export default function App() {
           </header>
 
           {/* Main Content Area */}
-          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center gap-8 relative">
+          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center gap-5 relative">
 
             {/* Main Hero Video Banner */}
             <div className="w-full relative rounded-2xl border border-border-color overflow-hidden shadow-2xl bg-black group">
@@ -2850,7 +2850,7 @@ export default function App() {
           </div>
 
           {/* Filters */}
-          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6 flex items-center gap-2.5 flex-wrap animate-slide-up-delayed-2">
+          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-2 pb-4 flex items-center gap-2.5 flex-wrap animate-slide-up-delayed-2">
             {LANGUAGES.map(lang => (
               <button
                 key={lang}
