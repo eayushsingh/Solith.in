@@ -965,10 +965,46 @@ export default function App() {
     setJoiningRoomId(room.id);
     setIsMuted(true);
     setChatMessages([]);
-    
+
     // Optimistically show room UI for zero-latency feel
     setActiveRoom(room);
     setIsChatOpen(true);
+    
+    // Optimsitically load participants from the database snapshot so the user sees everyone instantly
+    if (room) {
+      const optimisticParticipants = [
+        {
+          id: user.id,
+          name: user.name || 'You',
+          isLocal: true,
+          muted: true,
+          photoUrl: user?.photoUrl || '',
+          color: user?.color || '#ff4d4d',
+          emoji: user?.emoji || '👤'
+        },
+        {
+          id: 'agent-ananya-optimistic',
+          name: 'Ananya',
+          isLocal: false,
+          muted: false,
+          photoUrl: '/ananya.png',
+          color: '#8b5cf6',
+          emoji: '✨',
+          isAI: true
+        },
+        ...(room.participants || []).filter(p => p.id !== user.id).map(p => ({
+          id: p.id,
+          name: p.name || 'Guest',
+          isLocal: false,
+          muted: true,
+          photoUrl: p.photoUrl || '',
+          color: p.color || '#ff4d4d',
+          emoji: p.emoji || '👤',
+          isAI: (p.id || '').startsWith('agent')
+        }))
+      ];
+      setParticipants(optimisticParticipants);
+    }
 
     try {
       const res = await fetch(`${API_URL}/api/rooms/${room.id}/join`, {
@@ -1006,7 +1042,20 @@ export default function App() {
           setAudioLevels(levels);
         },
         onParticipantsChange: (pList) => {
-          setParticipants(pList);
+          const validParticipants = pList.filter(p => p && p.id);
+          if (validParticipants.length > 0) {
+            const hasRealAnanya = validParticipants.some(p => (p.id || '').startsWith('agent') && p.id !== 'agent-ananya-optimistic');
+            
+            setParticipants(prev => {
+              if (!hasRealAnanya) {
+                const optimisticAnanya = prev.find(p => p.id === 'agent-ananya-optimistic');
+                if (optimisticAnanya) {
+                  return [...validParticipants, optimisticAnanya];
+                }
+              }
+              return validParticipants;
+            });
+          }
         },
         onConnectionChange: ({ state, isMock, error }) => {
           setCallState(state);
@@ -2300,8 +2349,8 @@ export default function App() {
                   <button
                     onClick={toggleFollow}
                     className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${user.following?.includes(targetProfile.id)
-                        ? 'bg-[#121212] border border-yellow-500/20 text-yellow-500/80 hover:text-yellow-500 hover:bg-yellow-500/10'
-                        : 'bg-[var(--accent-primary)] text-white hover:scale-[1.02] hover:shadow-[0_0_15px_var(--accent-primary-glow)]'
+                      ? 'bg-[#121212] border border-yellow-500/20 text-yellow-500/80 hover:text-yellow-500 hover:bg-yellow-500/10'
+                      : 'bg-[var(--accent-primary)] text-white hover:scale-[1.02] hover:shadow-[0_0_15px_var(--accent-primary-glow)]'
                       }`}
                   >
                     {user.following?.includes(targetProfile.id) ? (
@@ -2859,7 +2908,7 @@ export default function App() {
                       <div className="fixed inset-0 z-40" onClick={() => setShowStreakCard(false)}></div>
                       <div className="absolute right-12 top-full mt-2 z-50 w-[360px] rounded-2xl overflow-hidden animate-fade-in"
                         style={{ background: 'linear-gradient(180deg, #1a1d28 0%, #12141c 100%)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
-                        
+
                         {/* Streak Header */}
                         <div className="px-6 pt-6 pb-4 text-center relative">
                           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -2879,10 +2928,9 @@ export default function App() {
                               return (
                                 <div key={i} className="flex flex-col items-center gap-1.5">
                                   <span className="text-[10px] font-semibold text-white/30">{day}</span>
-                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
-                                    isToday ? 'bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)] scale-110' :
-                                    isActive ? 'bg-orange-500/20 text-orange-400' : 'bg-white/5 text-white/20'
-                                  }`}>
+                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${isToday ? 'bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)] scale-110' :
+                                      isActive ? 'bg-orange-500/20 text-orange-400' : 'bg-white/5 text-white/20'
+                                    }`}>
                                     {isActive ? '🔥' : '·'}
                                   </div>
                                 </div>
@@ -3076,8 +3124,8 @@ export default function App() {
                       key={cols}
                       onClick={() => setLobbyGridCols(cols)}
                       className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${lobbyGridCols === cols
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'text-text-secondary hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'text-text-secondary hover:text-white'
                         }`}
                       title={`${cols}x Density`}
                     >
@@ -3124,10 +3172,10 @@ export default function App() {
               </div>
             ) : (
               <div className={`grid gap-4 ${lobbyGridCols === 3
-                  ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                  : lobbyGridCols === 2
-                    ? 'grid-cols-1 md:grid-cols-2'
-                    : 'grid-cols-1'
+                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                : lobbyGridCols === 2
+                  ? 'grid-cols-1 md:grid-cols-2'
+                  : 'grid-cols-1'
                 }`}>
                 {filteredRooms.map(room => (
                   <RoomCard
@@ -3312,8 +3360,8 @@ export default function App() {
                             >
                               <div style={{
                                 width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
-                                border: isSpeaking ? '2.5px solid #1877f2' : '2.5px solid rgba(255,255,255,0.12)',
-                                boxShadow: isSpeaking ? '0 0 20px rgba(24,119,242,0.6)' : 'none',
+                                border: isSpeaking ? (p.isAI ? '2.5px solid #a855f7' : '2.5px solid #1877f2') : '2.5px solid rgba(255,255,255,0.12)',
+                                boxShadow: isSpeaking ? (p.isAI ? '0 0 20px rgba(168,85,247,0.6)' : '0 0 20px rgba(24,119,242,0.6)') : 'none',
                                 transition: 'all 0.2s ease',
                                 background: pColor, position: 'relative', flexShrink: 0
                               }}>
@@ -3357,11 +3405,15 @@ export default function App() {
                               <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600, maxWidth: 80, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {pName}
                               </span>
-                              {targetRole === 'owner' && (
+                              {p.isAI ? (
+                                <span style={{ background: 'rgba(168,85,247,0.2)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.3)', fontSize: 9, fontWeight: 900, padding: '2px 8px', borderRadius: 20, marginTop: -4, letterSpacing: '0.05em' }}>
+                                  AI HOST
+                                </span>
+                              ) : targetRole === 'owner' ? (
                                 <span style={{ background: '#6c47ff', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, marginTop: -4 }}>
                                   Owner
                                 </span>
-                              )}
+                              ) : null}
                             </div>
                           );
                         })}
@@ -3394,8 +3446,8 @@ export default function App() {
                           >
                             <div style={{
                               width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
-                              border: isSpeaking ? '2.5px solid #1877f2' : '2.5px solid rgba(255,255,255,0.12)',
-                              boxShadow: isSpeaking ? '0 0 20px rgba(24,119,242,0.6)' : 'none',
+                              border: isSpeaking ? (p.isAI ? '2.5px solid #a855f7' : '2.5px solid #1877f2') : '2.5px solid rgba(255,255,255,0.12)',
+                              boxShadow: isSpeaking ? (p.isAI ? '0 0 20px rgba(168,85,247,0.6)' : '0 0 20px rgba(24,119,242,0.6)') : 'none',
                               transition: 'all 0.2s ease',
                               background: pColor, position: 'relative', flexShrink: 0
                             }}>
@@ -3439,11 +3491,15 @@ export default function App() {
                             <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600, maxWidth: 80, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {pName}
                             </span>
-                            {targetRole === 'owner' && (
+                            {p.isAI ? (
+                              <span style={{ background: 'rgba(168,85,247,0.2)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.3)', fontSize: 9, fontWeight: 900, padding: '2px 8px', borderRadius: 20, marginTop: -4, letterSpacing: '0.05em' }}>
+                                AI HOST
+                              </span>
+                            ) : targetRole === 'owner' ? (
                               <span style={{ background: '#6c47ff', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, marginTop: -4 }}>
                                 Owner
                               </span>
-                            )}
+                            ) : null}
                           </div>
                         );
                       })}

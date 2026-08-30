@@ -322,9 +322,10 @@ function updateParticipantsList() {
       const cameraTrack = cameraPub?.track;
       let meta = {};
       try { if (p.metadata) meta = JSON.parse(p.metadata); } catch(e){}
+      const isAI = p.identity.startsWith('agent');
       list.push({
         id: p.identity,
-        name: p.name || 'Guest Practicer',
+        name: p.name || (isAI ? 'Ananya' : 'Guest Practicer'),
         isLocal: false,
         muted: isMuted,
         isScreenSharing: isScreenSharing,
@@ -332,8 +333,9 @@ function updateParticipantsList() {
         isCameraOn: isCameraOn,
         cameraTrack: cameraTrack,
         photoUrl: meta.photoUrl || '',
-        color: meta.color || '#ff4d4d',
-        emoji: meta.emoji || '👤'
+        color: meta.color || (isAI ? '#8b5cf6' : '#ff4d4d'),
+        emoji: meta.emoji || (isAI ? '✨' : '👤'),
+        isAI: isAI
       });
     });
   }

@@ -752,10 +752,17 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-white flex items-center gap-1.5">
                         {p.name} {isMe && <span className="opacity-40 font-normal text-[10px]">(You)</span>}
+                        {p.isAI && (
+                          <span className="px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30 font-black shadow-[0_0_8px_rgba(168,85,247,0.4)]">
+                            AI HOST
+                          </span>
+                        )}
                       </span>
-                      <span className="text-[9px] font-bold uppercase text-[var(--accent-primary)] tracking-wide">
-                        {role === 'owner' ? 'Room Host' : role === 'co-host' ? 'Co-Host' : 'Speaker'}
-                      </span>
+                      {!p.isAI && (
+                        <span className="text-[9px] font-bold uppercase text-[var(--accent-primary)] tracking-wide">
+                          {role === 'owner' ? 'Room Host' : role === 'co-host' ? 'Co-Host' : 'Speaker'}
+                        </span>
+                      )}
                     </div>
                   </div>
 
