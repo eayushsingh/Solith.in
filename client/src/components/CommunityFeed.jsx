@@ -106,33 +106,41 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#0B0D12] relative overflow-x-hidden">
-      <Meteors number={15} />
+    <div className="w-full min-h-[100dvh] bg-[#090A0F] relative overflow-x-hidden text-white flex flex-col items-center">
+      
+      {/* Background with Meteors */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+         <Meteors number={15} />
+      </div>
 
-      <div className="w-full max-w-2xl mx-auto py-10 px-4 animate-fade-in relative z-20">
+      <div className="w-full max-w-[720px] py-16 px-5 relative z-20">
         
         {/* Header Section */}
-        <div className="flex flex-col items-start mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 mb-4">
-             <Compass className="w-4 h-4 text-[var(--accent-primary)] animate-pulse" />
-             <span className="text-[10px] font-bold tracking-widest uppercase text-[var(--accent-primary)]">Community</span>
+        <div className="flex flex-col items-start mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1A1D27] border border-[#2A2E3B] mb-5 shadow-sm">
+             <Compass className="w-3.5 h-3.5 text-[#3B82F6]" />
+             <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#3B82F6]">Community</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-white/40 tracking-tight drop-shadow-2xl">
+          <h1 className="text-[42px] font-bold text-white tracking-tight leading-tight mb-2">
             Lounge Feed
           </h1>
-          <p className="text-white/50 mt-2 font-medium text-sm">Connect, share progress, and discuss with fellow language learners.</p>
+          <p className="text-[#888A92] font-medium text-[15px]">
+            Connect, share progress, and discuss with fellow language learners.
+          </p>
         </div>
 
         {/* Create Post Card */}
         {user ? (
-          <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 mb-8 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[var(--accent-primary)] to-purple-500 opacity-30"></div>
-            <form onSubmit={handleCreatePost} className="space-y-4">
-              <div className="flex gap-4">
+          <div className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-6 mb-10 shadow-xl relative overflow-hidden transition-all focus-within:border-[#2A2E3B] focus-within:bg-[#0E1118]">
+            {/* Subtle top gradient */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#2A2E3B] to-transparent opacity-50"></div>
+            
+            <form onSubmit={handleCreatePost} className="space-y-0">
+              <div className="flex gap-4 mb-2">
                 <div 
                   onClick={() => openUserProfile(user.id)}
-                  className="w-10 h-10 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/10 cursor-pointer hover:scale-105 transition-transform" 
-                  style={{ backgroundColor: user.color || '#333' }}
+                  className="w-12 h-12 rounded-[14px] overflow-hidden bg-[#1E212B] flex items-center justify-center flex-shrink-0 cursor-pointer shadow-inner" 
+                  style={{ backgroundColor: user.color || '#1E212B' }}
                 >
                   {user.photoUrl ? (
                     <img src={user.photoUrl} alt="" className="w-full h-full object-cover" />
@@ -140,24 +148,26 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
                     <span className="text-xl">{user.emoji || '👤'}</span>
                   )}
                 </div>
-                <textarea
-                  value={postText}
-                  onChange={(e) => setPostText(e.target.value)}
-                  placeholder="What are you practicing today? Share updates or ask questions..."
-                  className="flex-1 min-h-[80px] bg-transparent border-0 resize-none text-text-primary text-sm placeholder-white/30 focus:outline-none focus:ring-0 w-full pt-1"
-                  maxLength={400}
-                  required
-                />
+                <div className="flex-1 pt-1">
+                  <textarea
+                    value={postText}
+                    onChange={(e) => setPostText(e.target.value)}
+                    placeholder="What are you practicing today? Share updates or ask questions..."
+                    className="w-full bg-transparent border-0 resize-none text-white text-[15px] placeholder-[#555861] focus:outline-none focus:ring-0 min-h-[64px] font-medium leading-relaxed"
+                    maxLength={400}
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-white/5 pt-3">
-                <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider">
+              <div className="flex items-center justify-between border-t border-[#1E212B] pt-4 mt-4">
+                <span className="text-[10px] text-[#555861] font-bold tracking-[0.1em] uppercase">
                   {postText.length} / 400 chars
                 </span>
                 <button
                   type="submit"
                   disabled={submitting || !postText.trim()}
-                  className="px-4 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-all disabled:opacity-50 disabled:pointer-events-none hover:shadow-[0_0_15px_var(--accent-primary-glow)] active:scale-[0.98]"
+                  className="px-5 py-2 bg-[#212C45] text-[#60A5FA] border border-[#2A3B5C] text-[13px] font-bold rounded-xl flex items-center gap-2 transition-all disabled:opacity-50 disabled:pointer-events-none hover:bg-[#2A3B5C] hover:text-white"
                 >
                   {submitting ? 'Posting...' : 'Post Share'}
                   <Send className="w-3.5 h-3.5" />
@@ -166,24 +176,23 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
             </form>
           </div>
         ) : (
-          <div className="bg-yellow-500/5 border border-yellow-500/10 rounded-3xl p-6 text-center mb-8">
-            <AlertCircle className="w-8 h-8 text-yellow-500/80 mx-auto mb-3" />
-            <h3 className="text-white/80 font-bold text-sm mb-1">Join the community conversation</h3>
-            <p className="text-white/40 text-xs mb-4">You need to sign in to share posts and like other practice shares.</p>
+          <div className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-6 text-center mb-10 shadow-xl">
+            <AlertCircle className="w-8 h-8 text-[#555861] mx-auto mb-3" />
+            <h3 className="text-white font-semibold text-[15px] mb-1">Join the community</h3>
+            <p className="text-[#888A92] text-sm">Sign in to share posts and like other practice shares.</p>
           </div>
         )}
 
         {/* Posts Feed */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-10 h-10 border-2 border-white/10 border-t-[var(--accent-primary)] rounded-full animate-spin"></div>
-            <div className="text-white/40 text-[10px] font-bold tracking-widest uppercase">Loading Feed...</div>
+            <div className="w-8 h-8 border-2 border-[#1E212B] border-t-[#3B82F6] rounded-full animate-spin"></div>
           </div>
         ) : posts.length === 0 ? (
-          <div className="py-20 text-center bg-black/20 border border-white/5 rounded-3xl p-8">
-            <MessageSquare className="w-10 h-10 text-white/20 mx-auto mb-4" />
-            <h3 className="text-white/60 font-bold">No posts in the lounge yet</h3>
-            <p className="text-white/30 text-xs max-w-xs mx-auto mt-2">Be the first to share your learning update or say hello to the community!</p>
+          <div className="py-20 text-center bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-8 shadow-xl">
+            <MessageSquare className="w-10 h-10 text-[#555861] mx-auto mb-4" />
+            <h3 className="text-white font-semibold text-[15px] mb-1">No posts yet</h3>
+            <p className="text-[#888A92] text-sm">Be the first to share an update!</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -192,13 +201,13 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
               const isAuthor = post.userId === user?.id;
 
               return (
-                <div key={post.id} className="bg-black/30 border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-all shadow-md group relative">
+                <div key={post.id} className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-5 hover:border-[#2A2E3B] hover:bg-[#0E1118] transition-all shadow-xl group">
                   <div className="flex gap-4">
                     {/* Author Avatar */}
                     <div 
                       onClick={() => openUserProfile(post.userId)}
-                      className="w-10 h-10 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/5 cursor-pointer hover:scale-105 transition-transform" 
-                      style={{ backgroundColor: post.authorColor || '#333' }}
+                      className="w-12 h-12 rounded-[14px] overflow-hidden bg-[#1E212B] flex items-center justify-center flex-shrink-0 cursor-pointer shadow-inner" 
+                      style={{ backgroundColor: post.authorColor || '#1E212B' }}
                     >
                       {post.authorPhotoUrl ? (
                         <img src={post.authorPhotoUrl} alt="" className="w-full h-full object-cover" />
@@ -209,39 +218,39 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
 
                     {/* Content Area */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline justify-between gap-2 mb-1">
+                      <div className="flex items-center justify-between gap-2 mb-2">
                         <span 
                           onClick={() => openUserProfile(post.userId)}
-                          className="font-extrabold text-white text-sm hover:text-[var(--accent-primary)] cursor-pointer transition-colors"
+                          className="font-bold text-white text-[15px] cursor-pointer hover:text-[#3B82F6] transition-colors tracking-tight"
                         >
                           {post.authorName}
                         </span>
-                        <span className="text-[10px] text-white/30 font-medium">
+                        <span className="text-[11px] text-[#555861] font-semibold tracking-wide">
                           {formatPostTime(post.createdAt)}
                         </span>
                       </div>
                       
-                      <p className="text-white/80 text-sm leading-relaxed whitespace-pre-wrap mt-2">
+                      <p className="text-[#D1D3D8] text-[15px] leading-relaxed whitespace-pre-wrap font-medium">
                         {post.text}
                       </p>
 
-                      {/* Post Actions (Like, Delete) */}
-                      <div className="flex items-center gap-6 mt-4 pt-3 border-t border-white/5">
+                      {/* Post Actions */}
+                      <div className="flex items-center gap-6 mt-5 border-t border-[#1E212B] pt-3 group-hover:border-[#2A2E3B] transition-colors">
                         <button
                           onClick={() => handleToggleLike(post.id, post.likes)}
-                          className={`flex items-center gap-1.5 text-xs font-bold transition-colors ${isLiked ? 'text-red-400' : 'text-white/30 hover:text-red-400/80'}`}
+                          className={`flex items-center gap-2 text-[13px] font-semibold transition-colors ${isLiked ? 'text-red-500' : 'text-[#555861] hover:text-red-400'}`}
                         >
-                          <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-400 text-red-400' : ''}`} />
+                          <Heart className={`w-[18px] h-[18px] ${isLiked ? 'fill-red-500 text-red-500' : ''}`} strokeWidth={isLiked ? 0 : 2} />
                           <span>{post.likes?.length || 0}</span>
                         </button>
 
                         {isAuthor && (
                           <button
                             onClick={() => handleDeletePost(post.id)}
-                            className="ml-auto text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 p-1 rounded-lg"
+                            className="ml-auto text-[#555861] hover:text-[#888A92] transition-colors opacity-0 group-hover:opacity-100"
                             title="Delete Post"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-[18px] h-[18px]" strokeWidth={2} />
                           </button>
                         )}
                       </div>
@@ -253,6 +262,8 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
           </div>
         )}
       </div>
+      
+      {/* Floating Plus Button for mobile could go here, but let's keep it clean as per UI */}
     </div>
   );
 }
