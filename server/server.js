@@ -1390,6 +1390,27 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('message-reaction', (data) => {
+    const { roomId, messageId, emoji, userId } = data;
+    
+    // Broadcast to everyone in the room (including sender)
+    io.in(roomId).emit('message-reaction', data);
+
+    // Save to memory
+    const room = rooms.find(r => r.id === roomId);
+    if (room && room.messages) {
+      const msg = room.messages.find(m => m.id === messageId);
+      if (msg) {
+        if (!msg.reactions) msg.reactions = {};
+        if (msg.reactions[userId] === emoji) {
+           delete msg.reactions[userId];
+        } else {
+           msg.reactions[userId] = emoji;
+        }
+      }
+    }
+  });
+
   socket.on('draw-stroke', (data) => {
     const { roomId } = data;
     socket.to(roomId).emit('draw-stroke', data);
