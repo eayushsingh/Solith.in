@@ -1,5 +1,6 @@
-import { worker, voice } from '@livekit/agents';
+import { cli, AgentSession, Agent, defineAgent } from '@livekit/agents';
 import * as google from '@livekit/agents-plugin-google';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -26,10 +27,8 @@ Rules:
 - Speak naturally like a real person, not a robot
 - If the room is quiet, ask an interesting question to spark conversation`;
 
-worker.run({
-  agentName: 'agent-ananya',
-
-  async entry(ctx) {
+export default defineAgent({
+  entry: async (ctx) => {
     console.log(`[Ananya] ✓ Entered room: ${ctx.room.name}`);
     console.log(`[Ananya] Participants: ${ctx.room.remoteParticipants.size}`);
 
@@ -66,7 +65,7 @@ worker.run({
     });
 
     // ─── Build agent ─────────────────────────────────────────────────────────
-    const agent = new voice.Agent({
+    const agent = new Agent({
       llm: model,
       instructions: SYSTEM_PROMPT,
       turnHandling: {
@@ -106,7 +105,7 @@ worker.run({
 
     // ─── Start session ───────────────────────────────────────────────────────
     console.log('[Ananya] Starting session...');
-    const session = new voice.AgentSession();
+    const session = new AgentSession();
 
     try {
       await session.start({ agent, room: ctx.room });
@@ -214,3 +213,6 @@ worker.run({
     console.log('[Ananya] ✓ Fully initialized and ready');
   }
 });
+
+// Run the CLI so `node agent.js start` works
+cli.runApp({ agent: fileURLToPath(import.meta.url), agentName: 'agent-ananya' });
