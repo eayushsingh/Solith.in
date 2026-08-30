@@ -1,5 +1,5 @@
 import { WorkerOptions, cli, defineAgent, voice } from '@livekit/agents';
-import * as openAI from '@livekit/agents-plugin-openai';
+import * as google from '@livekit/agents-plugin-google';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -54,16 +54,10 @@ export default defineAgent({
     // We don't have a principal participant because Ananya is the host
     // and talks to anyone in the room.
 
-    const model = new openAI.realtime.RealtimeModel({
+    const model = new google.realtime.RealtimeModel({
       instructions: SYSTEM_PROMPT,
-      model: "gpt-4o-realtime-preview-2024-10-01",
-      turnDetection: {
-        type: 'server_vad',
-        threshold: 0.5,
-        prefix_padding_ms: 300,
-        silence_duration_ms: 200, 
-      },
-      voice: "nova", 
+      model: "gemini-2.0-flash-exp",
+      voice: "Aoede", 
     });
     
     const agent = new voice.Agent({
