@@ -166,6 +166,7 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDevModal, setShowDevModal] = useState(false);
   const [showSocialPanel, setShowSocialPanel] = useState(false);
+  const [showStreakCard, setShowStreakCard] = useState(false);
   const [socialTab, setSocialTab] = useState('All');
   const [allSocialUsers, setAllSocialUsers] = useState([]);
   const [socialSearch, setSocialSearch] = useState('');
@@ -2013,34 +2014,76 @@ export default function App() {
       )}
       {/* AUTH MODAL */}
       {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/30 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in text-center">
-            <h3 className="text-2xl font-serif text-text-primary mb-2">Join Talk34</h3>
-            <p className="text-sm text-text-secondary mb-8">Sign in with Google to create rooms, track your language learning streak, and earn XP.</p>
-            <button
-              onClick={handleLogin}
-              className="w-full btn-primary py-3 px-6 text-sm flex items-center justify-center gap-3"
-            >
-              <svg className="w-5 h-5 bg-white rounded-full p-1" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-              </svg>
-              Sign in with Google
-            </button>
-            <p className="mt-6 mb-4 text-[10px] text-text-secondary uppercase tracking-wide">
-              By signing in, you agree to our{' '}
-              <button onClick={() => { setShowAuthModal(false); setView('guidelines'); }} className="underline hover:text-[var(--accent-primary)]">
-                Community Guidelines
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xl p-4" onClick={() => setShowAuthModal(false)}>
+          <div className="w-full max-w-[400px] rounded-3xl animate-fade-in text-center relative overflow-hidden" onClick={e => e.stopPropagation()}
+            style={{ background: 'linear-gradient(180deg, #1a1d28 0%, #12141c 100%)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 80px rgba(59,130,246,0.08)' }}
+          >
+            {/* Top accent glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-[var(--accent-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="relative z-10 px-8 pt-10 pb-8">
+              {/* Logo */}
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center text-3xl"
+                style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))', border: '1px solid rgba(59,130,246,0.2)' }}>
+                🌍
+              </div>
+
+              <h3 className="text-2xl font-extrabold text-white tracking-tight mb-2">Welcome to Solith.in</h3>
+              <p className="text-sm text-white/50 mb-8 leading-relaxed max-w-[280px] mx-auto">
+                Join live voice rooms, practice languages with native speakers, and track your progress.
+              </p>
+
+              {/* Sign in button */}
+              <button
+                onClick={handleLogin}
+                className="w-full py-3.5 px-6 text-sm font-bold flex items-center justify-center gap-3 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, #3B82F6, #2563EB)', color: 'white', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}
+              >
+                <svg className="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+                Continue with Google
               </button>
-            </p>
-            <button
-              onClick={() => setShowAuthModal(false)}
-              className="text-text-secondary hover:text-text-primary text-xs uppercase tracking-widest font-bold"
-            >
-              Cancel
-            </button>
+
+              {/* Features row */}
+              <div className="flex items-center justify-center gap-6 mt-7 mb-5">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg">🎙️</span>
+                  <span className="text-[10px] text-white/40 font-medium">Voice Rooms</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg">🔥</span>
+                  <span className="text-[10px] text-white/40 font-medium">Streaks</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg">🏆</span>
+                  <span className="text-[10px] text-white/40 font-medium">Leagues</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-lg">⚡</span>
+                  <span className="text-[10px] text-white/40 font-medium">XP System</span>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="w-full h-px bg-white/5 mb-4"></div>
+
+              <p className="text-[10px] text-white/30 mb-3">
+                By continuing, you agree to our{' '}
+                <button onClick={() => { setShowAuthModal(false); setView('guidelines'); }} className="underline hover:text-white/60 transition-colors">
+                  Community Guidelines
+                </button>
+              </p>
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="text-white/30 hover:text-white/60 text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2720,10 +2763,126 @@ export default function App() {
                   </div>
 
                   {/* Streak */}
-                  <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full" title={`${user.streak || 1} Day Streak`}>
+                  <button
+                    onClick={() => setShowStreakCard(!showStreakCard)}
+                    className="hidden sm:flex items-center gap-1.5 text-[13px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full hover:bg-orange-500/20 transition-all relative"
+                    title={`${user.streak || 1} Day Streak`}
+                  >
                     <span className="animate-pulse">🔥</span>
                     <span>{user.streak || 1}</span>
-                  </div>
+                  </button>
+
+                  {/* Streak & League Card */}
+                  {showStreakCard && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowStreakCard(false)}></div>
+                      <div className="absolute right-12 top-full mt-2 z-50 w-[360px] rounded-2xl overflow-hidden animate-fade-in"
+                        style={{ background: 'linear-gradient(180deg, #1a1d28 0%, #12141c 100%)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+                        
+                        {/* Streak Header */}
+                        <div className="px-6 pt-6 pb-4 text-center relative">
+                          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                          <div className="text-5xl mb-2">🔥</div>
+                          <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">{user.streak || 1}</div>
+                          <div className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400/80 mt-1">Day Streak</div>
+                        </div>
+
+                        {/* Weekly Calendar */}
+                        <div className="px-6 pb-4">
+                          <div className="flex items-center justify-between gap-1">
+                            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
+                              const today = new Date().getDay();
+                              const dayIndex = today === 0 ? 6 : today - 1;
+                              const isActive = i <= dayIndex;
+                              const isToday = i === dayIndex;
+                              return (
+                                <div key={i} className="flex flex-col items-center gap-1.5">
+                                  <span className="text-[10px] font-semibold text-white/30">{day}</span>
+                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
+                                    isToday ? 'bg-orange-500 text-white shadow-[0_0_15px_rgba(249,115,22,0.4)] scale-110' :
+                                    isActive ? 'bg-orange-500/20 text-orange-400' : 'bg-white/5 text-white/20'
+                                  }`}>
+                                    {isActive ? '🔥' : '·'}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="mx-6 h-px bg-white/5"></div>
+
+                        {/* XP Progress */}
+                        <div className="px-6 py-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-white/60">{levelInfo?.title || 'A1 Beginner'}</span>
+                            <span className="text-xs font-bold text-[var(--accent-primary)]">{(user.xp || 0).toLocaleString()} XP</span>
+                          </div>
+                          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${xpPercentage}%`, background: 'linear-gradient(90deg, #3B82F6, #8B5CF6)' }}>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <span className="text-[10px] text-white/30">Lvl {levelInfo?.level || 1}</span>
+                            <span className="text-[10px] text-white/30">{levelInfo?.next === 'MAX' ? 'MAX' : `Next: ${levelInfo?.next}`}</span>
+                          </div>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="mx-6 h-px bg-white/5"></div>
+
+                        {/* League Section */}
+                        <div className="px-6 py-4">
+                          <div className="text-xs font-bold uppercase tracking-wider text-white/40 mb-3">Your League</div>
+                          <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div className="text-3xl">
+                              {(user.xp || 0) >= 1500 ? '👑' : (user.xp || 0) >= 1000 ? '💎' : (user.xp || 0) >= 600 ? '🥇' : (user.xp || 0) >= 300 ? '🥈' : (user.xp || 0) >= 100 ? '🥉' : '🌱'}
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-sm font-bold text-white">
+                                {(user.xp || 0) >= 1500 ? 'Master League' : (user.xp || 0) >= 1000 ? 'Diamond League' : (user.xp || 0) >= 600 ? 'Gold League' : (user.xp || 0) >= 300 ? 'Silver League' : (user.xp || 0) >= 100 ? 'Bronze League' : 'Starter League'}
+                              </div>
+                              <div className="text-[11px] text-white/40 mt-0.5">
+                                {(user.xp || 0) >= 1500 ? 'Top tier — you\'re a legend!' : `${((user.xp || 0) >= 1000 ? 1500 : (user.xp || 0) >= 600 ? 1000 : (user.xp || 0) >= 300 ? 600 : (user.xp || 0) >= 100 ? 300 : 100) - (user.xp || 0)} XP to next league`}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* League Tiers */}
+                          <div className="grid grid-cols-6 gap-1.5 mt-3">
+                            {[
+                              { emoji: '🌱', name: 'Starter', min: 0 },
+                              { emoji: '🥉', name: 'Bronze', min: 100 },
+                              { emoji: '🥈', name: 'Silver', min: 300 },
+                              { emoji: '🥇', name: 'Gold', min: 600 },
+                              { emoji: '💎', name: 'Diamond', min: 1000 },
+                              { emoji: '👑', name: 'Master', min: 1500 },
+                            ].map((tier) => {
+                              const isActive = (user.xp || 0) >= tier.min;
+                              return (
+                                <div key={tier.name} className={`flex flex-col items-center gap-1 p-1.5 rounded-lg transition-all ${isActive ? 'bg-white/5' : 'opacity-30'}`} title={`${tier.name}: ${tier.min}+ XP`}>
+                                  <span className="text-base">{tier.emoji}</span>
+                                  <span className="text-[8px] font-bold text-white/50 truncate">{tier.name}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 pb-5 pt-1">
+                          <button
+                            onClick={() => { setShowStreakCard(false); setView('leaderboard'); }}
+                            className="w-full py-2.5 rounded-xl text-xs font-bold text-white/60 hover:text-white bg-white/5 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                          >
+                            <Trophy className="w-3.5 h-3.5" /> View Leaderboard
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Inbox Icon */}
                   <button
