@@ -541,24 +541,7 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     livekitUrl = runtimeConfig.livekitUrl;
     console.log(`Real LiveKit Room Created Implicitly: ${roomId}`);
     
-    // Dispatch the AI Host agent exactly once per room
-    try {
-      if (!global.dispatchedRooms) global.dispatchedRooms = new Set();
-      if (!global.dispatchedRooms.has(roomId)) {
-        global.dispatchedRooms.add(roomId);
-        const agentClient = new AgentDispatchClient(livekitUrl, runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret);
-        await agentClient.createDispatch(roomId, 'agent-ananya', {
-          metadata: JSON.stringify({
-            photoUrl: '/ananya.png',
-            color: '#8b5cf6',
-            emoji: '✨'
-          })
-        });
-        console.log(`Dispatched AI Host for room ${roomId}`);
-      }
-    } catch (e) {
-      console.error('Failed to dispatch AI Host:', e.message);
-    }
+
   } else {
     return res.status(500).json({ error: 'LiveKit configuration is missing. Cannot create real rooms.' });
   }
@@ -587,6 +570,44 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
 
   rooms.push(newRoom);
   saveDB();
+
+  // Dispatch Ananya to new room
+  if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
+    try {
+      const { AgentDispatchClient } = await import('@livekit/agents');
+      const dispatchClient = new AgentDispatchClient(
+        runtimeConfig.livekitUrl,
+        runtimeConfig.livekitApiKey,
+        runtimeConfig.livekitApiSecret
+      );
+
+      // Check if already dispatched (idempotency)
+      const adminInstance = initFirebaseAdmin();
+      let alreadyDispatched = false;
+      if (adminInstance) {
+        const db = adminInstance.firestore();
+        const dispatchRef = db.collection('settings').doc('global');
+        const snap = await dispatchRef.get();
+        const dispatched = snap.exists ? (snap.data().dispatchedRooms || []) : [];
+        alreadyDispatched = dispatched.includes(roomId);
+        if (!alreadyDispatched) {
+          await dispatchRef.set(
+            { dispatchedRooms: [...dispatched, roomId] },
+            { merge: true }
+          );
+        }
+      }
+
+      if (!alreadyDispatched) {
+        await dispatchClient.createDispatch(roomId, 'agent-ananya', {
+          metadata: JSON.stringify({ roomId, roomName: newRoom.name })
+        });
+        console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`);
+      }
+    } catch (dispatchErr) {
+      console.error('[dispatch] Failed to dispatch Ananya:', dispatchErr.message);
+    }
+  }
 
   res.status(201).json(newRoom);
 });
