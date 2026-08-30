@@ -45,7 +45,7 @@ const EMOJIS = ['😊', '🦊', '🐼', '🦁', '🚀', '🎮', '🎧', '☕', '
 const AVATAR_COLORS = ['#ff4d4d', '#ff944d', '#ffd11a', '#4da6ff', '#a64dff', '#ff4da6', '#33cc33', '#33cccc', '#f43f5e', '#8b5cf6'];
 const LANGUAGES = [
   'All Languages', 'English', 'Spanish', 'French', 'German', 'Japanese',
-  'Chinese', 'Portuguese', 'Korean', 'Hindi', 'Arabic',
+  'Chinese', 'Portuguese', 'Korean', 'Hindi', 'Arabic', 'Russian',
   'Bengali', 'Indonesian', 'Vietnamese', 'Urdu', 'Tamil',
   'Telugu', 'Marathi', 'Uzbek', 'Turkish'
 ];
