@@ -934,9 +934,11 @@ export default function App() {
       setNewRoomTags('Casual');
       setIsCreatingRoom(false);
 
-      // Open in a new tab
-      window.open(`/?room=${newRoom.id}`, '_blank');
+      // Permanently fix popup blocker issue by joining directly instead of opening a new tab
+      window.history.pushState({}, '', `/?room=${newRoom.id}`);
+      joinVoiceRoom(newRoom);
     } catch (err) {
+      setIsCreatingRoom(false);
       console.error('Error creating room:', err);
       alert(err.message || 'Failed to create new practice room.');
     } finally {
