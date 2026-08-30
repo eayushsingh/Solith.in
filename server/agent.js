@@ -58,7 +58,6 @@ export default defineAgent({
       const model = new google.realtime.RealtimeModel({
         apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
         instructions: SYSTEM_PROMPT,
-        model: "gemini-2.0-flash-exp",
         voice: "Kore",
       });
 
@@ -125,10 +124,10 @@ export default defineAgent({
       });
       
       ctx.room.on('participantDisconnected', (p) => {
-        if (ctx.room.participants.size === 0) {
+        if (ctx.room.remoteParticipants.size === 0) {
           console.log(`[ANANYA] Last participant left, initiating disconnect timer`);
           setTimeout(() => {
-            if (ctx.room.participants.size === 0) {
+            if (ctx.room.remoteParticipants.size === 0) {
               console.log(`[ANANYA] Room empty, disconnecting cleanly.`);
               ctx.disconnect();
             }
