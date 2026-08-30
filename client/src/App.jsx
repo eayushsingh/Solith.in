@@ -2850,7 +2850,7 @@ export default function App() {
           </div>
 
           {/* Filters */}
-          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6 flex items-center gap-3 overflow-x-auto hide-scrollbar animate-slide-up-delayed-2">
+          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6 flex items-center gap-2.5 flex-wrap animate-slide-up-delayed-2">
             {LANGUAGES.map(lang => (
               <button
                 key={lang}
