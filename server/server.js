@@ -1201,14 +1201,7 @@ import setupAdminRoutes from './adminRoutes.js';
 // Setup admin routes
 setupAdminRoutes(app, () => rooms, saveDB, io);
 
-// Serve frontend in production build if needed
-const clientDistPath = path.join(__dirname, '../client/dist');
-if (fs.existsSync(clientDistPath)) {
-  app.use(express.static(clientDistPath));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDistPath, 'index.html'));
-  });
-}
+
 
 // Socket.IO Logic
 let totalUserCount = 0;
@@ -1951,6 +1944,18 @@ app.post('/api/rooms/:id/agent-chat', express.json(), (req, res) => {
   io.to(id).emit('chat-message', message);
   res.json({ success: true });
 });
+// Static files MUST be last
+const clientDistPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req, res) => {
+    // Don't serve HTML for API routes
+    if (req.path.startsWith('/api/') || req.path.startsWith('/livekit/')) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 // Start Server
 const PORT = process.env.PORT || 3000;
