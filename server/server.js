@@ -60,6 +60,13 @@ let runtimeConfig = {
 
 // Rooms Database State
 let rooms = [];
+
+// In-memory cache to reduce Firestore reads (Bug 2 fix)
+let cachedSettings = null;
+let cachedSettingsTime = 0;
+let cachedUserCount = 0;
+let cachedUserCountTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const socketToIdentity = new Map();
 const authenticatedOnline = new Set();
 
@@ -502,7 +509,7 @@ function isJunkText(str) {
   if (trimmed.length < 2) return true;
   
   // Rule 2: Check for 4+ identical consecutive characters (e.g. "hiiii99")
-  if (/(.)\1{4,}/.test(trimmed)) return true;
+  if (/(.)\1{7,}/.test(trimmed)) return true;
   
   return false;
 }
@@ -1225,34 +1232,33 @@ setupAdminRoutes(app, () => rooms, saveDB, io);
 
 
 // Socket.IO Logic
-let totalUserCount = 0;
 const broadcastOnlineStats = async () => {
-  const adminInstance = initFirebaseAdmin();
-  if (adminInstance) {
+  // Only query Firestore for user count every 5 minutes
+  if (Date.now() - cachedUserCountTime > CACHE_TTL) {
     try {
-      const db = adminInstance.firestore();
-      // Optimization: use count() instead of fetching entire collection
-      const snapshot = await db.collection('users').count().get();
-      totalUserCount = snapshot.data().count;
+      const adminInstance = initFirebaseAdmin();
+      if (adminInstance) {
+        const db = adminInstance.firestore();
+        const snapshot = await db.collection('users').count().get();
+        cachedUserCount = snapshot.data().count;
+        cachedUserCountTime = Date.now();
+      }
     } catch (err) {
-      console.warn('Failed to query total user count from Firestore:', err.message);
+      console.warn('Failed to get user count:', err.message);
     }
-  } else {
-    totalUserCount = 1;
   }
 
-  const onlineUserIds = [...authenticatedOnline];
   io.emit('online-stats', {
-    online: authenticatedOnline.size,
-    total: totalUserCount,
-    onlineUserIds
+    online: authenticatedOnline ? authenticatedOnline.size : (io.engine.clientsCount || 1),
+    total: Math.max(cachedUserCount, io.engine.clientsCount || 1),
+    onlineUserIds: authenticatedOnline ? [...authenticatedOnline] : []
   });
 };
 
-// Periodically update total user count and broadcast stats
+// Broadcast stats every 60 seconds instead of 15 to reduce Firestore quota usage
 setInterval(async () => {
   await broadcastOnlineStats();
-}, 15000);
+}, 60000);
 
 // Helper functions for multiplayer games
 const getSocketByUid = (uid) => {
@@ -1835,22 +1841,28 @@ app.get('/api/settings/public', async (req, res) => {
     premiumVisibilityBoost: true
   };
 
+  // Return cached settings if fresh
+  if (cachedSettings && (Date.now() - cachedSettingsTime) < CACHE_TTL) {
+    return res.json(cachedSettings);
+  }
+
   try {
     const adminInstance = initFirebaseAdmin();
     if (!adminInstance) return res.json(fallback);
     const db = adminInstance.firestore();
     const doc = await db.collection('settings').doc('global').get();
-    if (!doc.exists) return res.json(fallback);
-    const data = doc.data();
-    res.json({
-      premiumPrice: data.premiumPrice || fallback.premiumPrice,
-      premiumDurationDays: data.premiumDurationDays || fallback.premiumDurationDays,
-      qrCodeUrl: data.qrCodeUrl || fallback.qrCodeUrl,
-      premiumVisibilityBoost: data.premiumVisibilityBoost ?? fallback.premiumVisibilityBoost
-    });
+    const data = doc.exists ? doc.data() : {};
+    cachedSettings = {
+      premiumPrice: data.premiumPrice || 99,
+      premiumDurationDays: data.premiumDurationDays || 30,
+      qrCodeUrl: data.qrCodeUrl || '/qr-placeholder.png',
+      premiumVisibilityBoost: data.premiumVisibilityBoost ?? true
+    };
+    cachedSettingsTime = Date.now();
+    res.json(cachedSettings);
   } catch (error) {
-    console.error('Settings fetch error:', error);
-    res.json(fallback); // Always return fallback, never 500
+    console.error('Settings fetch error:', error.message);
+    res.json(cachedSettings || fallback);
   }
 });
 
