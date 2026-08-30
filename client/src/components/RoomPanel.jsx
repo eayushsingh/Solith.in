@@ -1407,7 +1407,10 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
 
       {/* LIGHTBOX MODAL FOR ATTACHED IMAGES */}
       {lightboxImage && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+        <div 
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
+          onClick={() => setLightboxImage(null)}
+        >
           <div className="relative max-w-4xl w-full h-full max-h-[85vh] flex items-center justify-center">
             {/* Close Lightbox */}
             <button 
@@ -1417,7 +1420,12 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
             >
               <X className="w-5 h-5" />
             </button>
-            <img src={lightboxImage} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" alt="Lightbox Large view" />
+            <img 
+              src={lightboxImage} 
+              className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
+              alt="Lightbox Large view"
+              onClick={(e) => e.stopPropagation()} 
+            />
           </div>
         </div>
       )}
