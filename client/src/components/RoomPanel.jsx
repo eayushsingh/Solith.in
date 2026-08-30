@@ -207,6 +207,11 @@ export default function RoomPanel({
     sendChatMessage({ preventDefault: () => {} }, newMessage);
   };
 
+  const toggleReaction = (msgId, emoji) => {
+    if (!socket || !activeRoom || !user?.id) return;
+    socket.emit('message-reaction', { roomId: activeRoom.id, messageId: msgId, emoji, userId: user.id });
+  };
+
   const handleTextSubmit = (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -610,6 +615,31 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                       </button>
                     </div>
                     
+                    {/* Active Reactions Display */}
+                    {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1 z-10 relative">
+                        {Object.entries(msg.reactions).reduce((acc, [uid, emoji]) => {
+                           const existing = acc.find(item => item.emoji === emoji);
+                           if (existing) {
+                             existing.count += 1;
+                             existing.users.push(uid);
+                           } else {
+                             acc.push({ emoji, count: 1, users: [uid] });
+                           }
+                           return acc;
+                        }, []).map(r => (
+                          <div 
+                            key={r.emoji} 
+                            onClick={() => toggleReaction(msg.id, r.emoji)}
+                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] cursor-pointer border hover:scale-105 transition-transform ${r.users.includes(user?.id) ? 'bg-[var(--accent-primary)]/20 border-[var(--accent-primary)]/50 text-[var(--accent-primary)]' : 'bg-white/5 border-white/10 text-white/70'}`}
+                          >
+                            <span>{r.emoji}</span>
+                            <span style={{ fontSize: 9, fontWeight: 700 }}>{r.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
                     {/* Reaction Row */}
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-3 mt-1" style={{fontSize: 12}}>
                       <div style={{display:'flex', gap:4}}>
@@ -619,6 +649,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                             fontSize:14, padding:'2px 4px', borderRadius:6,
                             transition:'background 0.1s'
                           }}
+                          onClick={() => toggleReaction(msg.id, emoji)}
                           onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.1)'}
                           onMouseLeave={e => e.currentTarget.style.background='none'}
                           >
@@ -627,7 +658,6 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                         ))}
                       </div>
                       <button onClick={() => alert('Direct messages coming soon!')} style={{color:'#60a5fa',fontSize:11,fontWeight:600,background:'none',border:'none',cursor:'pointer'}}>PM</button>
-                      <button onClick={() => alert('Reactions coming soon!')} style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>React</button>
                       <button onClick={() => setReplyingTo(msg)} style={{color:'rgba(255,255,255,0.4)',fontSize:11,background:'none',border:'none',cursor:'pointer'}}>Reply</button>
                     </div>
                   </div>

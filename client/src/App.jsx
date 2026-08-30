@@ -15,7 +15,7 @@ import RoomPanel from './components/RoomPanel';
 import SocialUserRow from './components/SocialUserRow';
 
 import StaticModals from './components/StaticModals';
-import { 
+import {
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, Camera,
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
   Monitor, Youtube, Gamepad2, Crown, BarChart2
@@ -63,7 +63,7 @@ const lazyWithRetry = (componentImport) =>
       if (!pageHasAlreadyBeenForceRefreshed) {
         window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
         window.location.reload();
-        return new Promise(() => {}); // Wait for reload
+        return new Promise(() => { }); // Wait for reload
       }
       throw error;
     }
@@ -112,15 +112,15 @@ export default function App() {
     const hash = window.location.hash.replace('#', '');
     const path = window.location.pathname.replace('/', '');
     const hasSeenLanding = localStorage.getItem('seenLanding');
-    
+
     if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(hash)) return hash;
     if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(path)) return path;
     return hasSeenLanding ? 'lobby' : 'landing';
-  }); 
+  });
   const [activeDm, setActiveDm] = useState(null); // { id: string, profile: object }
   const [msgTab, setMsgTab] = useState('global'); // 'global' or 'direct'
   const [isConnected, setIsConnected] = useState(false);
-  
+
   // Landing Page Interactive Eye Tracking & Node Lines States
   const heroRef = useRef(null);
   const charSvgRef = useRef(null);
@@ -148,7 +148,7 @@ export default function App() {
   const [targetProfile, setTargetProfile] = useState(null);
   const [showTargetProfileModal, setShowTargetProfileModal] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
-  
+
   // Reports
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
@@ -207,13 +207,13 @@ export default function App() {
   useEffect(() => {
     const prev = prevParticipantsRef.current || [];
     const now = (participants || []).filter(p => p != null && p.id != null);
-    const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     now.forEach(p => {
       if (!prev.find(pp => pp.id === p.id) && !p.isLocal) {
         setJoinEvents(e => [...e.slice(-19), {
           text: `[${time}] ${p.name} joined.`,
-          initials: p.name?.slice(0,2).toUpperCase() || '??',
+          initials: p.name?.slice(0, 2).toUpperCase() || '??',
           color: p.color || '#333'
         }]);
       }
@@ -222,7 +222,7 @@ export default function App() {
       if (!now.find(pp => pp.id === p.id) && !p.isLocal) {
         setJoinEvents(e => [...e.slice(-19), {
           text: `[${time}] ${p.name} left.`,
-          initials: p.name?.slice(0,2).toUpperCase() || '??',
+          initials: p.name?.slice(0, 2).toUpperCase() || '??',
           color: p.color || '#333'
         }]);
       }
@@ -239,7 +239,7 @@ export default function App() {
   const [showGameSelector, setShowGameSelector] = useState(false);
   const [lobbyGridCols, setLobbyGridCols] = useState(3);
   const [joiningRoomId, setJoiningRoomId] = useState(null);
-  
+
   // Custom Toast State (replaces window.alert)
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -260,20 +260,20 @@ export default function App() {
     const originalAlert = window.alert;
     window.alert = (msg) => {
       const message = typeof msg === 'string' ? msg : JSON.stringify(msg);
-      
+
       if (message.includes('Invalid token') || message.includes('Unauthorized') || message.includes('banned')) {
-         signOut(auth).catch(console.error);
-         setToastMessage(message.includes('banned') ? "Account banned for violating guidelines." : "Session expired. Please sign in again.");
+        signOut(auth).catch(console.error);
+        setToastMessage(message.includes('banned') ? "Account banned for violating guidelines." : "Session expired. Please sign in again.");
       } else {
-         setToastMessage(message);
+        setToastMessage(message);
       }
-      
-      if(timeoutId) clearTimeout(timeoutId);
+
+      if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         setToastMessage(null);
       }, 5000);
     };
-    
+
     return () => {
       window.alert = originalAlert;
       if (timeoutId) clearTimeout(timeoutId);
@@ -284,7 +284,7 @@ export default function App() {
     const syncViewFromHash = () => {
       const hash = window.location.hash.replace('#', '');
       const path = window.location.pathname.replace('/', '');
-      
+
       if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(hash)) {
         setView(hash);
       } else if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(path)) {
@@ -350,10 +350,10 @@ export default function App() {
         if (currentUser && !currentUser.isAnonymous) {
           console.log("onAuthStateChanged: Authenticated as", currentUser.email);
           socket.emit('authenticate', currentUser.uid);
-          
+
           // 1. Instantly get the token (cached by Firebase, very fast)
           const token = await currentUser.getIdToken();
-          
+
           const defaultAvatar = `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(currentUser.uid)}`;
 
           // 2. OPTIMISTIC UI UPDATE for lightning-fast perceived performance
@@ -376,13 +376,13 @@ export default function App() {
               const userRef = doc(db, 'users', currentUser.uid);
               const today = new Date().toDateString();
               const yesterday = new Date(Date.now() - 86400000).toDateString();
-              
+
               const userSnap = await getDoc(userRef);
               let dbData;
 
               if (userSnap.exists()) {
                 dbData = userSnap.data();
-                
+
                 // --- Ban check ---
                 if (dbData.isBanned) {
                   alert('This account has been banned due to severe community guideline violations.');
@@ -408,7 +408,7 @@ export default function App() {
                   updates.name = currentUser.displayName;
                   dbData.name = currentUser.displayName;
                 }
-                
+
                 if (currentUser.photoURL && dbData.photoUrl !== currentUser.photoURL) {
                   updates.photoUrl = currentUser.photoURL;
                   dbData.photoUrl = currentUser.photoURL;
@@ -416,7 +416,7 @@ export default function App() {
                   updates.photoUrl = defaultAvatar;
                   dbData.photoUrl = defaultAvatar;
                 }
-                
+
                 if (currentUser.email === 'ayushsinghe07@gmail.com' && dbData.role !== 'admin') {
                   updates.role = 'admin';
                   dbData.role = 'admin';
@@ -496,7 +496,7 @@ export default function App() {
       setShowProfileModal(true);
     } catch (error) {
       console.error("signInWithPopup ERROR:", error.code, error.message);
-      
+
       if (error.code === 'auth/popup-blocked') {
         console.warn("Popup blocked by browser. Falling back to signInWithRedirect...");
         // Close the modal to show something is happening before the page redirects
@@ -520,7 +520,7 @@ export default function App() {
           return;
         } catch (fallbackError) {
           console.error("Fallback login failed:", fallbackError);
-          
+
           if (fallbackError.code === 'auth/popup-blocked') {
             console.warn("Popup blocked by browser on fallback. Falling back to signInWithRedirect...");
             setShowAuthModal(false);
@@ -571,16 +571,16 @@ export default function App() {
   const toggleFollow = async () => {
     if (!user || !targetProfile) return;
     const isFollowing = user.following?.includes(targetProfile.id);
-    
+
     // Optimistic UI update
-    const newFollowing = isFollowing 
+    const newFollowing = isFollowing
       ? (user.following || []).filter(id => id !== targetProfile.id)
       : [...(user.following || []), targetProfile.id];
-      
+
     const newTargetFollowers = isFollowing
       ? (targetProfile.followers || []).filter(id => id !== user.id)
       : [...(targetProfile.followers || []), user.id];
-      
+
     setUser(prev => ({ ...prev, following: newFollowing }));
     setTargetProfile(prev => ({ ...prev, followers: newTargetFollowers }));
 
@@ -594,7 +594,7 @@ export default function App() {
       if (!res.ok) throw new Error('Failed to toggle follow on server');
     } catch (e) {
       console.error("Failed to toggle follow", e);
-      setUser(prev => ({ ...prev, following: isFollowing ? [...(prev.following||[]), targetProfile.id] : prev.following.filter(id => id !== targetProfile.id) }));
+      setUser(prev => ({ ...prev, following: isFollowing ? [...(prev.following || []), targetProfile.id] : prev.following.filter(id => id !== targetProfile.id) }));
       alert("Action failed, please try again.");
     }
   };
@@ -620,6 +620,22 @@ export default function App() {
     const handleChatMessage = (message) => {
       setChatMessages(prev => [...prev, message]);
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    };
+
+    const handleMessageReaction = (data) => {
+      const { messageId, emoji, userId } = data;
+      setChatMessages(prev => prev.map(msg => {
+        if (msg.id === messageId) {
+          const newReactions = { ...(msg.reactions || {}) };
+          if (newReactions[userId] === emoji) {
+            delete newReactions[userId];
+          } else {
+            newReactions[userId] = emoji;
+          }
+          return { ...msg, reactions: newReactions };
+        }
+        return msg;
+      }));
     };
 
     const handleYtShare = ({ videoId, sharingUser }) => {
@@ -668,6 +684,7 @@ export default function App() {
 
     socket.on('chat-history', handleChatHistory);
     socket.on('chat-message', handleChatMessage);
+    socket.on('message-reaction', handleMessageReaction);
     socket.on('yt-share', handleYtShare);
     socket.on('participant-kicked', handleParticipantKicked);
     socket.on('participant-muted', handleParticipantMuted);
@@ -695,6 +712,7 @@ export default function App() {
     return () => {
       socket.off('chat-history', handleChatHistory);
       socket.off('chat-message', handleChatMessage);
+      socket.off('message-reaction', handleMessageReaction);
       socket.off('yt-share', handleYtShare);
       socket.off('participant-kicked', handleParticipantKicked);
       socket.off('participant-muted', handleParticipantMuted);
@@ -716,7 +734,7 @@ export default function App() {
     const pingInterval = setInterval(async () => {
       fetch(`${API_URL}/api/rooms/${activeRoom.id}/ping`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await getFreshToken()}`
         },
@@ -767,13 +785,13 @@ export default function App() {
     if (rooms.length > 0 && user && user.id && callState === 'left' && !activeRoom) {
       const urlParams = new URLSearchParams(window.location.search);
       const roomId = urlParams.get('room');
-      
+
       if (roomId) {
         const roomToJoin = rooms.find(r => r.id === roomId);
         if (roomToJoin) {
           // Join the room
           joinVoiceRoom(roomToJoin);
-          
+
           // Clean up URL to avoid infinite joins on refresh
           window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -800,7 +818,7 @@ export default function App() {
       const data = await res.json();
       setRooms(data);
       setIsConnected(true);
-      
+
       // Update active room details in real-time
       if (activeRoom) {
         const updated = data.find(r => r.id === activeRoom.id);
@@ -869,7 +887,7 @@ export default function App() {
       alert("Room name must be at least 3 characters.");
       return;
     }
-    
+
     setIsCreatingRoom(true);
 
     const tagsArray = newRoomTags.split(',').map(t => t.trim()).filter(t => t.length >= 3).slice(0, 5);
@@ -880,7 +898,7 @@ export default function App() {
 
       const res = await fetch(`${API_URL}/api/rooms`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await getFreshToken()}`
         },
@@ -903,7 +921,7 @@ export default function App() {
       }
 
       const newRoom = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(newRoom.error || 'Failed to create room');
       }
@@ -914,7 +932,7 @@ export default function App() {
       setNewRoomTopic('');
       setNewRoomTags('Casual');
       setIsCreatingRoom(false);
-      
+
       // Open in a new tab
       window.open(`/?room=${newRoom.id}`, '_blank');
     } catch (err) {
@@ -950,7 +968,7 @@ export default function App() {
     try {
       const res = await fetch(`${API_URL}/api/rooms/${room.id}/join`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${await getFreshToken()}`
         },
@@ -1001,7 +1019,7 @@ export default function App() {
 
       // Connect via LiveKit helper
       await LiveKitService.join(data.livekitUrl, data.token, data.isRealConnection, user);
-      
+
       setRoomJoinTime(Date.now());
       fetchRooms(); // refresh listing UI
       return true;
@@ -1022,7 +1040,7 @@ export default function App() {
     LiveKitService.leave(isRealCall);
     if (activeRoom) {
       socket.emit('leave-room', activeRoom.id);
-      
+
       // Calculate and save time spent
       if (roomJoinTime && user && user.id) {
         const timeSpentMinutes = Math.floor((Date.now() - roomJoinTime) / 60000);
@@ -1094,8 +1112,8 @@ export default function App() {
     const nextMute = !isMuted;
     const resolved = LiveKitService.setLocalAudio(nextMute, isRealCall);
     setIsMuted(resolved);
-    
-    setParticipants(prev => 
+
+    setParticipants(prev =>
       prev.map(p => p.isLocal ? { ...p, muted: resolved } : p)
     );
   };
@@ -1156,7 +1174,7 @@ export default function App() {
     try {
       await fetch(`${API_URL}/api/rooms/${activeRoom.id}/allow-speak`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${await getFreshToken()}`,
           'Content-Type': 'application/json'
         },
@@ -1200,25 +1218,25 @@ export default function App() {
 
 
     const svgRect = charSvgRef.current.getBoundingClientRect();
-    const svgCx = svgRect.left + svgRect.width/2 - rect.left;
-    const svgCy = svgRect.top + svgRect.height*0.5 - rect.top;
+    const svgCx = svgRect.left + svgRect.width / 2 - rect.left;
+    const svgCy = svgRect.top + svgRect.height * 0.5 - rect.top;
 
     const dx = x - svgCx;
     const dy = y - svgCy;
-    const dist = Math.sqrt(dx*dx + dy*dy);
+    const dist = Math.sqrt(dx * dx + dy * dy);
     const maxOffset = 5;
-    const ox = (dx/Math.max(dist, 1)) * Math.min(dist/30, 1) * maxOffset;
-    const oy = (dy/Math.max(dist, 1)) * Math.min(dist/30, 1) * maxOffset;
+    const ox = (dx / Math.max(dist, 1)) * Math.min(dist / 30, 1) * maxOffset;
+    const oy = (dy / Math.max(dist, 1)) * Math.min(dist / 30, 1) * maxOffset;
 
     setPupilOffset({ x: ox, y: oy });
 
     // Connect node lines to eyes and body segments of the SVG character in hero-space coordinates
-    const cx1 = svgRect.left + 78 - rect.left; 
+    const cx1 = svgRect.left + 78 - rect.left;
     const cy1 = svgRect.top + 108 - rect.top;
-    
+
     const cx2 = svgRect.left + 122 - rect.left;
     const cy2 = svgRect.top + 108 - rect.top;
-    
+
     const cx3 = svgRect.left + 100 - rect.left;
     const cy3 = svgRect.top + 180 - rect.top;
 
@@ -1351,8 +1369,8 @@ export default function App() {
   const filteredRooms = rooms.filter(room => {
     const matchLang = selectedLanguage === 'All Languages' || room.language === selectedLanguage;
     const matchSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        room.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        room.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      room.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      room.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchLang && matchSearch;
   }).sort((a, b) => {
     if (platformSettings?.premiumVisibilityBoost !== false) {
@@ -1378,7 +1396,7 @@ export default function App() {
     onlineStats
   };
 
-  const usersInRooms = rooms.flatMap(r => 
+  const usersInRooms = rooms.flatMap(r =>
     (r.participants || []).map(p => ({ ...p, roomName: r.name, roomId: r.id }))
   );
 
@@ -1389,7 +1407,7 @@ export default function App() {
       <div className="main-content hide-scrollbar z-10 relative">
         {children}
       </div>
-      
+
       {/* MODALS MOVED HERE FOR GLOBAL ACCESS */}
       {/* PARTICIPANT ACTION CARD MODAL */}
       {activeActionUser && (
@@ -1398,7 +1416,7 @@ export default function App() {
             <button onClick={() => setActiveActionUser(null)} className="absolute top-4 right-4 text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20">
               <X className="w-4 h-4" />
             </button>
-            
+
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/10" style={{ backgroundColor: activeActionUser.color || '#333' }}>
                 {activeActionUser.photoUrl ? (
@@ -1416,11 +1434,11 @@ export default function App() {
                 </span>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[10px] text-white/30 font-mono truncate max-w-[120px]">ID: {activeActionUser.id}</span>
-                  <button 
+                  <button
                     onClick={() => {
                       navigator.clipboard.writeText(activeActionUser.id);
                       alert('Copied User ID!');
-                    }} 
+                    }}
                     className="text-[9px] text-[var(--accent-primary)] font-bold hover:underline"
                   >
                     Copy ID
@@ -1433,7 +1451,7 @@ export default function App() {
               <button onClick={() => { alert('User Blocked'); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all">Block</button>
               <button onClick={() => { setShowReportModal(activeActionUser.id); setActiveActionUser(null); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all">Report</button>
               <button onClick={() => { handleStartDM(activeActionUser.id, activeActionUser.name); setActiveActionUser(null); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all">PM</button>
-              <button 
+              <button
                 onClick={async () => {
                   const isFollowing = user.following?.includes(activeActionUser.id);
                   const targetProfileSnap = await getDoc(doc(db, 'users', activeActionUser.id));
@@ -1441,7 +1459,7 @@ export default function App() {
                     setTargetProfile({ id: activeActionUser.id, ...targetProfileSnap.data() });
                     toggleFollow();
                   }
-                }} 
+                }}
                 className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all"
               >
                 {user.following?.includes(activeActionUser.id) ? 'Unfollow' : 'Follow'}
@@ -1462,7 +1480,7 @@ export default function App() {
                 <div className="border-t border-white/5 pt-4 space-y-2">
                   <div className="text-[10px] text-white/30 font-bold uppercase tracking-widest mb-2">Room Moderation</div>
                   <div className="grid grid-cols-2 gap-2">
-                    <button 
+                    <button
                       onClick={async () => {
                         try {
                           await fetch(`${API_URL}/api/rooms/${activeRoom.id}/mute`, {
@@ -1478,12 +1496,12 @@ export default function App() {
                         } catch (err) {
                           alert(err.message);
                         }
-                      }} 
+                      }}
                       className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold rounded-xl transition-all"
                     >
                       Mute
                     </button>
-                    <button 
+                    <button
                       onClick={async () => {
                         try {
                           await fetch(`${API_URL}/api/rooms/${activeRoom.id}/kick`, {
@@ -1499,16 +1517,16 @@ export default function App() {
                         } catch (err) {
                           alert(err.message);
                         }
-                      }} 
+                      }}
                       className="py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold rounded-xl transition-all"
                     >
                       Kick
                     </button>
                     <button onClick={() => { setChatMessages([]); alert('Cleared room chat'); }} className="py-2.5 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-xl transition-all col-span-2">Clear Chat</button>
-                    
+
                     {isOwner && (
                       <>
-                        <button 
+                        <button
                           onClick={async () => {
                             const newRole = targetRole === 'co-owner' ? 'member' : 'co-owner';
                             try {
@@ -1529,7 +1547,7 @@ export default function App() {
                         >
                           {targetRole === 'co-owner' ? 'Set Guest' : 'Set Co-Owner'}
                         </button>
-                        <button 
+                        <button
                           onClick={async () => {
                             if (!window.confirm(`Are you sure you want to transfer room ownership to ${activeActionUser.name}? You will become Co-Owner.`)) return;
                             try {
@@ -1552,9 +1570,9 @@ export default function App() {
                         </button>
                       </>
                     )}
-                    
+
                     {(activeRoom.speakingQueue || []).includes(activeActionUser.id) && (
-                      <button 
+                      <button
                         onClick={async () => {
                           try {
                             await fetch(`${API_URL}/api/rooms/${activeRoom.id}/lower-hand-mod`, {
@@ -1586,17 +1604,17 @@ export default function App() {
               </div>
               <div className="flex items-center gap-3">
                 <Volume2 className="w-4 h-4 text-white/40" />
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1" 
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
                   step="0.05"
                   value={activeActionUser.volume !== undefined ? activeActionUser.volume : 1}
                   onChange={(e) => {
                     const newVol = parseFloat(e.target.value);
                     setParticipants(prev => prev.map(p => p.id === activeActionUser.id ? { ...p, volume: newVol } : p));
                     setActiveActionUser(prev => ({ ...prev, volume: newVol }));
-                    
+
                     if (isRealCall) {
                       const participant = LiveKitService.getRoom()?.remoteParticipants.get(activeActionUser.id);
                       if (participant) {
@@ -1653,7 +1671,7 @@ export default function App() {
                 </div>
                 Co-Watch YouTube
               </h3>
-              <button 
+              <button
                 onClick={() => setShowYtModal(false)}
                 className="text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-2"
               >
@@ -1664,9 +1682,9 @@ export default function App() {
             <div className="space-y-5">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-red-400 mb-2 drop-shadow-sm">YouTube Video Link</label>
-                <input 
-                  type="text" 
-                  placeholder="https://www.youtube.com/watch?v=..." 
+                <input
+                  type="text"
+                  placeholder="https://www.youtube.com/watch?v=..."
                   value={ytUrlInput}
                   onChange={(e) => setYtUrlInput(e.target.value)}
                   className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary placeholder-white/30 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all shadow-inner"
@@ -1714,11 +1732,11 @@ export default function App() {
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl md:text-2xl font-bold text-text-primary flex items-center gap-3">
                 <div className="p-2 bg-[var(--accent-primary-bg)] rounded-xl border border-[var(--accent-primary-glow)]">
-                  <Plus className="w-5 h-5 text-[var(--accent-primary)]" /> 
+                  <Plus className="w-5 h-5 text-[var(--accent-primary)]" />
                 </div>
                 Start Practice Lounge
               </h3>
-              <button 
+              <button
                 onClick={() => setShowCreateModal(false)}
                 className="text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-2"
               >
@@ -1729,9 +1747,9 @@ export default function App() {
             <form onSubmit={handleCreateRoom} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Room Title</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Intermediate Spanish Chat & Tacos 🌮" 
+                <input
+                  type="text"
+                  placeholder="e.g. Intermediate Spanish Chat & Tacos 🌮"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
                   className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary placeholder-white/30 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all shadow-inner"
@@ -1742,7 +1760,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Language Focus</label>
-                  <select 
+                  <select
                     value={newRoomLanguage}
                     onChange={(e) => setNewRoomLanguage(e.target.value)}
                     className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-all shadow-inner"
@@ -1755,9 +1773,9 @@ export default function App() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Tags (comma separated)</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Casual, Debate" 
+                  <input
+                    type="text"
+                    placeholder="e.g. Casual, Debate"
                     value={newRoomTags}
                     onChange={(e) => setNewRoomTags(e.target.value)}
                     className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary placeholder-white/30 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all shadow-inner"
@@ -1767,8 +1785,8 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Lounge Description / Topic</label>
-                <textarea 
-                  placeholder="Give speakers details about what you want to talk about..." 
+                <textarea
+                  placeholder="Give speakers details about what you want to talk about..."
                   value={newRoomTopic}
                   onChange={(e) => setNewRoomTopic(e.target.value)}
                   className="w-full text-sm h-24 resize-none bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary placeholder-white/30 focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all shadow-inner"
@@ -1778,7 +1796,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Privacy</label>
-                  <select 
+                  <select
                     value={newRoomAccessType}
                     onChange={(e) => setNewRoomAccessType(e.target.value)}
                     className="w-full text-sm bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 text-text-primary focus:outline-none focus:border-[var(--accent-primary)] transition-all shadow-inner"
@@ -1791,8 +1809,8 @@ export default function App() {
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest text-[var(--accent-primary-hover)] mb-2 drop-shadow-sm">Speaking Mode</label>
                   <label className="flex items-center gap-3 w-full bg-bg-base/40 border border-white/10 rounded-xl px-4 py-3 cursor-pointer hover:bg-white/5 transition-colors">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={newRoomIsOpenMic}
                       onChange={(e) => setNewRoomIsOpenMic(e.target.checked)}
                       className="w-4 h-4 accent-[var(--accent-primary)] cursor-pointer"
@@ -1831,7 +1849,7 @@ export default function App() {
               <h3 className="text-lg font-bold text-text-primary flex items-center gap-1.5">
                 <Settings className="w-5 h-5 text-[var(--accent-primary)]" /> Customize Identity
               </h3>
-              <button 
+              <button
                 onClick={() => setShowSettingsModal(false)}
                 className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition text-text-secondary hover:text-text-primary"
               >
@@ -1842,7 +1860,7 @@ export default function App() {
             <div className="space-y-4">
               {/* Preview Avatar Card */}
               <div className="flex items-center gap-4 p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--line)]">
-                <div 
+                <div
                   className="w-16 h-16 rounded-full flex items-center justify-center text-4xl shadow-md"
                   style={{ backgroundColor: user.color }}
                 >
@@ -1858,8 +1876,8 @@ export default function App() {
               {/* Name Edit Input */}
               <div>
                 <label className="block text-xs font-semibold text-text-secondary mb-1.5">Nickname</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={user.name}
                   onChange={(e) => setUser(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full text-sm"
@@ -1875,9 +1893,8 @@ export default function App() {
                     <button
                       key={em}
                       onClick={() => setUser(prev => ({ ...prev, emoji: em }))}
-                      className={`text-xl p-1 rounded-md hover:bg-[var(--bg-hover)] transition ${
-                        user.emoji === em ? 'bg-[var(--accent-primary-bg)] border border-[var(--accent-primary)]' : 'border border-transparent'
-                      }`}
+                      className={`text-xl p-1 rounded-md hover:bg-[var(--bg-hover)] transition ${user.emoji === em ? 'bg-[var(--accent-primary-bg)] border border-[var(--accent-primary)]' : 'border border-transparent'
+                        }`}
                     >
                       {em}
                     </button>
@@ -1923,7 +1940,7 @@ export default function App() {
               <h3 className="text-lg font-bold text-text-primary flex items-center gap-2">
                 <Settings className="w-5 h-5 text-[var(--accent-primary)]" /> LiveKit Credentials
               </h3>
-              <button 
+              <button
                 onClick={() => setShowDevModal(false)}
                 className="p-1.5 rounded-lg hover:bg-[var(--bg-hover)] transition text-text-secondary hover:text-text-primary"
               >
@@ -1932,7 +1949,7 @@ export default function App() {
             </div>
 
             <div className="p-3.5 bg-[var(--accent-primary-bg)] border border-[var(--accent-primary-glow)] rounded-xl text-xs text-[var(--accent-primary)] leading-normal mb-5">
-              Inputting credentials here lets the server call the real LiveKit WebRTC service to generate active meeting rooms and voice channels. 
+              Inputting credentials here lets the server call the real LiveKit WebRTC service to generate active meeting rooms and voice channels.
               <br />
               If you leave these fields empty, Talk34 works in <strong>Demo Simulator Mode</strong> with simulated speech visualisers and mock partners.
             </div>
@@ -1940,9 +1957,9 @@ export default function App() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-text-secondary mb-1.5">LiveKit WebSocket URL</label>
-                <input 
-                  type="text" 
-                  placeholder="wss://your-project.livekit.cloud" 
+                <input
+                  type="text"
+                  placeholder="wss://your-project.livekit.cloud"
                   value={livekitUrl}
                   onChange={(e) => setLivekitUrl(e.target.value)}
                   className="w-full text-sm"
@@ -1952,9 +1969,9 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-semibold text-text-secondary mb-1.5">LiveKit API Key</label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. API..." 
+                <input
+                  type="text"
+                  placeholder="e.g. API..."
                   value={devApiKey}
                   onChange={(e) => setDevApiKey(e.target.value)}
                   className="w-full text-sm"
@@ -1963,9 +1980,9 @@ export default function App() {
 
               <div>
                 <label className="block text-xs font-semibold text-text-secondary mb-1.5">LiveKit API Secret</label>
-                <input 
-                  type="password" 
-                  placeholder="e.g. 5ca7...da8b" 
+                <input
+                  type="password"
+                  placeholder="e.g. 5ca7...da8b"
                   value={devApiSecret}
                   onChange={(e) => setDevApiSecret(e.target.value)}
                   className="w-full text-sm"
@@ -1997,15 +2014,15 @@ export default function App() {
           <div className="w-full max-w-sm glass rounded-2xl p-8 animate-fade-in text-center">
             <h3 className="text-2xl font-serif text-text-primary mb-2">Join Talk34</h3>
             <p className="text-sm text-text-secondary mb-8">Sign in with Google to create rooms, track your language learning streak, and earn XP.</p>
-            <button 
+            <button
               onClick={handleLogin}
               className="w-full btn-primary py-3 px-6 text-sm flex items-center justify-center gap-3"
             >
               <svg className="w-5 h-5 bg-white rounded-full p-1" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
               Sign in with Google
             </button>
@@ -2015,7 +2032,7 @@ export default function App() {
                 Community Guidelines
               </button>
             </p>
-            <button 
+            <button
               onClick={() => setShowAuthModal(false)}
               className="text-text-secondary hover:text-text-primary text-xs uppercase tracking-widest font-bold"
             >
@@ -2029,16 +2046,16 @@ export default function App() {
       {showProfileModal && user && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4">
           <div className="w-full max-w-sm rounded-3xl p-8 animate-fade-in relative bg-bg-base border border-border-color shadow-xl">
-            <button 
+            <button
               onClick={() => setShowProfileModal(false)}
               className="absolute top-4 right-4 text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20"
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             <div className="flex flex-col items-center mt-2 relative z-10">
               <div className="relative mb-6">
-                
+
                 <img src={getAvatarUrl(user.photoUrl, user.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
                 {user.isPremium && (
                   <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
@@ -2047,7 +2064,7 @@ export default function App() {
 
               <h3 className="text-2xl font-black text-text-primary mb-1">{user.name}</h3>
               <p className="text-xs text-yellow-500/60 mb-8 font-mono">{user.email}</p>
-              
+
               <div className="w-full grid grid-cols-2 gap-4 mb-8">
                 <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-border-color shadow-inner">
                   <div className="flex justify-center mb-2"><Flame className="w-6 h-6 text-orange-500 fill-orange-500 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] animate-pulse" /></div>
@@ -2062,7 +2079,7 @@ export default function App() {
               </div>
 
               <div className="w-full flex justify-around py-4 mb-8 bg-yellow-500/5 rounded-2xl border border-yellow-500/10 shadow-inner">
-                <div 
+                <div
                   className="text-center cursor-pointer hover:scale-110 transition-transform"
                   onClick={() => setFollowListState({ isOpen: true, type: 'followers', ids: user.followers || [], title: 'Followers' })}
                 >
@@ -2070,7 +2087,7 @@ export default function App() {
                   <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Followers</div>
                 </div>
                 <div className="w-px bg-yellow-500/20"></div>
-                <div 
+                <div
                   className="text-center cursor-pointer hover:scale-110 transition-transform"
                   onClick={() => setFollowListState({ isOpen: true, type: 'following', ids: user.following || [], title: 'Following' })}
                 >
@@ -2078,8 +2095,8 @@ export default function App() {
                   <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Following</div>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => {
                   signOut(auth);
                   setShowProfileModal(false);
@@ -2097,13 +2114,13 @@ export default function App() {
       {showTargetProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4">
           <div className="w-full max-w-sm rounded-3xl p-8 animate-fade-in relative bg-bg-base border border-border-color shadow-xl">
-            <button 
+            <button
               onClick={() => setShowTargetProfileModal(false)}
               className="absolute top-4 right-4 text-text-primary/40 hover:text-text-primary transition-colors bg-white/5 hover:bg-white/10 rounded-full p-1.5 z-20"
             >
               <X className="w-5 h-5" />
             </button>
-            
+
             {profileLoading || !targetProfile ? (
               <div className="flex flex-col items-center justify-center h-48 text-yellow-500/50 text-sm font-bold uppercase tracking-widest animate-pulse">
                 Loading...
@@ -2111,16 +2128,16 @@ export default function App() {
             ) : (
               <div className="flex flex-col items-center mt-2 relative z-10">
                 <div className="relative mb-6">
-                  
+
                   <img src={getAvatarUrl(targetProfile.photoUrl, targetProfile.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
                   {targetProfile.isPremium && (
                     <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
                   )}
                 </div>
-                
+
                 <h3 className="text-2xl font-black text-text-primary mb-1">{targetProfile.name}</h3>
                 <p className="text-xs text-yellow-500/60 mb-8 font-mono">Joined {new Date(targetProfile.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}</p>
-                
+
                 <div className="w-full grid grid-cols-2 gap-4 mb-8">
                   <div className="bg-[#1a1c23] rounded-2xl p-4 text-center border border-border-color shadow-inner">
                     <div className="flex justify-center mb-2"><Flame className="w-6 h-6 text-orange-500 fill-orange-500 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)] animate-pulse" /></div>
@@ -2135,7 +2152,7 @@ export default function App() {
                 </div>
 
                 <div className="w-full flex justify-around py-4 mb-8 bg-yellow-500/5 rounded-2xl border border-yellow-500/10 shadow-inner">
-                  <div 
+                  <div
                     className="text-center cursor-pointer hover:scale-110 transition-transform"
                     onClick={() => setFollowListState({ isOpen: true, type: 'followers', ids: targetProfile.followers || [], title: `${targetProfile.name.split(' ')[0]}'s Followers` })}
                   >
@@ -2143,7 +2160,7 @@ export default function App() {
                     <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Followers</div>
                   </div>
                   <div className="w-px bg-yellow-500/20"></div>
-                  <div 
+                  <div
                     className="text-center cursor-pointer hover:scale-110 transition-transform"
                     onClick={() => setFollowListState({ isOpen: true, type: 'following', ids: targetProfile.following || [], title: `${targetProfile.name.split(' ')[0]} is Following` })}
                   >
@@ -2151,15 +2168,14 @@ export default function App() {
                     <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Following</div>
                   </div>
                 </div>
-                
+
                 {user && (
-                  <button 
+                  <button
                     onClick={toggleFollow}
-                    className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
-                      user.following?.includes(targetProfile.id) 
-                        ? 'bg-[#121212] border border-yellow-500/20 text-yellow-500/80 hover:text-yellow-500 hover:bg-yellow-500/10' 
+                    className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${user.following?.includes(targetProfile.id)
+                        ? 'bg-[#121212] border border-yellow-500/20 text-yellow-500/80 hover:text-yellow-500 hover:bg-yellow-500/10'
                         : 'bg-[var(--accent-primary)] text-white hover:scale-[1.02] hover:shadow-[0_0_15px_var(--accent-primary-glow)]'
-                    }`}
+                      }`}
                   >
                     {user.following?.includes(targetProfile.id) ? (
                       <>
@@ -2173,7 +2189,7 @@ export default function App() {
                   </button>
                 )}
                 {user && user.id !== targetProfile.id && (
-                  <button 
+                  <button
                     onClick={() => {
                       setShowTargetProfileModal(false);
                       const convoId = user.id < targetProfile.id ? `${user.id}_${targetProfile.id}` : `${targetProfile.id}_${user.id}`;
@@ -2188,7 +2204,7 @@ export default function App() {
                   </button>
                 )}
                 {!user && (
-                  <button 
+                  <button
                     onClick={() => { setShowTargetProfileModal(false); setShowAuthModal(true); }}
                     className="w-full py-3.5 rounded-xl text-sm font-bold bg-[var(--accent-primary)] text-white shadow-lg hover:scale-[1.02]"
                   >
@@ -2202,10 +2218,10 @@ export default function App() {
       )}
 
       {/* REPORT MODAL */}
-      <ReportModal 
-        isOpen={showReportModal} 
-        onClose={() => { setShowReportModal(false); setReportTarget(null); }} 
-        targetUser={reportTarget} 
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => { setShowReportModal(false); setReportTarget(null); }}
+        targetUser={reportTarget}
         currentUser={user}
         roomId={activeRoom ? activeRoom.name : null}
       />
@@ -2218,9 +2234,9 @@ export default function App() {
         ids={followListState.ids}
       />
 
-      <StaticModals 
-        activeModal={activeModal} 
-        closeModal={() => setActiveModal(null)} 
+      <StaticModals
+        activeModal={activeModal}
+        closeModal={() => setActiveModal(null)}
       />
 
       {showSocialPanel && (
@@ -2289,28 +2305,28 @@ export default function App() {
             )}
             {socialTab === 'In Room' && usersInRooms.map(p => (
               <div key={p.id} style={{
-                display:'flex', alignItems:'center', justifyContent:'space-between',
-                padding:'10px 16px'
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 16px'
               }}>
-                <div style={{display:'flex', alignItems:'center', gap:10}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <img src={p.photoUrl || `https://api.dicebear.com/7.x/lorelei/svg?seed=${p.id}`}
-                    style={{width:36,height:36,borderRadius:'50%',objectFit:'cover'}} alt="" />
+                    style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} alt="" />
                   <div>
-                    <div style={{color:'white',fontSize:13,fontWeight:600}}>{p.name}</div>
-                    <div style={{color:'rgba(255,255,255,0.3)',fontSize:11}}>in {p.roomName}</div>
+                    <div style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>{p.name}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>in {p.roomName}</div>
                   </div>
                 </div>
                 <button onClick={() => {
                   const room = rooms.find(r => r.id === p.roomId);
                   if (room) { joinVoiceRoom(room); setShowSocialPanel(false); }
                 }} style={{
-                  background:'rgba(24,119,242,0.15)',border:'1px solid rgba(24,119,242,0.3)',
-                  borderRadius:8,padding:'5px 10px',color:'#60a5fa',
-                  fontSize:11,fontWeight:700,cursor:'pointer'
+                  background: 'rgba(24,119,242,0.15)', border: '1px solid rgba(24,119,242,0.3)',
+                  borderRadius: 8, padding: '5px 10px', color: '#60a5fa',
+                  fontSize: 11, fontWeight: 700, cursor: 'pointer'
                 }}>Join</button>
               </div>
             ))}
-            
+
             {socialTab === 'All' && (() => {
               const filtered = allSocialUsers.filter(u => u.id !== user?.id && u.name.toLowerCase().includes(socialSearch.toLowerCase()));
               if (filtered.length === 0) return (
@@ -2408,13 +2424,13 @@ export default function App() {
             <Shield className="w-12 h-12 text-accent-secondary mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-text-primary mb-2">Admin Portal</h1>
             <p className="text-text-secondary text-sm mb-8">Sign in with an administrator account to continue.</p>
-            <button 
+            <button
               onClick={() => signInWithPopup(auth, googleProvider)}
               className="w-full py-3 bg-red-600 hover:bg-red-700 text-text-primary rounded-xl font-bold transition-colors"
             >
               Sign In with Google
             </button>
-            <button 
+            <button
               onClick={() => {
                 window.history.pushState({}, '', '/');
                 setView('landing');
@@ -2436,11 +2452,11 @@ export default function App() {
             <p className="text-text-secondary text-sm mb-6">Your account ({user.email}) does not have administrative privileges.</p>
             <div className="flex gap-4 justify-center">
               <button onClick={() => signOut(auth)} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-text-primary rounded-lg text-sm">Sign Out</button>
-              <button 
+              <button
                 onClick={() => {
                   window.history.pushState({}, '', '/');
                   setView('landing');
-                }} 
+                }}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-text-primary rounded-lg text-sm"
               >
                 Return to App
@@ -2458,8 +2474,8 @@ export default function App() {
       <>
 
 
-        <div 
-          id="hero" 
+        <div
+          id="hero"
           className="landing-hero"
           ref={heroRef}
           onMouseMove={handleMouseMove}
@@ -2478,84 +2494,84 @@ export default function App() {
             {totalListeners} listeners online
           </div>
 
-        {/* Dynamic constellation canvas */}
-        <svg 
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} 
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {nodeLines.visible && (
-            <>
-              <line x1={nodeLines.x1} y1={nodeLines.y1} x2={nodeLines.cx1} y2={nodeLines.cy1} stroke="rgba(255,255,255,0.08)" strokeWidth="0.5"/>
-              <line x1={nodeLines.x1} y1={nodeLines.y1} x2={nodeLines.cx2} y2={nodeLines.cy2} stroke="rgba(255,255,255,0.06)" strokeWidth="0.5"/>
-              <line x1={nodeLines.x1} y1={nodeLines.y1} x2={nodeLines.cx3} y2={nodeLines.cy3} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/>
-              <circle cx={nodeLines.cx1} cy={nodeLines.cy1} r="3" fill="rgba(255,255,255,0.2)"/>
-              <circle cx={nodeLines.cx2} cy={nodeLines.cy2} r="2" fill="rgba(255,255,255,0.15)"/>
-            </>
-          )}
-        </svg>
-
-        <div id="char-wrap">
-          {/* Eyeglass character SVG */}
-          <svg 
-            id="char-svg" 
-            ref={charSvgRef}
-            viewBox="0 0 200 220" 
-            width="200"
-            height="220"
-            style={{ 
-              maxWidth: '200px', 
-              maxHeight: '220px',
-              filter: 'drop-shadow(0 0 30px rgba(255,255,255,0.1))',
-              transition: 'transform 0.1s ease-out'
-            }}
+          {/* Dynamic constellation canvas */}
+          <svg
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
             xmlns="http://www.w3.org/2000/svg"
           >
-            <defs>
-              <clipPath id="faceClip"><ellipse cx="100" cy="105" rx="62" ry="72"/></clipPath>
-            </defs>
-            <ellipse cx="100" cy="105" rx="62" ry="72" fill="#fff" stroke="#fff" strokeWidth="0"/>
-            <path d="M38,105 Q38,140 60,160 Q80,178 100,180 Q120,178 140,160 Q162,140 162,105" fill="#f0f0f0"/>
-            <ellipse cx="100" cy="185" rx="16" ry="4" fill="#e0e0e0"/>
-            <path d="M84,185 Q100,200 116,185" fill="none" stroke="#ccc" strokeWidth="6" strokeLinecap="round"/>
-            <path d="M62,80 Q80,65 100,70 Q120,65 138,80" fill="none" stroke="#111" strokeWidth="14" strokeLinecap="round"/>
-            <path d="M55,68 Q70,40 100,35 Q130,40 145,68" fill="#111" stroke="#111" strokeWidth="2"/>
-            <path d="M50,72 Q65,42 100,37 Q135,42 150,72 Q145,85 100,82 Q55,85 50,72Z" fill="#111"/>
-            <circle id="leye" cx="78" cy="108" r="18" fill="#fff" stroke="#111" strokeWidth="3"/>
-            <circle id="reye" cx="122" cy="108" r="18" fill="#fff" stroke="#111" strokeWidth="3"/>
-            <circle id="lpupil" cx={78 + pupilOffset.x} cy={108 + pupilOffset.y} r="7" fill="#111"/>
-            <circle id="rpupil" cx={122 + pupilOffset.x} cy={108 + pupilOffset.y} r="7" fill="#111"/>
-            <circle cx="80" cy="105" r="2.5" fill="#fff"/>
-            <circle cx="124" cy="105" r="2.5" fill="#fff"/>
-            <rect x="56" y="95" width="44" height="26" rx="14" fill="none" stroke="#111" strokeWidth="3"/>
-            <rect x="100" y="95" width="44" height="26" rx="14" fill="none" stroke="#111" strokeWidth="3"/>
-            <path d="M100,95 L100,121" stroke="#111" strokeWidth="2"/>
-            <path d="M56,108 L44,108" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
-            <path d="M144,108 L156,108" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
-            <path d="M88,135 Q100,145 112,135" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round"/>
-            <path d="M100,180 L94,205 M100,180 L106,205" stroke="#ccc" strokeWidth="6" strokeLinecap="round"/>
-            <rect x="60" y="200" width="80" height="20" rx="10" fill="#ddd"/>
+            {nodeLines.visible && (
+              <>
+                <line x1={nodeLines.x1} y1={nodeLines.y1} x2={nodeLines.cx1} y2={nodeLines.cy1} stroke="rgba(255,255,255,0.08)" strokeWidth="0.5" />
+                <line x1={nodeLines.x1} y1={nodeLines.y1} x2={nodeLines.cx2} y2={nodeLines.cy2} stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
+                <line x1={nodeLines.x1} y1={nodeLines.y1} x2={nodeLines.cx3} y2={nodeLines.cy3} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+                <circle cx={nodeLines.cx1} cy={nodeLines.cy1} r="3" fill="rgba(255,255,255,0.2)" />
+                <circle cx={nodeLines.cx2} cy={nodeLines.cy2} r="2" fill="rgba(255,255,255,0.15)" />
+              </>
+            )}
           </svg>
 
-          <div className="headline font-serif text-[#fff]">talk to anyone.</div>
-          <div className="sub tracking-[3px] text-xs font-mono opacity-50">free · live · voice</div>
-          
-          <button 
-            className="cta" 
-            onClick={() => setView('lobby')}
-          >
-            enter a room ↗
-          </button>
-        </div>
+          <div id="char-wrap">
+            {/* Eyeglass character SVG */}
+            <svg
+              id="char-svg"
+              ref={charSvgRef}
+              viewBox="0 0 200 220"
+              width="200"
+              height="220"
+              style={{
+                maxWidth: '200px',
+                maxHeight: '220px',
+                filter: 'drop-shadow(0 0 30px rgba(255,255,255,0.1))',
+                transition: 'transform 0.1s ease-out'
+              }}
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <clipPath id="faceClip"><ellipse cx="100" cy="105" rx="62" ry="72" /></clipPath>
+              </defs>
+              <ellipse cx="100" cy="105" rx="62" ry="72" fill="#fff" stroke="#fff" strokeWidth="0" />
+              <path d="M38,105 Q38,140 60,160 Q80,178 100,180 Q120,178 140,160 Q162,140 162,105" fill="#f0f0f0" />
+              <ellipse cx="100" cy="185" rx="16" ry="4" fill="#e0e0e0" />
+              <path d="M84,185 Q100,200 116,185" fill="none" stroke="#ccc" strokeWidth="6" strokeLinecap="round" />
+              <path d="M62,80 Q80,65 100,70 Q120,65 138,80" fill="none" stroke="#111" strokeWidth="14" strokeLinecap="round" />
+              <path d="M55,68 Q70,40 100,35 Q130,40 145,68" fill="#111" stroke="#111" strokeWidth="2" />
+              <path d="M50,72 Q65,42 100,37 Q135,42 150,72 Q145,85 100,82 Q55,85 50,72Z" fill="#111" />
+              <circle id="leye" cx="78" cy="108" r="18" fill="#fff" stroke="#111" strokeWidth="3" />
+              <circle id="reye" cx="122" cy="108" r="18" fill="#fff" stroke="#111" strokeWidth="3" />
+              <circle id="lpupil" cx={78 + pupilOffset.x} cy={108 + pupilOffset.y} r="7" fill="#111" />
+              <circle id="rpupil" cx={122 + pupilOffset.x} cy={108 + pupilOffset.y} r="7" fill="#111" />
+              <circle cx="80" cy="105" r="2.5" fill="#fff" />
+              <circle cx="124" cy="105" r="2.5" fill="#fff" />
+              <rect x="56" y="95" width="44" height="26" rx="14" fill="none" stroke="#111" strokeWidth="3" />
+              <rect x="100" y="95" width="44" height="26" rx="14" fill="none" stroke="#111" strokeWidth="3" />
+              <path d="M100,95 L100,121" stroke="#111" strokeWidth="2" />
+              <path d="M56,108 L44,108" stroke="#111" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M144,108 L156,108" stroke="#111" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M88,135 Q100,145 112,135" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M100,180 L94,205 M100,180 L106,205" stroke="#ccc" strokeWidth="6" strokeLinecap="round" />
+              <rect x="60" y="200" width="80" height="20" rx="10" fill="#ddd" />
+            </svg>
 
-        <div className="absolute bottom-6 left-0 right-0 text-center z-10">
-          <button 
-            onClick={() => setView('guidelines')}
-            className="text-xs text-text-secondary hover:text-text-primary transition-colors opacity-70 hover:opacity-100"
-          >
-            Community Guidelines
-          </button>
+            <div className="headline font-serif text-[#fff]">talk to anyone.</div>
+            <div className="sub tracking-[3px] text-xs font-mono opacity-50">free · live · voice</div>
+
+            <button
+              className="cta"
+              onClick={() => setView('lobby')}
+            >
+              enter a room ↗
+            </button>
+          </div>
+
+          <div className="absolute bottom-6 left-0 right-0 text-center z-10">
+            <button
+              onClick={() => setView('guidelines')}
+              className="text-xs text-text-secondary hover:text-text-primary transition-colors opacity-70 hover:opacity-100"
+            >
+              Community Guidelines
+            </button>
+          </div>
         </div>
-      </div>
       </>
     );
   }
@@ -2571,13 +2587,13 @@ export default function App() {
         {/* Messages View */}
         <div className={view === 'messages' ? "flex flex-col h-[calc(100vh-73px)] bg-bg-base overflow-hidden" : "hidden"}>
           <div className="flex border-b border-border-color bg-bg-surface px-4 py-2 gap-4 flex-shrink-0">
-            <button 
+            <button
               onClick={() => { setActiveDm(null); setMsgTab('global'); }}
               className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${!activeDm && msgTab === 'global' ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
             >
               Global Chat
             </button>
-            <button 
+            <button
               onClick={() => { setActiveDm(null); setMsgTab('direct'); }}
               className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${(activeDm || msgTab === 'direct') ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
             >
@@ -2625,421 +2641,500 @@ export default function App() {
         </div>
 
         {/* Lobby View */}
-<div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
-        {/* Global Header */}
-        <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 bg-bg-base/95 backdrop-blur-md sticky top-0 z-30 border-b border-border-color">
-          
-          {/* Left: Actions */}
-          <div className="flex-1 flex items-center justify-start gap-3">
-            <button 
-              onClick={() => { if(user) setShowCreateModal(true); else setShowAuthModal(true); }}
-              className="px-4 py-2 bg-[var(--accent-primary)] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-2 hover:bg-[var(--accent-primary-hover)] transition-all shadow-[0_4px_20px_var(--accent-primary-glow)] hover:scale-105 whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
-            </button>
-            {/* This button must be in the header for ALL users (logged in or not): */}
-            <button
-              onClick={() => { setView('premium'); window.location.hash = 'premium'; }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm"
-              style={{
-                background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.15))',
-                border: '1px solid rgba(251,191,36,0.4)',
-                color: '#fbbf24'
-              }}
-            >
-              <Crown className="w-4 h-4" /> Go Premium
-            </button>
-          </div>
+        <div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
+          {/* Global Header */}
+          <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 bg-bg-base/95 backdrop-blur-md sticky top-0 z-30 border-b border-border-color">
 
-          {/* Center: Brand Identity */}
-          <div className="flex-shrink-0 flex items-center justify-center">
-            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView('lobby')}>
-              <span className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center select-none">
-                solith
-                <span className="text-[var(--accent-primary)] font-bold flex items-center">
-                  .
-                  <span className="relative inline-block mx-[1px]">
-                    <span className="opacity-0">i</span>
-                    <span className="absolute inset-0 flex justify-center">
-                      <span className="absolute bottom-0 leading-none">ı</span>
-                      <span className="absolute bottom-[60%] sm:bottom-[65%] w-[12px] h-[12px] sm:w-[15px] sm:h-[15px] rounded-full overflow-hidden bg-white shadow-sm pointer-events-none z-10 border border-[var(--accent-primary)]/20">
-                        <video src="/freevideo2.mp4" autoPlay loop muted playsInline className="w-full h-full object-cover scale-[1.1]" />
+            {/* Left: Actions */}
+            <div className="flex-1 flex items-center justify-start gap-3">
+              <button
+                onClick={() => { if (user) setShowCreateModal(true); else setShowAuthModal(true); }}
+                className="px-4 py-2 bg-[var(--accent-primary)] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-2 hover:bg-[var(--accent-primary-hover)] transition-all shadow-[0_4px_20px_var(--accent-primary-glow)] hover:scale-105 whitespace-nowrap"
+              >
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
+              </button>
+              {/* This button must be in the header for ALL users (logged in or not): */}
+              <button
+                onClick={() => { setView('premium'); window.location.hash = 'premium'; }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.15))',
+                  border: '1px solid rgba(251,191,36,0.4)',
+                  color: '#fbbf24'
+                }}
+              >
+                <Crown className="w-4 h-4" /> Go Premium
+              </button>
+            </div>
+
+            {/* Center: Brand Identity */}
+            <div className="flex-shrink-0 flex items-center justify-center">
+              <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView('lobby')}>
+                <span className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center select-none">
+                  solith
+                  <span className="text-[var(--accent-primary)] font-bold flex items-center">
+                    .
+                    <span className="relative inline-block mx-[1px]">
+                      <span className="opacity-0">i</span>
+                      <span className="absolute inset-0 flex justify-center">
+                        <span className="absolute bottom-0 leading-none">ı</span>
+                        <span className="absolute bottom-[60%] sm:bottom-[65%] w-[12px] h-[12px] sm:w-[15px] sm:h-[15px] rounded-full overflow-hidden bg-white shadow-sm pointer-events-none z-10 border border-[var(--accent-primary)]/20">
+                          <video src="/freevideo2.mp4" autoPlay loop muted playsInline className="w-full h-full object-cover scale-[1.1]" />
+                        </span>
                       </span>
                     </span>
+                    n
                   </span>
-                  n
                 </span>
-              </span>
-            </div>
-          </div>
-
-          {/* Right: Controls & User */}
-          <div className="flex-1 flex items-center justify-end gap-3 sm:gap-6">
-            
-            {/* More Dropdown */}
-            <div className="relative group">
-              <button className="text-text-secondary hover:text-text-primary p-2 rounded-xl transition-colors hidden sm:block">
-                <MoreVertical className="w-5 h-5" />
-              </button>
-              <div className="absolute right-0 top-full mt-2 w-48 bg-bg-surface-elevated border border-border-color rounded-xl shadow-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all flex flex-col p-2 z-50">
-                <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('privacy')}><Shield className="w-4 h-4"/> Privacy Policy</button>
-                <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('contact')}><MessageSquare className="w-4 h-4"/> Contact Us</button>
-                <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('about')}><Info className="w-4 h-4"/> About Us</button>
-                <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => window.open('https://facebook.com', '_blank')}><Facebook className="w-4 h-4"/> Facebook Group</button>
               </div>
             </div>
 
-            {user ? (
-              <>
-                {/* Level / XP */}
-                <div className="hidden lg:flex items-center gap-2 text-[13px] font-semibold text-text-secondary bg-bg-surface border border-white/5 px-3 py-1.5 rounded-full" title="Your current Level and XP">
-                  <div className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_8px_var(--accent-primary-glow)]"></div>
-                  <span className="text-text-primary">Lvl {levelInfo ? levelInfo.level : 1}</span>
-                  <span className="text-white/30">•</span>
-                  <span>{(user?.xp || 0).toLocaleString()} XP</span>
-                </div>
+            {/* Right: Controls & User */}
+            <div className="flex-1 flex items-center justify-end gap-3 sm:gap-6">
 
-                {/* Streak */}
-                <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full" title={`${user.streak || 1} Day Streak`}>
-                  <span className="animate-pulse">🔥</span>
-                  <span>{user.streak || 1}</span>
+              {/* More Dropdown */}
+              <div className="relative group">
+                <button className="text-text-secondary hover:text-text-primary p-2 rounded-xl transition-colors hidden sm:block">
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-48 bg-bg-surface-elevated border border-border-color rounded-xl shadow-xl opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all flex flex-col p-2 z-50">
+                  <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('privacy')}><Shield className="w-4 h-4" /> Privacy Policy</button>
+                  <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('contact')}><MessageSquare className="w-4 h-4" /> Contact Us</button>
+                  <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => setActiveModal('about')}><Info className="w-4 h-4" /> About Us</button>
+                  <button className="text-left px-3 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-hover rounded-lg flex items-center gap-2" onClick={() => window.open('https://facebook.com', '_blank')}><Facebook className="w-4 h-4" /> Facebook Group</button>
                 </div>
-                
-                {/* Inbox Icon */}
-                <button 
-                  onClick={() => {
-                    setView('messages');
-                    setMsgTab('direct');
-                    setActiveDm(null);
-                    window.location.hash = 'messages';
-                  }}
-                  className="relative text-text-secondary hover:text-text-primary transition-colors hidden sm:block"
+              </div>
+
+              {user ? (
+                <>
+                  {/* Level / XP */}
+                  <div className="hidden lg:flex items-center gap-2 text-[13px] font-semibold text-text-secondary bg-bg-surface border border-white/5 px-3 py-1.5 rounded-full" title="Your current Level and XP">
+                    <div className="w-2 h-2 rounded-full bg-[var(--accent-primary)] shadow-[0_0_8px_var(--accent-primary-glow)]"></div>
+                    <span className="text-text-primary">Lvl {levelInfo ? levelInfo.level : 1}</span>
+                    <span className="text-white/30">•</span>
+                    <span>{(user?.xp || 0).toLocaleString()} XP</span>
+                  </div>
+
+                  {/* Streak */}
+                  <div className="hidden sm:flex items-center gap-1.5 text-[13px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full" title={`${user.streak || 1} Day Streak`}>
+                    <span className="animate-pulse">🔥</span>
+                    <span>{user.streak || 1}</span>
+                  </div>
+
+                  {/* Inbox Icon */}
+                  <button
+                    onClick={() => {
+                      setView('messages');
+                      setMsgTab('direct');
+                      setActiveDm(null);
+                      window.location.hash = 'messages';
+                    }}
+                    className="relative text-text-secondary hover:text-text-primary transition-colors hidden sm:block"
+                  >
+                    <Inbox className="w-6 h-6" />
+                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-accent-secondary rounded-md text-[11px] font-bold text-text-primary flex items-center justify-center">5</span>
+                  </button>
+
+                  {/* Avatar */}
+                  <img
+                    src={getAvatarUrl(user.photoUrl, user.id)}
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full cursor-pointer border-2 border-border-color hover:border-[var(--accent-primary)] transition-all object-cover"
+                    onClick={() => setShowProfileModal(true)}
+                  />
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="px-5 py-2.5 text-xs font-bold bg-[var(--accent-primary)] text-white rounded-xl hover:bg-[var(--accent-primary-hover)] transition-colors shadow-[0_0_15px_var(--accent-primary-glow)] z-40 relative"
                 >
-                  <Inbox className="w-6 h-6" />
-                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-accent-secondary rounded-md text-[11px] font-bold text-text-primary flex items-center justify-center">5</span>
+                  Sign In
+                </button>
+              )}
+            </div>
+          </header>
+
+          {/* Main Content Area */}
+          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center gap-8 relative">
+
+            {/* Main Hero Video Banner */}
+            <div className="w-full relative rounded-2xl border border-border-color overflow-hidden shadow-2xl bg-black group">
+              <video
+                src="/freevideo.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-[180px] sm:h-[240px] lg:h-[300px] object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-[var(--bg-base)]/10 to-transparent pointer-events-none"></div>
+              <div className="absolute bottom-6 left-0 right-0 text-center z-10 px-4 pointer-events-none">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">Practice languages live on solith.in</h2>
+                <p className="text-sm sm:text-base text-white/90 max-w-lg mx-auto leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-medium">
+                  Join live voice rooms, talk with native speakers, and improve your pronunciation in real-time.
+                </p>
+              </div>
+            </div>
+
+            {/* Full Width Search Row */}
+            <div className="w-full flex flex-row items-center gap-2 md:gap-4 bg-bg-base/60 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-2xl overflow-hidden focus-within:border-[var(--accent-primary)] focus-within:bg-bg-base transition-all">
+              <div className="relative flex-1 min-w-0 group flex items-center pl-3 md:pl-4 gap-2 md:gap-3">
+                <Search className="w-5 h-5 flex-shrink-0 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search rooms..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 py-3 md:py-4 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium relative z-0"
+                />
+              </div>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="p-2 text-text-secondary hover:text-white transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+              <button className="px-4 md:px-6 py-3 bg-[var(--accent-primary)] text-white text-[13px] md:text-sm font-bold rounded-xl hover:bg-[var(--accent-primary-hover)] transition-colors flex items-center gap-2 flex-shrink-0 shadow-[0_0_15px_rgba(24,119,242,0.3)]">
+                <Search className="w-4 h-4" /> <span className="hidden md:inline">Search</span>
+              </button>
+              <div className="hidden lg:flex items-center gap-2 border-l border-white/10 pl-4 text-text-secondary text-xs font-semibold px-2">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e] animate-pulse"></span>
+                  {rooms.length} Active Rooms
+                </span>
+              </div>
+              <div className="hidden md:flex items-center gap-2 border-l border-white/10 pl-4">
+                <button
+                  onClick={() => setView('leaderboard')}
+                  className="p-2 md:p-2.5 text-text-secondary hover:text-[var(--accent-primary)] bg-transparent hover:bg-white/5 rounded-lg transition-all mr-1"
+                  title="Leaderboard"
+                >
+                  <Trophy className="w-4 h-4 md:w-5 md:h-5" />
+                </button>
+                <button
+                  onClick={() => setShowSocialPanel(!showSocialPanel)}
+                  style={{
+                    width: 40, height: 40, borderRadius: '50%',
+                    background: showSocialPanel ? '#1877f2' : 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
+                  title="Social">
+                  <Users size={18} color="white" />
                 </button>
 
-                {/* Avatar */}
-                <img 
-                  src={getAvatarUrl(user.photoUrl, user.id)} 
-                  alt="Profile" 
-                  className="w-10 h-10 rounded-full cursor-pointer border-2 border-border-color hover:border-[var(--accent-primary)] transition-all object-cover" 
-                  onClick={() => setShowProfileModal(true)} 
-                />
-              </>
-            ) : (
-              <button 
-                onClick={() => setShowAuthModal(true)}
-                className="px-5 py-2.5 text-xs font-bold bg-[var(--accent-primary)] text-white rounded-xl hover:bg-[var(--accent-primary-hover)] transition-colors shadow-[0_0_15px_var(--accent-primary-glow)] z-40 relative"
-              >
-                Sign In
-              </button>
-            )}
-          </div>
-        </header>
-
-        {/* Main Content Area */}
-        <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-16 flex flex-col items-center gap-8 relative">
-          
-          {/* Main Hero Video Banner */}
-          <div className="w-full relative rounded-2xl border border-border-color overflow-hidden shadow-2xl bg-black group">
-            <video 
-              src="/freevideo.mp4" 
-              autoPlay 
-              loop 
-              muted 
-              playsInline 
-              className="w-full h-[180px] sm:h-[240px] lg:h-[300px] object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-[var(--bg-base)]/10 to-transparent pointer-events-none"></div>
-            <div className="absolute bottom-6 left-0 right-0 text-center z-10 px-4 pointer-events-none">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">Practice languages live on solith.in</h2>
-              <p className="text-sm sm:text-base text-white/90 max-w-lg mx-auto leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-medium">
-                Join live voice rooms, talk with native speakers, and improve your pronunciation in real-time.
-              </p>
-            </div>
-          </div>
-
-          {/* Full Width Search Row */}
-          <div className="w-full flex flex-row items-center gap-2 md:gap-4 bg-bg-base/60 backdrop-blur-md p-2 rounded-2xl border border-white/10 shadow-2xl overflow-hidden focus-within:border-[var(--accent-primary)] focus-within:bg-bg-base transition-all">
-            <div className="relative flex-1 min-w-0 group flex items-center pl-3 md:pl-4 gap-2 md:gap-3">
-              <Search className="w-5 h-5 flex-shrink-0 text-text-secondary group-focus-within:text-[var(--accent-primary)] transition-colors pointer-events-none" />
-              <input 
-                type="text" 
-                placeholder="Search rooms..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 py-3 md:py-4 pr-4 text-[14px] md:text-[15px] bg-transparent focus:outline-none text-text-primary placeholder:text-text-secondary border-none shadow-none font-medium relative z-0"
-              />
-            </div>
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="p-2 text-text-secondary hover:text-white transition-colors"
-              >
-                Clear
-              </button>
-            )}
-            <button className="px-4 md:px-6 py-3 bg-[var(--accent-primary)] text-white text-[13px] md:text-sm font-bold rounded-xl hover:bg-[var(--accent-primary-hover)] transition-colors flex items-center gap-2 flex-shrink-0 shadow-[0_0_15px_rgba(24,119,242,0.3)]">
-              <Search className="w-4 h-4" /> <span className="hidden md:inline">Search</span>
-            </button>
-            <div className="hidden lg:flex items-center gap-2 border-l border-white/10 pl-4 text-text-secondary text-xs font-semibold px-2">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e] animate-pulse"></span> 
-                {rooms.length} Active Rooms
-              </span>
-            </div>
-            <div className="hidden md:flex items-center gap-2 border-l border-white/10 pl-4">
-              <button 
-                onClick={() => setView('leaderboard')}
-                className="p-2 md:p-2.5 text-text-secondary hover:text-[var(--accent-primary)] bg-transparent hover:bg-white/5 rounded-lg transition-all mr-1"
-                title="Leaderboard"
-              >
-                <Trophy className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
-              <button
-                onClick={() => setShowSocialPanel(!showSocialPanel)}
-                style={{
-                  width: 40, height: 40, borderRadius: '50%',
-                  background: showSocialPanel ? '#1877f2' : 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s'
-                  }}
-                title="Social">
-                <Users size={18} color="white" />
-              </button>
-              
-              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
-                {[3, 2, 1].map(cols => (
-                  <button
-                    key={cols}
-                    onClick={() => setLobbyGridCols(cols)}
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                      lobbyGridCols === cols 
-                        ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-text-secondary hover:text-white'
-                    }`}
-                    title={`${cols}x Density`}
-                  >
-                    {cols}x
-                  </button>
-                ))}
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
+                  {[3, 2, 1].map(cols => (
+                    <button
+                      key={cols}
+                      onClick={() => setLobbyGridCols(cols)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${lobbyGridCols === cols
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'text-text-secondary hover:text-white'
+                        }`}
+                      title={`${cols}x Density`}
+                    >
+                      {cols}x
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Filters */}
-        <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6 flex items-center gap-3 overflow-x-auto hide-scrollbar animate-slide-up-delayed-2">
-          {LANGUAGES.map(lang => (
-            <button
-              key={lang}
-              onClick={() => setSelectedLanguage(lang)}
-              className={`filter-pill text-[11px] uppercase tracking-wider font-bold whitespace-nowrap ${
-                selectedLanguage === lang ? 'active' : ''
-              }`}
-            >
-              {lang}
-            </button>
-          ))}
-        </div>
-
-        {/* Rooms Grid */}
-        <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16 animate-slide-up-delayed-2">
-          {filteredRooms.length === 0 ? (
-            <div className="py-16 mt-4 flex flex-col items-center justify-center text-center rounded-2xl border border-border-color bg-bg-surface/60 backdrop-blur-md relative overflow-hidden max-w-2xl mx-auto w-full p-8 shadow-2xl">
-              {/* Radial glow background */}
-              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[var(--accent-primary)]/15 rounded-full blur-3xl pointer-events-none"></div>
-              
-              <h3 className="text-2xl md:text-3xl font-extrabold text-text-primary mb-2 tracking-tight">No active rooms right now</h3>
-              <p className="text-sm text-text-secondary mb-8 max-w-md leading-relaxed">
-                Be the first to initiate a room on <span className="text-[var(--accent-primary)] font-bold">solith.in</span> and connect live with language learners worldwide!
-              </p>
-              
-              <button 
-                onClick={() => user ? setShowCreateModal(true) : setShowAuthModal(true)}
-                className="px-8 py-3.5 bg-[var(--accent-primary)] text-white font-bold rounded-xl text-sm flex items-center gap-2.5 hover:bg-[var(--accent-primary-hover)] transition-all shadow-[0_0_25px_var(--accent-primary-glow)] hover:scale-105"
+          {/* Filters */}
+          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6 flex items-center gap-3 overflow-x-auto hide-scrollbar animate-slide-up-delayed-2">
+            {LANGUAGES.map(lang => (
+              <button
+                key={lang}
+                onClick={() => setSelectedLanguage(lang)}
+                className={`filter-pill text-[11px] uppercase tracking-wider font-bold whitespace-nowrap ${selectedLanguage === lang ? 'active' : ''
+                  }`}
               >
-                <Plus className="w-5 h-5" /> Start a Room Now
+                {lang}
               </button>
-            </div>
-          ) : (
-            <div className={`grid gap-4 ${
-              lobbyGridCols === 3 
-                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-                : lobbyGridCols === 2 
-                  ? 'grid-cols-1 md:grid-cols-2' 
-                  : 'grid-cols-1'
-            }`}>
-              {filteredRooms.map(room => (
-                <RoomCard 
-                  key={room.id} 
-                  room={room} 
-                  inThisRoom={activeRoom?.id === room.id} 
-                  onJoin={(room) => window.open(`/?room=${room.id}`, '_blank')} 
-                  userFollowing={user?.following || []}
-                  isJoining={joiningRoomId === room.id}
-                  anyRoomJoining={!!joiningRoomId}
-                />
-              ))}
-            </div>
-          )}
+            ))}
+          </div>
+
+          {/* Rooms Grid */}
+          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16 animate-slide-up-delayed-2">
+            {filteredRooms.length === 0 ? (
+              <div className="py-16 mt-4 flex flex-col items-center justify-center text-center rounded-2xl border border-border-color bg-bg-surface/60 backdrop-blur-md relative overflow-hidden max-w-2xl mx-auto w-full p-8 shadow-2xl">
+                {/* Radial glow background */}
+                <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[var(--accent-primary)]/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                <h3 className="text-2xl md:text-3xl font-extrabold text-text-primary mb-2 tracking-tight">No active rooms right now</h3>
+                <p className="text-sm text-text-secondary mb-8 max-w-md leading-relaxed">
+                  Be the first to initiate a room on <span className="text-[var(--accent-primary)] font-bold">solith.in</span> and connect live with language learners worldwide!
+                </p>
+
+                <button
+                  onClick={() => user ? setShowCreateModal(true) : setShowAuthModal(true)}
+                  className="px-8 py-3.5 bg-[var(--accent-primary)] text-white font-bold rounded-xl text-sm flex items-center gap-2.5 hover:bg-[var(--accent-primary-hover)] transition-all shadow-[0_0_25px_var(--accent-primary-glow)] hover:scale-105"
+                >
+                  <Plus className="w-5 h-5" /> Start a Room Now
+                </button>
+              </div>
+            ) : (
+              <div className={`grid gap-4 ${lobbyGridCols === 3
+                  ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                  : lobbyGridCols === 2
+                    ? 'grid-cols-1 md:grid-cols-2'
+                    : 'grid-cols-1'
+                }`}>
+                {filteredRooms.map(room => (
+                  <RoomCard
+                    key={room.id}
+                    room={room}
+                    inThisRoom={activeRoom?.id === room.id}
+                    onJoin={(room) => window.open(`/?room=${room.id}`, '_blank')}
+                    userFollowing={user?.following || []}
+                    isJoining={joiningRoomId === room.id}
+                    anyRoomJoining={!!joiningRoomId}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Full-Screen Active Room Redesign */}
-      {(() => {
-        if (!activeRoom) return null;
-        
-        const currentRoomData = rooms.find(r => r.id === activeRoom.id) || activeRoom;
-        const safeParticipants = (participants || []).filter(p => p != null && p.id != null);
-        const speakingQueue = currentRoomData.speakingQueue || [];
-        const allowedSpeakers = currentRoomData.allowedSpeakers || [];
-        const isOpenMic = currentRoomData.isOpenMic;
-        const myRole = getRole(user?.id);
-        const isHostOrCoHost = myRole === 'owner' || myRole === 'co-host';
-        const isAllowedSpeaker = allowedSpeakers.includes(user?.id);
-        const isListener = !isHostOrCoHost && !isAllowedSpeaker && !isOpenMic;
-        const hasRaisedHand = speakingQueue.includes(user?.id);
+        {/* Full-Screen Active Room Redesign */}
+        {(() => {
+          if (!activeRoom) return null;
 
-        return (
-        <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-col z-50 overflow-hidden">
-          
-          {/* Top Floating Controls — icon-only pill */}
-           <div style={{
-             position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-             display: 'flex', alignItems: 'center', gap: 8,
-             background: 'rgba(15,21,32,0.85)', backdropFilter: 'blur(20px)',
-             border: '1px solid rgba(255,255,255,0.08)',
-             borderRadius: 16, padding: '8px 12px', zIndex: 50
-           }}>
-             <button onClick={toggleMute} style={{
-               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
-               background: isMuted ? '#1877f2' : 'rgba(255,255,255,0.08)',
-               display: 'flex', alignItems: 'center', justifyContent: 'center'
-             }}>
-               {isMuted ? <MicOff size={20} color="white"/> : <Mic size={20} color="white"/>}
-             </button>
+          const currentRoomData = rooms.find(r => r.id === activeRoom.id) || activeRoom;
+          const safeParticipants = (participants || []).filter(p => p != null && p.id != null);
+          const speakingQueue = currentRoomData.speakingQueue || [];
+          const allowedSpeakers = currentRoomData.allowedSpeakers || [];
+          const isOpenMic = currentRoomData.isOpenMic;
+          const myRole = getRole(user?.id);
+          const isHostOrCoHost = myRole === 'owner' || myRole === 'co-host';
+          const isAllowedSpeaker = allowedSpeakers.includes(user?.id);
+          const isListener = !isHostOrCoHost && !isAllowedSpeaker && !isOpenMic;
+          const hasRaisedHand = speakingQueue.includes(user?.id);
 
-             <button onClick={toggleCamera} style={{
-               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
-               background: isCameraOn ? '#1877f2' : 'rgba(255,255,255,0.08)',
-               display: 'flex', alignItems: 'center', justifyContent: 'center'
-             }}>
-               <Camera size={20} color="white"/>
-             </button>
+          return (
+            <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-col z-50 overflow-hidden">
 
-             <button onClick={toggleScreenShare} style={{
-               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
-               background: isScreenSharing ? '#1877f2' : 'rgba(255,255,255,0.08)',
-               display: 'flex', alignItems: 'center', justifyContent: 'center'
-             }}>
-               <Monitor size={20} color="white"/>
-             </button>
+              {/* Top Floating Controls — icon-only pill */}
+              <div style={{
+                position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'rgba(15,21,32,0.85)', backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 16, padding: '8px 12px', zIndex: 50
+              }}>
+                <button onClick={toggleMute} style={{
+                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+                  background: isMuted ? '#1877f2' : 'rgba(255,255,255,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {isMuted ? <MicOff size={20} color="white" /> : <Mic size={20} color="white" />}
+                </button>
 
-             <button style={{
-               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'default',
-               background: 'rgba(255,255,255,0.08)',
-               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-             }}>
-               <span style={{width: 7, height: 7, borderRadius: '50%', background: '#22c55e', display: 'block'}}/>
-               <BarChart2 size={18} color="white"/>
-             </button>
+                <button onClick={toggleCamera} style={{
+                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+                  background: isCameraOn ? '#1877f2' : 'rgba(255,255,255,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Camera size={20} color="white" />
+                </button>
 
-             <button onClick={leaveVoiceRoom} style={{
-               width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
-               background: '#dc2626',
-               display: 'flex', alignItems: 'center', justifyContent: 'center'
-             }}>
-               <LogOut size={20} color="white"/>
-             </button>
-           </div>
+                <button onClick={toggleScreenShare} style={{
+                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+                  background: isScreenSharing ? '#1877f2' : 'rgba(255,255,255,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Monitor size={20} color="white" />
+                </button>
 
-          {/* Game lobby overlay */}
-          {gameLobby && !activeGame && (
-            <GameLobby
-              gameLobby={gameLobby}
-              currentUser={user}
-              onAccept={() => socket.emit('game-accept', {
-                roomId: activeRoom.id,
-                player: { id: user.id, name: user.name, photoUrl: user.photoUrl, color: user.color }
-              })}
-              onCancel={() => socket.emit('game-cancel', { roomId: activeRoom.id, userId: user.id })}
-              onStart={() => socket.emit('game-start', { roomId: activeRoom.id, userId: user.id })}
-            />
-          )}
+                <button style={{
+                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'default',
+                  background: 'rgba(255,255,255,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+                }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', display: 'block' }} />
+                  <BarChart2 size={18} color="white" />
+                </button>
 
-          {/* Active game scrabble full screen view */}
-          {activeGame && activeGame.type === 'scrabble' && (
-            <div style={{ position: 'absolute', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.85)', overflow: 'auto' }}>
-              <ScrabbleGame
-                activeGame={activeGame}
-                currentUser={user}
-                socket={socket}
-                roomId={activeRoom.id}
-              />
-              <button onClick={() => socket.emit('game-end', { roomId: activeRoom.id, userId: user.id })}
-                style={{ position: 'absolute', top: 12, right: 12, background: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 12px', color: 'white', cursor: 'pointer', fontWeight: 700 }}>
-                End Game
-              </button>
-            </div>
-          )}
+                <button onClick={leaveVoiceRoom} style={{
+                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
+                  background: '#dc2626',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <LogOut size={20} color="white" />
+                </button>
+              </div>
 
-          {/* Participant Grid / Presenter View */}
-          {(() => {
-            const screenSharingParticipant = safeParticipants.find(p => p.isScreenSharing);
-            const hasPresenterContent = screenSharingParticipant || ytVideoId || activeGame;
-            
-            if (hasPresenterContent) {
-              return (
-                <div className="flex flex-col lg:flex-row flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 gap-6 overflow-hidden">
-                  {/* Large Screen Share / YouTube Viewer / Game */}
-                  <div className="flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px]">
-                    {activeGame ? (
-                      <GameContainer activeGame={activeGame} socket={socket} roomId={activeRoom.id} currentUser={user} />
-                    ) : screenSharingParticipant ? (
-                      <>
-                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
-                          <Monitor className="w-3.5 h-3.5 text-[var(--accent-primary)] animate-pulse" />
-                          <span>{screenSharingParticipant.isLocal ? 'Your Screen' : `${screenSharingParticipant.name}'s Screen`}</span>
-                        </div>
-                        <div className="flex-1 w-full h-full flex items-center justify-center p-2 bg-black">
-                          {isRealCall ? (
-                            screenSharingParticipant.screenShareTrack ? (
-                              <VideoTrack track={screenSharingParticipant.screenShareTrack} />
-                            ) : (
-                              <div className="text-text-primary/40 text-sm flex flex-col items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-accent-secondary animate-ping"></span>
-                                Connecting screen share stream...
+              {/* Game lobby overlay */}
+              {gameLobby && !activeGame && (
+                <GameLobby
+                  gameLobby={gameLobby}
+                  currentUser={user}
+                  onAccept={() => socket.emit('game-accept', {
+                    roomId: activeRoom.id,
+                    player: { id: user.id, name: user.name, photoUrl: user.photoUrl, color: user.color }
+                  })}
+                  onCancel={() => socket.emit('game-cancel', { roomId: activeRoom.id, userId: user.id })}
+                  onStart={() => socket.emit('game-start', { roomId: activeRoom.id, userId: user.id })}
+                />
+              )}
+
+              {/* Active game scrabble full screen view */}
+              {activeGame && activeGame.type === 'scrabble' && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.85)', overflow: 'auto' }}>
+                  <ScrabbleGame
+                    activeGame={activeGame}
+                    currentUser={user}
+                    socket={socket}
+                    roomId={activeRoom.id}
+                  />
+                  <button onClick={() => socket.emit('game-end', { roomId: activeRoom.id, userId: user.id })}
+                    style={{ position: 'absolute', top: 12, right: 12, background: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 12px', color: 'white', cursor: 'pointer', fontWeight: 700 }}>
+                    End Game
+                  </button>
+                </div>
+              )}
+
+              {/* Participant Grid / Presenter View */}
+              {(() => {
+                const screenSharingParticipant = safeParticipants.find(p => p.isScreenSharing);
+                const hasPresenterContent = screenSharingParticipant || ytVideoId || activeGame;
+
+                if (hasPresenterContent) {
+                  return (
+                    <div className="flex flex-col lg:flex-row flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 gap-6 overflow-hidden">
+                      {/* Large Screen Share / YouTube Viewer / Game */}
+                      <div className="flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px]">
+                        {activeGame ? (
+                          <GameContainer activeGame={activeGame} socket={socket} roomId={activeRoom.id} currentUser={user} />
+                        ) : screenSharingParticipant ? (
+                          <>
+                            <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
+                              <Monitor className="w-3.5 h-3.5 text-[var(--accent-primary)] animate-pulse" />
+                              <span>{screenSharingParticipant.isLocal ? 'Your Screen' : `${screenSharingParticipant.name}'s Screen`}</span>
+                            </div>
+                            <div className="flex-1 w-full h-full flex items-center justify-center p-2 bg-black">
+                              {isRealCall ? (
+                                screenSharingParticipant.screenShareTrack ? (
+                                  <VideoTrack track={screenSharingParticipant.screenShareTrack} />
+                                ) : (
+                                  <div className="text-text-primary/40 text-sm flex flex-col items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-accent-secondary animate-ping"></span>
+                                    Connecting screen share stream...
+                                  </div>
+                                )
+                              ) : (
+                                <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain rounded-2xl bg-black" />
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
+                              <Youtube className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                              <span>Shared YouTube Video (Shared by {ytSharingUser})</span>
+                              <button onClick={() => socket.emit('yt-share', { roomId: activeRoom.id, videoId: null, sharingUser: null })} className="ml-2 px-2 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg transition-colors text-[10px] font-bold">Stop</button>
+                            </div>
+                            <div className="flex-1 w-full h-full bg-black">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&enablejsapi=1`}
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      {/* Side Participant List */}
+                      <div className="w-full lg:w-[240px] flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
+                        {safeParticipants.map(p => {
+                          const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
+                          const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                          const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
+                          const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
+                          const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
+                          const targetRole = getRole(p.id);
+
+                          return (
+                            <div key={p.id}
+                              onClick={() => !p.isLocal && setActiveActionUser(p)}
+                              className="group flex-shrink-0"
+                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: p.isLocal ? 'default' : 'pointer' }}
+                            >
+                              <div style={{
+                                width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
+                                border: isSpeaking ? '2.5px solid #1877f2' : '2.5px solid rgba(255,255,255,0.12)',
+                                boxShadow: isSpeaking ? '0 0 20px rgba(24,119,242,0.6)' : 'none',
+                                transition: 'all 0.2s ease',
+                                background: pColor, position: 'relative', flexShrink: 0
+                              }}>
+                                {p.isCameraOn && p.cameraTrack ? (
+                                  <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover" />
+                                ) : pPhotoUrl ? (
+                                  <img
+                                    src={pPhotoUrl}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    alt=""
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
+                                    {pName.slice(0, 2).toUpperCase()}
+                                  </div>
+                                )}
+                                {p.muted && (
+                                  <div style={{
+                                    position: 'absolute', bottom: 3, right: 3,
+                                    background: '#dc2626', borderRadius: '50%',
+                                    width: 20, height: 20,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    border: '2px solid #080c14'
+                                  }}>
+                                    <MicOff size={10} color="white" />
+                                  </div>
+                                )}
+                                {!p.isLocal && (
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity" style={{
+                                    position: 'absolute', top: 4, right: 4,
+                                    background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: 3
+                                  }}>
+                                    <Settings size={10} color="white" />
+                                  </div>
+                                )}
                               </div>
-                            )
-                          ) : (
-                            <video src="/freevideo.mp4" autoPlay loop muted className="w-full h-full object-contain rounded-2xl bg-black" />
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2 text-xs text-text-primary">
-                          <Youtube className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-                          <span>Shared YouTube Video (Shared by {ytSharingUser})</span>
-                          <button onClick={() => socket.emit('yt-share', { roomId: activeRoom.id, videoId: null, sharingUser: null })} className="ml-2 px-2 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 rounded-lg transition-colors text-[10px] font-bold">Stop</button>
-                        </div>
-                        <div className="flex-1 w-full h-full bg-black">
-                          <iframe 
-                            src={`https://www.youtube.com/embed/${ytVideoId}?autoplay=1&enablejsapi=1`}
-                            className="w-full h-full border-0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  {/* Side Participant List */}
-                  <div className="w-full lg:w-[240px] flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
-                    {safeParticipants.map(p => {
+                              <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600, maxWidth: 80, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {pName}
+                              </span>
+                              {targetRole === 'owner' && (
+                                <span style={{ background: '#6c47ff', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, marginTop: -4 }}>
+                                  Owner
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Default view: Circular participant avatars anchored at the bottom center
+                return (
+                  <div className="flex-1 w-full h-full relative flex flex-col items-center justify-end overflow-hidden" style={{ paddingBottom: 140 }}>
+                    {/* Circular participant avatars */}
+                    <div style={{
+                      position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+                      display: 'flex', alignItems: 'flex-end', gap: 20, zIndex: 10
+                    }}>
+                      {safeParticipants.map(p => {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                         const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
                         const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
@@ -3050,8 +3145,8 @@ export default function App() {
                         return (
                           <div key={p.id}
                             onClick={() => !p.isLocal && setActiveActionUser(p)}
-                            className="group flex-shrink-0"
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: p.isLocal ? 'default' : 'pointer' }}
+                            className="group"
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: p.isLocal ? 'default' : 'pointer' }}
                           >
                             <div style={{
                               width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
@@ -3063,19 +3158,19 @@ export default function App() {
                               {p.isCameraOn && p.cameraTrack ? (
                                 <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover" />
                               ) : pPhotoUrl ? (
-                                <img 
-                                    src={pPhotoUrl} 
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                    alt="" 
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                      e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
-                                    }}
-                                  />
+                                <img
+                                  src={pPhotoUrl}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  alt=""
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
+                                  }}
+                                />
                               ) : (
                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
-                                    {pName.slice(0, 2).toUpperCase()}
-                                  </div>
+                                  {pName.slice(0, 2).toUpperCase()}
+                                </div>
                               )}
                               {p.muted && (
                                 <div style={{
@@ -3107,180 +3202,102 @@ export default function App() {
                             )}
                           </div>
                         );
-                    })}
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            }
+                );
+              })()}
 
-            // Default view: Circular participant avatars anchored at the bottom center
-            return (
-              <div className="flex-1 w-full h-full relative flex flex-col items-center justify-end overflow-hidden" style={{ paddingBottom: 140 }}>
-                {/* Circular participant avatars */}
-                <div style={{
-                  position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
-                  display: 'flex', alignItems: 'flex-end', gap: 20, zIndex: 10
-                }}>
-                  {safeParticipants.map(p => {
-                      const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                      const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
-                      const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
-                      const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
-                      const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
-                      const targetRole = getRole(p.id);
+              {/* Room Sidebar Panel — always visible */}
+              <RoomPanel
+                isChatOpen={true}
+                setIsChatOpen={setIsChatOpen}
+                chatMessages={chatMessages}
+                sendChatMessage={(e, customMsg) => {
+                  if (customMsg) {
+                    setChatMessages(prev => [...prev, customMsg]);
+                    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                  } else {
+                    sendChatMessage(e);
+                  }
+                }}
+                chatInput={chatInput}
+                setChatInput={setChatInput}
+                chatEndRef={chatEndRef}
+                participants={safeParticipants}
+                joinEvents={joinEvents}
+                activeRoom={activeRoom}
+                user={user}
+                setUser={setUser}
+                socket={socket}
+                ytVideoId={ytVideoId}
+                getRole={getRole}
+                API_URL={API_URL}
+                getAvatarUrl={getAvatarUrl}
+                rooms={rooms}
+                onlineUserIds={onlineUserIds}
+                setActiveDm={setActiveDm}
+                setMsgTab={setMsgTab}
+                setView={setView}
+                joinVoiceRoom={joinVoiceRoom}
+                openUserProfile={openUserProfile}
+              />
 
-                      return (
-                        <div key={p.id}
-                          onClick={() => !p.isLocal && setActiveActionUser(p)}
-                          className="group"
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: p.isLocal ? 'default' : 'pointer' }}
-                        >
-                          <div style={{
-                            width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
-                            border: isSpeaking ? '2.5px solid #1877f2' : '2.5px solid rgba(255,255,255,0.12)',
-                            boxShadow: isSpeaking ? '0 0 20px rgba(24,119,242,0.6)' : 'none',
-                            transition: 'all 0.2s ease',
-                            background: pColor, position: 'relative', flexShrink: 0
-                          }}>
-                            {p.isCameraOn && p.cameraTrack ? (
-                              <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover" />
-                            ) : pPhotoUrl ? (
-                              <img 
-                                  src={pPhotoUrl} 
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                  alt="" 
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
-                                  }}
-                                />
-                            ) : (
-                              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
-                                  {pName.slice(0, 2).toUpperCase()}
-                                </div>
-                            )}
-                            {p.muted && (
-                              <div style={{
-                                position: 'absolute', bottom: 3, right: 3,
-                                background: '#dc2626', borderRadius: '50%',
-                                width: 20, height: 20,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                border: '2px solid #080c14'
-                              }}>
-                                <MicOff size={10} color="white" />
-                              </div>
-                            )}
-                            {!p.isLocal && (
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity" style={{
-                                position: 'absolute', top: 4, right: 4,
-                                background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: 3
-                              }}>
-                                <Settings size={10} color="white" />
-                              </div>
-                            )}
-                          </div>
-                          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600, maxWidth: 80, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {pName}
-                          </span>
-                          {targetRole === 'owner' && (
-                            <span style={{ background: '#6c47ff', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, marginTop: -4 }}>
-                              Owner
-                            </span>
-                          )}
-                        </div>
-                      );
-                  })}
+              {/* Bottom Floating Controls */}
+              <div style={{
+                position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'rgba(15,21,32,0.85)', backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 28, padding: '10px 20px', zIndex: 50
+              }}>
+                <button onClick={hasRaisedHand ? lowerHand : raiseHand}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22 }}>
+                  ✋
+                </button>
+                <button onClick={() => setIsChatOpen(!isChatOpen)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: isChatOpen ? '#1877f2' : 'rgba(255,255,255,0.5)'
+                  }}>
+                  <MessageSquare size={20} />
+                </button>
+                <div className="relative">
+                  <button onClick={() => setShowGameSelector(!showGameSelector)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'rgba(255,255,255,0.5)'
+                    }}>
+                    <MoreVertical size={20} />
+                  </button>
+                  {/* Replace old game selector */}
+                  {showGameSelector && (
+                    <GameSelector
+                      onSelect={handleGameSelect}
+                      onClose={() => setShowGameSelector(false)}
+                    />
+                  )}
                 </div>
               </div>
-            );
-          })()}
 
-          {/* Room Sidebar Panel — always visible */}
-          <RoomPanel 
-            isChatOpen={true}
-            setIsChatOpen={setIsChatOpen}
-            chatMessages={chatMessages}
-            sendChatMessage={(e, customMsg) => {
-              if (customMsg) {
-                setChatMessages(prev => [...prev, customMsg]);
-                setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-              } else {
-                sendChatMessage(e);
-              }
-            }}
-            chatInput={chatInput}
-            setChatInput={setChatInput}
-            chatEndRef={chatEndRef}
-            participants={safeParticipants}
-            joinEvents={joinEvents}
-            activeRoom={activeRoom}
-            user={user}
-            setUser={setUser}
-            socket={socket}
-            ytVideoId={ytVideoId}
-            getRole={getRole}
-            API_URL={API_URL}
-            getAvatarUrl={getAvatarUrl}
-            rooms={rooms}
-            onlineUserIds={onlineUserIds}
-            setActiveDm={setActiveDm}
-            setMsgTab={setMsgTab}
-            setView={setView}
-            joinVoiceRoom={joinVoiceRoom}
-            openUserProfile={openUserProfile}
-          />
+            </div>
+          );
+        })()}
 
-          {/* Bottom Floating Controls */}
-          <div style={{
-            position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', alignItems: 'center', gap: 12,
-            background: 'rgba(15,21,32,0.85)', backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 28, padding: '10px 20px', zIndex: 50
-          }}>
-             <button onClick={hasRaisedHand ? lowerHand : raiseHand}
-               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22 }}>
-               ✋
-             </button>
-             <button onClick={() => setIsChatOpen(!isChatOpen)}
-               style={{ background: 'none', border: 'none', cursor: 'pointer',
-                 color: isChatOpen ? '#1877f2' : 'rgba(255,255,255,0.5)' }}>
-               <MessageSquare size={20}/>
-             </button>
-             <div className="relative">
-               <button onClick={() => setShowGameSelector(!showGameSelector)}
-                 style={{ background: 'none', border: 'none', cursor: 'pointer',
-                   color: 'rgba(255,255,255,0.5)' }}>
-                 <MoreVertical size={20}/>
-               </button>
-               {/* Replace old game selector */}
-               {showGameSelector && (
-                 <GameSelector
-                   onSelect={handleGameSelect}
-                   onClose={() => setShowGameSelector(false)}
-                 />
-               )}
-             </div>
+        {/* Custom Global Toast */}
+        {toastMessage && (
+          <div className="fixed top-6 md:top-20 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in pointer-events-none">
+            <div className="bg-[#111] backdrop-blur-xl border border-white/10 text-white px-6 py-3.5 rounded-full shadow-2xl flex items-center gap-3 max-w-sm md:max-w-md text-left mx-4 w-max">
+              <span className="text-[var(--accent-primary)] flex-shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </span>
+              <span className="text-sm font-bold truncate leading-tight max-w-[280px]">
+                {typeof toastMessage === 'string' ? toastMessage : JSON.stringify(toastMessage)}
+              </span>
+            </div>
           </div>
-
-        </div>
-        );
-      })()}
-
-      {/* Custom Global Toast */}
-      {toastMessage && (
-        <div className="fixed top-6 md:top-20 left-1/2 -translate-x-1/2 z-[9999] animate-fade-in pointer-events-none">
-          <div className="bg-[#111] backdrop-blur-xl border border-white/10 text-white px-6 py-3.5 rounded-full shadow-2xl flex items-center gap-3 max-w-sm md:max-w-md text-left mx-4 w-max">
-             <span className="text-[var(--accent-primary)] flex-shrink-0">
-               <AlertCircle className="w-5 h-5" />
-             </span>
-             <span className="text-sm font-bold truncate leading-tight max-w-[280px]">
-               {typeof toastMessage === 'string' ? toastMessage : JSON.stringify(toastMessage)}
-             </span>
-          </div>
-        </div>
-      )}
+        )}
       </>
-)
+    )
   );
 }
