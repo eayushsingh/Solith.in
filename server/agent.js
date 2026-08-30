@@ -70,6 +70,7 @@ export default defineAgent({
       const agent = new voice.Agent({
         llm: model,
         chatCtx: initialCtx,
+        instructions: SYSTEM_PROMPT,
         turnHandling: {
           interruption: { enabled: true }
         }
@@ -78,13 +79,15 @@ export default defineAgent({
       const agentSession = new voice.AgentSession();
       await agentSession.start({ agent, room: ctx.room });
       console.log(`[ANANYA] AgentSession created and Gemini realtime session ready`);
+      
+      // Force the agent to speak an initial greeting
+      agent.session.generateReply();
 
       ctx.room.on('participantConnected', (p) => {
         console.log(`[ANANYA] Participant joined: ${p.name}`);
-        // We can optionally add to chat context instead of generateReply, but agent.chatCtx.append works
-        agent.chatCtx.append({
-          role: 'user',
-          text: `A new user named ${p.name || 'someone'} just joined the room. Acknowledge them naturally.`
+        // Trigger a reply greeting the new user
+        agent.session.generateReply({
+          userInput: `A new user named ${p.name || 'someone'} just joined the room. Acknowledge them naturally.`
         });
       });
 
@@ -107,7 +110,8 @@ export default defineAgent({
             }
             
             if (text.trim()) {
-              fetch(`http://localhost:3000/api/rooms/${ctx.room.name}/agent-chat`, {
+              const port = process.env.PORT || 3000;
+              fetch(`http://localhost:${port}/api/rooms/${ctx.room.name}/agent-chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text.trim() })
