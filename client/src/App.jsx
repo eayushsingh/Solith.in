@@ -2196,6 +2196,7 @@ export default function App() {
                       setActiveDm({ id: convoId, profile: targetProfile });
                       setMsgTab('direct');
                       setView('messages');
+                      setIsChatOpen(false);
                       window.location.hash = 'messages';
                     }}
                     className="w-full py-3.5 rounded-xl text-sm font-bold border border-[var(--line-bright)] text-text-primary bg-[var(--bg-elevated)] hover:bg-[var(--bg-secondary)] hover:border-[var(--ink-tertiary)] flex items-center justify-center gap-2 transition-all shadow-sm mt-3"
