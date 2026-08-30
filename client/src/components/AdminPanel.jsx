@@ -41,16 +41,27 @@ export default function AdminPanel({ onBack, user }) {
 
   const fetchWithToken = async (endpoint, options = {}) => {
     if (!user || !(await getFreshToken())) return null;
-    const res = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        ...options.headers,
-        'Authorization': `Bearer ${(await getFreshToken())}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    if (!res.ok) throw new Error('API request failed');
-    return res.json();
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    try {
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          ...options.headers,
+          'Authorization': `Bearer ${(await getFreshToken())}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error('API request failed');
+      return res.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
   };
 
   const loadData = async (tab) => {
@@ -152,7 +163,7 @@ export default function AdminPanel({ onBack, user }) {
   };
 
   return (
-    <div className="min-h-screen bg-bg-base text-text-primary font-mono overflow-x-hidden">
+    <div className="min-h-screen bg-[#090A0F] text-white font-mono overflow-x-hidden">
       <ConfirmDialog 
         {...confirmDialog} 
         onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
@@ -163,9 +174,9 @@ export default function AdminPanel({ onBack, user }) {
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-bg-surface border-b border-red-900/30 px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <header className="sticky top-0 z-40 bg-[#0C0E14] border-b border-[#1E212B] px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4 min-w-0">
-          <button onClick={onBack} className="p-2 hover:bg-[#222] rounded-full transition-colors text-text-secondary hover:text-text-primary">
+          <button onClick={onBack} className="p-2 bg-[#12141C] border border-[#1E212B] hover:bg-[#1A1D27] rounded-xl transition-colors text-[#888A92] hover:text-white">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2 text-red-500">
@@ -173,12 +184,12 @@ export default function AdminPanel({ onBack, user }) {
             <h1 className="text-xl font-bold tracking-widest uppercase">Admin Dashboard</h1>
           </div>
         </div>
-        <div className="text-xs text-gray-500 break-all sm:text-right">Logged in as {user?.email}</div>
+        <div className="text-xs text-[#555861] break-all sm:text-right font-bold">Logged in as {user?.email}</div>
       </header>
 
       <div className="flex flex-col lg:flex-row min-h-[calc(100dvh-73px)]">
         {/* Sidebar */}
-        <div className="w-full lg:w-64 bg-bg-surface border-b lg:border-b-0 lg:border-r border-red-900/20 p-4 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
+        <div className="w-full lg:w-64 bg-[#0C0E14] border-b lg:border-b-0 lg:border-r border-[#1E212B] p-4 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
           {[
             { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
             { id: 'users', icon: Users, label: 'Users' },
@@ -191,10 +202,10 @@ export default function AdminPanel({ onBack, user }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-sm ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-[14px] transition-all font-bold text-sm ${
                 activeTab === tab.id 
-                  ? 'bg-red-500/10 text-red-500 border border-red-500/20' 
-                  : 'text-text-secondary hover:bg-[#222] hover:text-text-primary border border-transparent'
+                  ? 'bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]' 
+                  : 'text-[#888A92] hover:bg-[#12141C] hover:text-white border border-transparent'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -204,33 +215,45 @@ export default function AdminPanel({ onBack, user }) {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar min-w-0">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar min-w-0 bg-[#090A0F]">
           {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-500">Loading data...</div>
+            <div className="flex flex-col items-center justify-center min-h-[500px] text-white">
+               <div className="w-10 h-10 border-4 border-[#1E212B] border-t-red-500 rounded-full animate-spin mb-4"></div>
+               <span className="text-[#888A92] font-bold tracking-[0.2em] uppercase text-sm">Loading Data...</span>
+            </div>
           ) : (
             <>
               {/* OVERVIEW TAB */}
-              {activeTab === 'overview' && stats && (
+              {activeTab === 'overview' && (
                 <div className="space-y-6">
                   <h2 className="text-2xl font-bold text-text-primary mb-6">Platform Overview</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
-                      <div className="text-text-secondary text-sm mb-2">Total Users</div>
-                      <div className="text-4xl font-bold text-text-primary">{stats.usersTotal}</div>
+                  {stats ? (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                      <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
+                        <div className="text-text-secondary text-sm mb-2">Total Users</div>
+                        <div className="text-4xl font-bold text-text-primary">{stats.usersTotal}</div>
+                      </div>
+                      <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
+                        <div className="text-text-secondary text-sm mb-2">Active Rooms</div>
+                        <div className="text-4xl font-bold text-blue-400">{stats.activeRooms}</div>
+                      </div>
+                      <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
+                        <div className="text-text-secondary text-sm mb-2">Total Reports</div>
+                        <div className="text-4xl font-bold text-text-primary">{stats.reportsTotal}</div>
+                      </div>
+                      <div className="bg-[#151515] p-6 rounded-2xl border border-red-900/50">
+                        <div className="text-red-400 text-sm mb-2">Pending Reports</div>
+                        <div className="text-4xl font-bold text-red-500">{stats.reportsPending}</div>
+                      </div>
                     </div>
-                    <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
-                      <div className="text-text-secondary text-sm mb-2">Active Rooms</div>
-                      <div className="text-4xl font-bold text-blue-400">{stats.activeRooms}</div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-12 bg-[#151515] rounded-2xl border border-red-900/50 text-center">
+                      <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                      <h3 className="text-lg font-bold text-text-primary mb-2">Failed to load Overview</h3>
+                      <p className="text-text-secondary text-sm">The server took too long to respond or the request failed.</p>
+                      <button onClick={() => loadData('overview')} className="mt-4 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-colors font-medium">Retry</button>
                     </div>
-                    <div className="bg-[#151515] p-6 rounded-2xl border border-gray-800">
-                      <div className="text-text-secondary text-sm mb-2">Total Reports</div>
-                      <div className="text-4xl font-bold text-text-primary">{stats.reportsTotal}</div>
-                    </div>
-                    <div className="bg-[#151515] p-6 rounded-2xl border border-red-900/50">
-                      <div className="text-red-400 text-sm mb-2">Pending Reports</div>
-                      <div className="text-4xl font-bold text-red-500">{stats.reportsPending}</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
 

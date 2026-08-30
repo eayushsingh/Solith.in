@@ -5,7 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import axios from 'axios';
-import { AccessToken, RoomServiceClient, WebhookReceiver } from 'livekit-server-sdk';
+import { AccessToken, RoomServiceClient, WebhookReceiver, AgentDispatchClient } from 'livekit-server-sdk';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import admin from 'firebase-admin';
@@ -534,10 +534,24 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
   const roomId = 'room-' + Math.random().toString(36).substring(2, 9);
   let livekitUrl = '';
 
-  // 1. If LiveKit API is available, use real URL
   if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
     livekitUrl = runtimeConfig.livekitUrl;
     console.log(`Real LiveKit Room Created Implicitly: ${roomId}`);
+    
+    // Dispatch the AI Host agent
+    try {
+      const agentClient = new AgentDispatchClient(livekitUrl, runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret);
+      await agentClient.createDispatch(roomId, 'agent-ananya', {
+        metadata: JSON.stringify({
+          photoUrl: '/ananya.png',
+          color: '#8b5cf6',
+          emoji: '✨'
+        })
+      });
+      console.log(`Dispatched AI Host for room ${roomId}`);
+    } catch (e) {
+      console.error('Failed to dispatch AI Host:', e.message);
+    }
   } else {
     return res.status(500).json({ error: 'LiveKit configuration is missing. Cannot create real rooms.' });
   }

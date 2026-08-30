@@ -22,6 +22,20 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
     }
   };
 
+  // Helper to prevent Firebase Admin hanging if Cloud Firestore API is disabled
+  const withTimeout = (promise, ms = 10000) => {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(`Operation timed out after ${ms}ms. Check Cloud Firestore API.`));
+      }, ms);
+    });
+    return Promise.race([
+      promise,
+      timeoutPromise
+    ]).finally(() => clearTimeout(timeoutId));
+  };
+
   // 1. GET /api/admin/stats
   router.get('/stats', async (req, res) => {
     const adminInstance = initFirebaseAdmin();
@@ -36,9 +50,10 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
 
     try {
       const db = adminInstance.firestore();
-      const usersCount = (await db.collection('users').count().get()).data().count;
-      const reportsCount = (await db.collection('reports').count().get()).data().count;
-      const pendingReportsCount = (await db.collection('reports').where('status', '==', 'pending').count().get()).data().count;
+      
+      const usersCount = (await withTimeout(db.collection('users').count().get())).data().count;
+      const reportsCount = (await withTimeout(db.collection('reports').count().get())).data().count;
+      const pendingReportsCount = (await withTimeout(db.collection('reports').where('status', '==', 'pending').count().get())).data().count;
       const activeRoomsCount = getRooms().length;
       
       res.json({
@@ -64,7 +79,7 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
     }
     try {
       const db = adminInstance.firestore();
-      const usersSnap = await db.collection('users').orderBy('createdAt', 'desc').limit(100).get();
+      const usersSnap = await withTimeout(db.collection('users').orderBy('createdAt', 'desc').limit(100).get());
       const users = [];
       usersSnap.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
       res.json({ users });
@@ -164,7 +179,7 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
     }
     try {
       const db = adminInstance.firestore();
-      const reportsSnap = await db.collection('reports').orderBy('timestamp', 'desc').limit(100).get();
+      const reportsSnap = await withTimeout(db.collection('reports').orderBy('timestamp', 'desc').limit(100).get());
       const reports = [];
       reportsSnap.forEach(doc => reports.push({ id: doc.id, ...doc.data() }));
       res.json({ reports });
@@ -192,7 +207,7 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
 
       if (action !== 'dismiss' && reportedUserId) {
         const userRef = db.collection('users').doc(reportedUserId);
-        const userDoc = await userRef.get();
+        const userDoc = await withTimeout(userRef.get());
         
         if (userDoc.exists) {
           const userData = userDoc.data();
@@ -262,7 +277,7 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
     }
     try {
       const db = adminInstance.firestore();
-      const logsSnap = await db.collection('admin_logs').orderBy('timestamp', 'desc').limit(100).get();
+      const logsSnap = await withTimeout(db.collection('admin_logs').orderBy('timestamp', 'desc').limit(100).get());
       const logs = [];
       logsSnap.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
       res.json({ logs });
@@ -280,7 +295,7 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
     }
     try {
       const db = adminInstance.firestore();
-      const paymentsSnap = await db.collection('payment_requests').orderBy('submittedAt', 'desc').limit(100).get();
+      const paymentsSnap = await withTimeout(db.collection('payment_requests').orderBy('submittedAt', 'desc').limit(100).get());
       const payments = [];
       paymentsSnap.forEach(doc => payments.push({ id: doc.id, ...doc.data() }));
       res.json({ payments });
@@ -374,7 +389,7 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
     
     try {
       const db = adminInstance.firestore();
-      const doc = await db.collection('settings').doc('global').get();
+      const doc = await withTimeout(db.collection('settings').doc('global').get());
       if (!doc.exists) {
         return res.json({ premiumPrice: 99, premiumDurationDays: 30, qrCodeUrl: "/qr-placeholder.png", premiumVisibilityBoost: true });
       }
