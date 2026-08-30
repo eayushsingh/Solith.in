@@ -549,8 +549,10 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                   {/* Left Avatar for other users */}
                   {msg.senderId !== user?.id && (
                     <div 
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-md flex-shrink-0 text-white" 
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs shadow-md flex-shrink-0 text-white cursor-pointer hover:scale-110 transition-transform" 
                       style={{ backgroundColor: msg.senderColor }}
+                      onClick={() => openUserProfile && openUserProfile(msg.senderId)}
+                      title={`View ${msg.senderName}'s Profile`}
                     >
                       {msg.senderEmoji || '👤'}
                     </div>
@@ -704,8 +706,10 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                 <div key={p.id} className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                   <div className="flex items-center gap-3">
                     <div 
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-base shadow-inner border border-white/10 text-white"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-base shadow-inner border border-white/10 text-white cursor-pointer hover:scale-110 transition-transform"
                       style={{ backgroundColor: p.color || '#ff4d4d' }}
+                      onClick={() => openUserProfile && openUserProfile(p.id)}
+                      title={`View ${p.name}'s Profile`}
                     >
                       {p.photoUrl ? (
                         <img src={p.photoUrl} className="w-full h-full object-cover rounded-full" alt="" />
