@@ -1309,9 +1309,9 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
         {/* SOCIAL TAB CONTENT */}
         {activeTab === 'social' && (
           <div style={{flex:1, overflowY:'auto'}}>
-            {/* Tabs: Following / In Room */}
+            {/* Tabs: Followers / Following / In Room */}
             <div style={{display:'flex', borderBottom:'1px solid rgba(255,255,255,0.07)', padding:'0 12px'}}>
-              {['Following','In Room'].map(tab => (
+              {['Followers', 'Following', 'In Room'].map(tab => (
                 <button key={tab} onClick={() => setSocialTab(tab)} style={{
                   padding:'8px 10px', background:'none', border:'none', cursor:'pointer',
                   color: socialTab===tab ? '#1877f2' : 'rgba(255,255,255,0.4)',
@@ -1321,6 +1321,29 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                 }}>{tab}</button>
               ))}
             </div>
+
+            {/* Followers list */}
+            {socialTab === 'Followers' && (user?.followers || []).length === 0 && (
+              <div style={{ padding: '20px 12px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>
+                You don't have any followers yet.
+              </div>
+            )}
+            {socialTab === 'Followers' && (user?.followers || []).map(followerId => (
+              <SocialUserRow
+                key={followerId}
+                userId={followerId}
+                currentUser={user}
+                onlineUserIds={onlineUserIds}
+                openUserProfile={openUserProfile}
+                onDM={(id, profile) => {
+                  setActiveDm({id, profile});
+                  setMsgTab('direct');
+                  setView('messages');
+                  setIsChatOpen(false);
+                  window.location.hash = 'messages';
+                }}
+              />
+            ))}
 
             {/* Following list */}
             {socialTab === 'Following' && (user?.following || []).length === 0 && (
@@ -1339,6 +1362,8 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                   setActiveDm({id, profile});
                   setMsgTab('direct');
                   setView('messages');
+                  setIsChatOpen(false);
+                  window.location.hash = 'messages';
                 }}
               />
             ))}
