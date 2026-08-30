@@ -115,6 +115,14 @@ export default defineAgent({
       return;
     }
 
+    // Publish audio track explicitly
+    try {
+      await ctx.room.localParticipant.setMicrophoneEnabled(true);
+      console.log('[Ananya] ✓ Microphone enabled');
+    } catch (e) {
+      console.warn('[Ananya] setMicrophoneEnabled failed:', e.message);
+    }
+
     // ─── Enable audio ────────────────────────────────────────────────────────
     try {
       if (agent.session?.setAudioEnabled) {
@@ -126,28 +134,23 @@ export default defineAgent({
     }
 
     // ─── Initial greeting ────────────────────────────────────────────────────
-    console.log('[Ananya] Waiting 2s before greeting...');
-    await new Promise(r => setTimeout(r, 2000));
+    // Wait for session to fully establish audio
+    await new Promise(r => setTimeout(r, 3000));
 
-    const participantCount = ctx.room.remoteParticipants.size;
-    const greetingInstruction = participantCount === 0
-      ? 'The room is empty. Say a brief welcome and let people know you are here waiting.'
-      : participantCount === 1
-        ? 'One person just joined. Welcome them warmly to Solith.in and ask what language they are learning today.'
-        : `${participantCount} people are in the room. Welcome everyone warmly to Solith.in and start an interesting conversation about language learning.`;
+    // Log what tracks are published
+    const local = ctx.room.localParticipant;
+    console.log('[Ananya] identity:', local?.identity);
+    console.log('[Ananya] audio tracks:', local?.audioTrackPublications?.size);
 
+    // Force generate reply
+    console.log('[Ananya] Generating greeting...');
     try {
-      console.log('[Ananya] Generating initial greeting...');
-      await agent.session.generateReply({ instructions: greetingInstruction });
-      console.log('[Ananya] ✓ Initial greeting sent');
+      await agent.session.generateReply({
+        instructions: 'Say hello and welcome everyone warmly to Solith.in. Ask what language they want to practice today. Keep it to 2 sentences.'
+      });
+      console.log('[Ananya] ✓ Greeting done');
     } catch (e) {
-      console.error('[Ananya] ✗ Initial greeting failed:', e.message);
-      try {
-        await agent.session.generateReply();
-        console.log('[Ananya] ✓ Fallback greeting sent');
-      } catch (e2) {
-        console.error('[Ananya] ✗ Fallback greeting also failed:', e2.message, e2.stack);
-      }
+      console.error('[Ananya] generateReply error:', e.message, e.stack);
     }
 
     // ─── Greet new participants ──────────────────────────────────────────────
