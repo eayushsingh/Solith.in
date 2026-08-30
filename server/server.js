@@ -1930,18 +1930,52 @@ app.get('/api/payments/status', verifyToken, async (req, res) => {
   }
 });
 
+app.post('/api/rooms/:id/agent-chat', express.json(), (req, res) => {
+  const { id } = req.params;
+  const { text, speaker, senderId, color } = req.body;
+  if (!text) return res.status(400).json({ error: 'No text' });
+
+  const message = {
+    id: 'agent-' + Date.now(),
+    senderId: senderId || 'ananya-ai',
+    senderName: speaker || 'Ananya AI',
+    senderEmoji: senderId === 'ananya-ai' ? '🤖' : '🎤',
+    senderColor: color || '#6c47ff',
+    text,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    isAgent: senderId === 'ananya-ai',
+    isTranscript: senderId !== 'ananya-ai'
+  };
+
+  // Broadcast to room via socket
+  io.to(id).emit('chat-message', message);
+  res.json({ success: true });
+});
+
 // Start Server
 const PORT = process.env.PORT || 3000;
 loadDB();
+
+let agentWorker = null;
+const startAgentWorker = () => {
+  console.log(chalk.yellow('[Agent Worker] Starting...'));
+  agentWorker = spawn('node', ['agent.js', 'start'], {
+    stdio: 'inherit',
+    env: process.env
+  });
+
+  agentWorker.on('exit', (code, signal) => {
+    console.warn(chalk.red(`[Agent Worker] Exited with code ${code}, signal ${signal}. Restarting in 3s...`));
+    agentWorker = null;
+    setTimeout(startAgentWorker, 3000); // auto-restart
+  });
+
+  agentWorker.on('error', (err) => {
+    console.error(chalk.red(`[Agent Worker] Spawn error: ${err.message}`));
+  });
+};
+
 server.listen(PORT, () => {
   console.log(chalk.cyan.bold(`🚀 Solith Backend running on port ${PORT}`));
-  
-  // Start the LiveKit Agent Worker as a child process so it runs on Render
-  const agentWorker = spawn('node', ['agent.js', 'start'], { stdio: 'inherit' });
-  agentWorker.on('error', (err) => {
-    console.warn(`[Agent Worker] Failed to start: ${err.message}`);
-  });
-  agentWorker.on('exit', (code) => {
-    console.warn(`[Agent Worker] Exited with code ${code}`);
-  });
+  startAgentWorker();
 });
