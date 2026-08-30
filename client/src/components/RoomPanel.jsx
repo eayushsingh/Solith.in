@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SocialUserRow from './SocialUserRow';
 import { 
-  MessageSquare, Users, LayoutGrid, Settings, Maximize2, Minimize2, ChevronDown, 
+  MessageSquare, Users, LayoutGrid, Settings, Maximize2, Minimize2, ChevronDown, ChevronUp,
   Send, CornerUpLeft, Image, X, Mic, MicOff, Camera, Shield, Youtube, 
   Briefcase, FileText, Tv, Megaphone, Video, Play, RefreshCw, Sparkles, Check, Trash2, Copy, Download, Eraser
 } from 'lucide-react';
@@ -38,6 +38,7 @@ export default function RoomPanel({
   const [activeTab, setActiveTab] = useState('chat'); // chat, users, tools, settings, social
   const [socialTab, setSocialTab] = useState('Following');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [activeTool, setActiveTool] = useState(null); // mock-interview, notetaker, whiteboard, magic-mic, magic-camera, ip-shield, youtube
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -412,7 +413,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
 
   return (
     <div className={`absolute bottom-[90px] right-4 md:right-8 z-40 bg-[#0f1115]/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300 animate-fade-in ${
-      isExpanded ? 'left-4 md:left-auto md:w-[680px] h-[580px] max-h-[80vh]' : 'left-4 md:left-auto md:w-[380px] h-[480px] max-h-[70vh]'
+      isMinimized ? 'left-4 md:left-auto md:w-[380px] h-[55px]' : (isExpanded ? 'left-4 md:left-auto md:w-[680px] h-[580px] max-h-[80vh]' : 'left-4 md:left-auto md:w-[380px] h-[480px] max-h-[70vh]')
     }`}>
       
       {/* Top Navigation Tabs Header */}
@@ -490,17 +491,18 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
           {/* Collapse Panel Button */}
           <button 
             type="button"
-            onClick={() => setIsChatOpen(false)}
+            onClick={() => setIsMinimized(!isMinimized)}
             className="p-2 text-white/40 hover:text-white/80 rounded-xl transition-colors"
-            title="Close Panel"
+            title={isMinimized ? "Restore Panel" : "Minimize Panel"}
           >
-            <ChevronDown className="w-4 h-4" />
+            {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
       </div>
-
-      {/* Main Panel Content Area */}
-      <div className="flex-1 overflow-hidden flex flex-col relative">
+      
+      {/* Hide content when minimized so we don't bleed or scroll */}
+      {!isMinimized && (
+        <div className="flex-1 overflow-hidden flex flex-col relative">
         
         {/* TABS CONTAINER */}
         
@@ -1401,6 +1403,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
         )}
 
       </div>
+      )}
 
       {/* LIGHTBOX MODAL FOR ATTACHED IMAGES */}
       {lightboxImage && (
