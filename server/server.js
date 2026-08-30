@@ -1,4 +1,5 @@
 import express from 'express';
+import { spawn } from 'child_process';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
@@ -1934,4 +1935,13 @@ const PORT = process.env.PORT || 3000;
 loadDB();
 server.listen(PORT, () => {
   console.log(chalk.cyan.bold(`🚀 Solith Backend running on port ${PORT}`));
+  
+  // Start the LiveKit Agent Worker as a child process so it runs on Render
+  const agentWorker = spawn('node', ['agent.js', 'start'], { stdio: 'inherit' });
+  agentWorker.on('error', (err) => {
+    console.warn(`[Agent Worker] Failed to start: ${err.message}`);
+  });
+  agentWorker.on('exit', (code) => {
+    console.warn(`[Agent Worker] Exited with code ${code}`);
+  });
 });
