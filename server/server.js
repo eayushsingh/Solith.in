@@ -538,17 +538,21 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     livekitUrl = runtimeConfig.livekitUrl;
     console.log(`Real LiveKit Room Created Implicitly: ${roomId}`);
     
-    // Dispatch the AI Host agent
+    // Dispatch the AI Host agent exactly once per room
     try {
-      const agentClient = new AgentDispatchClient(livekitUrl, runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret);
-      await agentClient.createDispatch(roomId, 'agent-ananya', {
-        metadata: JSON.stringify({
-          photoUrl: '/ananya.png',
-          color: '#8b5cf6',
-          emoji: '✨'
-        })
-      });
-      console.log(`Dispatched AI Host for room ${roomId}`);
+      if (!global.dispatchedRooms) global.dispatchedRooms = new Set();
+      if (!global.dispatchedRooms.has(roomId)) {
+        global.dispatchedRooms.add(roomId);
+        const agentClient = new AgentDispatchClient(livekitUrl, runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret);
+        await agentClient.createDispatch(roomId, 'agent-ananya', {
+          metadata: JSON.stringify({
+            photoUrl: '/ananya.png',
+            color: '#8b5cf6',
+            emoji: '✨'
+          })
+        });
+        console.log(`Dispatched AI Host for room ${roomId}`);
+      }
     } catch (e) {
       console.error('Failed to dispatch AI Host:', e.message);
     }
