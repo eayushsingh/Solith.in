@@ -79,6 +79,31 @@ export default defineAgent({
           userInput: `A new user named ${p.name || 'someone'} just joined the room. Acknowledge them naturally.`
         });
     });
+
+    agentSession.on('agent_state_changed', async (state) => {
+        if (state === 'listening') {
+            const items = agent.chatCtx.items;
+            const lastItem = items[items.length - 1];
+            if (lastItem && lastItem.role === 'assistant') {
+                let text = '';
+                if (Array.isArray(lastItem.content)) {
+                    for (const content of lastItem.content) {
+                        if (typeof content === 'string') text += content;
+                    }
+                } else if (typeof lastItem.content === 'string') {
+                    text = lastItem.content;
+                }
+                
+                if (text.trim()) {
+                    fetch(`http://localhost:3000/api/rooms/${ctx.room.name}/agent-chat`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: text.trim() })
+                    }).catch(err => console.error('Agent chat broadcast failed:', err));
+                }
+            }
+        }
+    });
     
     ctx.room.on('participantDisconnected', (p) => {
          if (ctx.room.participants.size === 0) {
