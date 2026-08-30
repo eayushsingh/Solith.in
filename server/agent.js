@@ -1,4 +1,4 @@
-import { WorkerOptions, cli, defineAgent, voice } from '@livekit/agents';
+import { WorkerOptions, cli, defineAgent, voice, llm } from '@livekit/agents';
 import * as google from '@livekit/agents-plugin-google';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -50,70 +50,97 @@ Human-to-Human Priority & Silence:
 
 export default defineAgent({
   entry: async (ctx) => {
-    await ctx.connect();
-    
-    // We don't have a principal participant because Ananya is the host
-    // and talks to anyone in the room.
+    console.log(`[ANANYA] Dispatch received for room: ${ctx.room.name}`);
+    try {
+      await ctx.connect();
+      console.log(`[ANANYA] Connected to room: ${ctx.room.name}`);
 
-    const model = new google.realtime.RealtimeModel({
-      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
-      instructions: SYSTEM_PROMPT,
-      model: "gemini-2.0-flash-exp",
-      voice: "Kore", // Kore is a very sweet and expressive female voice
-    });
-    
-    const agent = new voice.Agent({
-      llm: model,
-    });
-    
-    const agentSession = new voice.AgentSession();
-    await agentSession.start({ agent, room: ctx.room });
+      const model = new google.realtime.RealtimeModel({
+        apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY,
+        instructions: SYSTEM_PROMPT,
+        model: "gemini-2.0-flash-exp",
+        voice: "Kore",
+      });
 
-    // Initial greeting
-    agent.session.generateReply({
-      userInput: 'You have just joined a Solith voice room. Say a quick, casual hello to start the conversation.'
-    });
+      // Provide the initial context to trigger a greeting immediately upon connection
+      const initialCtx = new llm.ChatContext().append({
+        role: 'user',
+        text: 'You have just joined a Solith voice room. Say a quick, casual hello to start the conversation.'
+      });
 
-    ctx.room.on('participantConnected', (p) => {
-        agent.session.generateReply({
-          userInput: `A new user named ${p.name || 'someone'} just joined the room. Acknowledge them naturally.`
-        });
-    });
-
-    agentSession.on('agent_state_changed', async (state) => {
-        if (state === 'listening') {
-            const items = agent.chatCtx.items;
-            const lastItem = items[items.length - 1];
-            if (lastItem && lastItem.role === 'assistant') {
-                let text = '';
-                if (Array.isArray(lastItem.content)) {
-                    for (const content of lastItem.content) {
-                        if (typeof content === 'string') text += content;
-                    }
-                } else if (typeof lastItem.content === 'string') {
-                    text = lastItem.content;
-                }
-                
-                if (text.trim()) {
-                    fetch(`http://localhost:3000/api/rooms/${ctx.room.name}/agent-chat`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: text.trim() })
-                    }).catch(err => console.error('Agent chat broadcast failed:', err));
-                }
-            }
+      const agent = new voice.Agent({
+        llm: model,
+        chatCtx: initialCtx,
+        turnHandling: {
+          interruption: { enabled: true }
         }
-    });
-    
-    ctx.room.on('participantDisconnected', (p) => {
-         if (ctx.room.participants.size === 0) {
-             setTimeout(() => {
-                 if (ctx.room.participants.size === 0) {
-                     ctx.disconnect();
-                 }
-             }, 30000);
-         }
-    });
+      });
+      
+      const agentSession = new voice.AgentSession();
+      await agentSession.start({ agent, room: ctx.room });
+      console.log(`[ANANYA] AgentSession created and Gemini realtime session ready`);
+
+      ctx.room.on('participantConnected', (p) => {
+        console.log(`[ANANYA] Participant joined: ${p.name}`);
+        // We can optionally add to chat context instead of generateReply, but agent.chatCtx.append works
+        agent.chatCtx.append({
+          role: 'user',
+          text: `A new user named ${p.name || 'someone'} just joined the room. Acknowledge them naturally.`
+        });
+      });
+
+      agentSession.on('agent_state_changed', async (state) => {
+        console.log(`[ANANYA] State changed to: ${state}`);
+        if (state === 'speaking') {
+          console.log(`[ANANYA] Audio playback started`);
+        }
+        if (state === 'listening') {
+          const items = agent.chatCtx.items;
+          const lastItem = items[items.length - 1];
+          if (lastItem && lastItem.role === 'assistant') {
+            let text = '';
+            if (Array.isArray(lastItem.content)) {
+              for (const content of lastItem.content) {
+                if (typeof content === 'string') text += content;
+              }
+            } else if (typeof lastItem.content === 'string') {
+              text = lastItem.content;
+            }
+            
+            if (text.trim()) {
+              fetch(`http://localhost:3000/api/rooms/${ctx.room.name}/agent-chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text.trim() })
+              }).catch(err => console.error('[ANANYA ERROR] Agent chat broadcast failed:', err));
+            }
+          }
+        }
+      });
+
+      ctx.room.on('trackPublished', (pub, p) => {
+        if (p.identity === ctx.room.localParticipant.identity) {
+          console.log(`[ANANYA] Audio track published`);
+        }
+      });
+      
+      ctx.room.on('participantDisconnected', (p) => {
+        if (ctx.room.participants.size === 0) {
+          console.log(`[ANANYA] Last participant left, initiating disconnect timer`);
+          setTimeout(() => {
+            if (ctx.room.participants.size === 0) {
+              console.log(`[ANANYA] Room empty, disconnecting cleanly.`);
+              ctx.disconnect();
+            }
+          }, 30000);
+        }
+      });
+
+    } catch (error) {
+      console.error('[ANANYA ERROR] Fatal exception during agent execution:');
+      console.error(error);
+      ctx.disconnect();
+    }
   },
 });
 
