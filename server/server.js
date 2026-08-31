@@ -22,7 +22,7 @@ const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, 'db.json');
 
 const app = express();
-app.set('trust proxy', true); // Trust all proxies to ensure we get the real client IP on Render
+app.set('trust proxy', 1); // Trust only the first proxy hop (Render) to prevent express-rate-limit from crashing with ERR_ERL_PERMISSIVE_TRUST_PROXY
 const server = createServer(app);
 
 // CORS configuration - allow only explicit origins in production
