@@ -52,18 +52,18 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
       const db = adminInstance.firestore();
       
       const [usersSnap, reportsSnap, pendingReportsSnap] = await Promise.all([
-        withTimeout(db.collection('users').count().get()).catch(() => ({ data: () => ({ count: 0 }) })),
-        withTimeout(db.collection('reports').count().get()).catch(() => ({ data: () => ({ count: 0 }) })),
-        withTimeout(db.collection('reports').where('status', '==', 'pending').count().get()).catch(() => ({ data: () => ({ count: 0 }) }))
+        withTimeout(db.collection('users').get()).catch(() => ({ size: 0 })),
+        withTimeout(db.collection('reports').get()).catch(() => ({ size: 0 })),
+        withTimeout(db.collection('reports').where('status', '==', 'pending').get()).catch(() => ({ size: 0 }))
       ]);
       
       const activeRoomsCount = getRooms().length;
       
       res.json({
-        usersTotal: usersSnap.data().count,
+        usersTotal: usersSnap.size || 0,
         activeRooms: activeRoomsCount,
-        reportsTotal: reportsSnap.data().count,
-        reportsPending: pendingReportsSnap.data().count
+        reportsTotal: reportsSnap.size || 0,
+        reportsPending: pendingReportsSnap.size || 0
       });
     } catch (error) {
       console.error('Error fetching admin stats:', error);
