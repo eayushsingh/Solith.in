@@ -933,10 +933,8 @@ export default function App() {
       setNewRoomTopic('');
       setNewRoomTags('Casual');
       setIsCreatingRoom(false);
-
-      // Permanently fix popup blocker issue by joining directly instead of opening a new tab
-      window.history.pushState({}, '', `/?room=${newRoom.id}`);
-      joinVoiceRoom(newRoom);
+      // Auto-join newly created room in a new tab
+      window.open('/?room=' + newRoom.id, '_blank');
     } catch (err) {
       setIsCreatingRoom(false);
       console.error('Error creating room:', err);
