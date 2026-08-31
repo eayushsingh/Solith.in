@@ -580,40 +580,42 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
 
   // Dispatch Ananya to new room
   if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
-    try {
-      const { AgentDispatchClient } = await import('@livekit/agents');
-      const dispatchClient = new AgentDispatchClient(
-        runtimeConfig.livekitUrl,
-        runtimeConfig.livekitApiKey,
-        runtimeConfig.livekitApiSecret
-      );
+    (async () => {
+      try {
+        const { AgentDispatchClient } = await import('@livekit/agents');
+        const dispatchClient = new AgentDispatchClient(
+          runtimeConfig.livekitUrl,
+          runtimeConfig.livekitApiKey,
+          runtimeConfig.livekitApiSecret
+        );
 
-      // Check if already dispatched (idempotency)
-      const adminInstance = initFirebaseAdmin();
-      let alreadyDispatched = false;
-      if (adminInstance) {
-        const db = adminInstance.firestore();
-        const dispatchRef = db.collection('settings').doc('global');
-        const snap = await dispatchRef.get();
-        const dispatched = snap.exists ? (snap.data().dispatchedRooms || []) : [];
-        alreadyDispatched = dispatched.includes(roomId);
-        if (!alreadyDispatched) {
-          await dispatchRef.set(
-            { dispatchedRooms: [...dispatched, roomId] },
-            { merge: true }
-          );
+        // Check if already dispatched (idempotency)
+        const adminInstance = initFirebaseAdmin();
+        let alreadyDispatched = false;
+        if (adminInstance) {
+          const db = adminInstance.firestore();
+          const dispatchRef = db.collection('settings').doc('global');
+          const snap = await dispatchRef.get();
+          const dispatched = snap.exists ? (snap.data().dispatchedRooms || []) : [];
+          alreadyDispatched = dispatched.includes(roomId);
+          if (!alreadyDispatched) {
+            await dispatchRef.set(
+              { dispatchedRooms: [...dispatched, roomId] },
+              { merge: true }
+            );
+          }
         }
-      }
 
-      if (!alreadyDispatched) {
-        await dispatchClient.createDispatch(roomId, 'agent-ananya', {
-          metadata: JSON.stringify({ roomId, roomName: newRoom.name })
-        });
-        console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`);
+        if (!alreadyDispatched) {
+          await dispatchClient.createDispatch(roomId, 'agent-ananya', {
+            metadata: JSON.stringify({ roomId, roomName: newRoom.name })
+          });
+          console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`);
+        }
+      } catch (dispatchErr) {
+        console.error('[dispatch] Failed to dispatch Ananya:', dispatchErr.message);
       }
-    } catch (dispatchErr) {
-      console.error('[dispatch] Failed to dispatch Ananya:', dispatchErr.message);
-    }
+    })();
   }
 
   res.status(201).json(newRoom);
