@@ -140,6 +140,17 @@ const loadDB = async () => {
       const snapshot = await db.collection('rooms').get();
       rooms = snapshot.docs.map(doc => doc.data());
       console.log(`✓ Loaded ${rooms.length} rooms from Firestore.`);
+      
+      // Load LiveKit config
+      const livekitSnap = await db.collection('settings').doc('livekit').get();
+      if (livekitSnap.exists) {
+        const data = livekitSnap.data();
+        if (data.livekitApiKey) runtimeConfig.livekitApiKey = data.livekitApiKey;
+        if (data.livekitApiSecret) runtimeConfig.livekitApiSecret = data.livekitApiSecret;
+        if (data.livekitUrl) runtimeConfig.livekitUrl = data.livekitUrl;
+        console.log(`✓ Loaded LiveKit configuration from Firestore.`);
+      }
+      
       await setAdminRoles();
       return;
     } catch (err) {
@@ -480,11 +491,29 @@ app.get('/api/config', (req, res) => {
 });
 
 // API Endpoint: Update Config dynamically
-app.post('/api/config', verifyToken, verifyAdmin, (req, res) => {
+app.post('/api/config', verifyToken, verifyAdmin, async (req, res) => {
   const { apiKey, apiSecret, url } = req.body;
+  
   if (apiKey !== undefined) runtimeConfig.livekitApiKey = apiKey.trim();
   if (apiSecret !== undefined) runtimeConfig.livekitApiSecret = apiSecret.trim();
   if (url !== undefined) runtimeConfig.livekitUrl = url.trim();
+
+  // Save to Firestore so it persists across backend restarts
+  const adminInstance = initFirebaseAdmin();
+  if (adminInstance) {
+    try {
+      const db = adminInstance.firestore();
+      await db.collection('settings').doc('livekit').set({
+        livekitApiKey: runtimeConfig.livekitApiKey,
+        livekitApiSecret: runtimeConfig.livekitApiSecret,
+        livekitUrl: runtimeConfig.livekitUrl,
+        updatedAt: Date.now()
+      }, { merge: true });
+    } catch (err) {
+      console.error('Failed to save LiveKit config to DB:', err);
+    }
+  }
+
   res.json({
     success: true,
     hasApiKey: !!runtimeConfig.livekitApiKey,
