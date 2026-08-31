@@ -65,17 +65,19 @@ export default defineAgent({
       // VAD — voice activity detection
       await silero.VAD.load(),
 
-      // STT — speech to text using OpenAI Whisper
+      // STT — speech to text using Groq Whisper
       new openai.STT({
-        apiKey: process.env.OPENAI_API_KEY,
-        model: 'whisper-1',
+        apiKey: process.env.GROQ_API_KEY,
+        baseURL: 'https://api.groq.com/openai/v1',
+        model: 'whisper-large-v3',
         language: 'en',
       }),
 
-      // LLM — GPT-4o mini for fast responses
+      // LLM — Groq Llama 3 for ultra-fast responses
       new openai.LLM({
-        apiKey: process.env.OPENAI_API_KEY,
-        model: 'gpt-4o-mini',
+        apiKey: process.env.GROQ_API_KEY,
+        baseURL: 'https://api.groq.com/openai/v1',
+        model: 'llama-3.1-8b-instant',
       }),
 
       // TTS — ElevenLabs for natural voice
