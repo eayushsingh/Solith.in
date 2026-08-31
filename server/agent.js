@@ -13,6 +13,10 @@ import { fileURLToPath } from 'url';
 
 dotenv.config();
 
+// VAD is loaded once per process lifetime — not per room — to save memory.
+// It's held in this module-level variable after first load.
+let cachedVad = null;
+
 const SYSTEM_PROMPT = `You are Ananya, a warm and engaging AI voice host on Solith.in — a live language learning platform.
 
 Your personality:
@@ -36,24 +40,31 @@ Rules:
 
 export default defineAgent({
   entry: async (ctx) => {
+    // STEP 4 — Memory logging at startup
+    const startMem = process.memoryUsage();
+    console.log('[Ananya] Memory at start:', Math.round(startMem.rss / 1024 / 1024), 'MB RSS');
+
+    // STEP 5 — Fail fast on missing env vars
     const required = ['GROQ_API_KEY', 'ELEVENLABS_API_KEY'];
     for (const key of required) {
       if (!process.env[key]) {
-        console.error(`[Ananya] ✗ FATAL: missing env var ${key}`);
+        console.error(`[Ananya] FATAL: missing env var ${key}`);
         throw new Error(`Missing required env var: ${key}`);
       }
     }
     console.log('[Ananya] ✓ All required env vars present');
-
     console.log(`[Ananya] ✓ Entered room: ${ctx.room.name}`);
 
-    const port = process.env.PORT || 3000;
+    // The web server URL — agent and server are now separate processes,
+    // but on the same Render internal network if on same account.
+    // Use the public backend URL so the agent can still broadcast chat.
+    const serverUrl = process.env.SERVER_URL || `http://127.0.0.1:${process.env.PORT || 3000}`;
 
-    // Broadcast chat to room
+    // Broadcast a message to the room's chat via the web API
     const broadcastChat = async (text, senderName, senderId, color) => {
       if (!text?.trim()) return;
       try {
-        await fetch(`http://127.0.0.1:${port}/api/rooms/${ctx.room.name}/agent-chat`, {
+        await fetch(`${serverUrl}/api/rooms/${ctx.room.name}/agent-chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -68,25 +79,32 @@ export default defineAgent({
       }
     };
 
+    // --- Connect to room ---
     console.log('[Ananya] Step: connecting to room...');
     await ctx.connect();
     console.log('[Ananya] ✓ Connected');
 
-    const vadPromise = Promise.race([
-      silero.VAD.load(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('VAD load timeout after 8s')), 8000))
-    ]);
-
-    let vad;
-    try {
-      console.log('[Ananya] Step: loading VAD...');
-      vad = await vadPromise;
-      console.log('[Ananya] ✓ VAD loaded');
-    } catch (e) {
-      console.error('[Ananya] ✗ VAD load failed:', e.message);
-      throw e;
+    // --- Load VAD (once per process, lazily) ---
+    if (!cachedVad) {
+      console.log('[Ananya] Step: loading VAD (first time this process)...');
+      const vadPromise = Promise.race([
+        silero.VAD.load(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('VAD load timeout after 10s')), 10000)
+        )
+      ]);
+      try {
+        cachedVad = await vadPromise;
+        console.log('[Ananya] ✓ VAD loaded');
+      } catch (e) {
+        console.error('[Ananya] ✗ VAD load failed:', e.message);
+        throw e; // fail fast — don't hang silently
+      }
+    } else {
+      console.log('[Ananya] ✓ VAD already loaded (reusing cached)');
     }
 
+    // --- Construct pipeline clients ---
     console.log('[Ananya] Step: constructing STT...');
     const stt = new openai.STT({
       apiKey: process.env.GROQ_API_KEY,
@@ -115,14 +133,11 @@ export default defineAgent({
     console.log('[Ananya] ✓ TTS constructed');
 
     console.log('[Ananya] Step: constructing Agent pipeline...');
-    // Build pipeline components for Voice Pipeline
     const agent = new Agent({
-      vad,
+      vad: cachedVad,
       stt,
       llm: llmClient,
       tts,
-
-      // Agent options
       chatCtx: new llm.ChatContext().append({
         role: llm.ChatRole.SYSTEM,
         text: SYSTEM_PROMPT,
@@ -132,8 +147,9 @@ export default defineAgent({
         interruption: { enabled: true }
       }
     });
+    console.log('[Ananya] ✓ Agent pipeline constructed');
 
-    // On agent reply — broadcast to chat
+    // --- Wire up chat broadcasting ---
     agent.on('agent_speech_committed', async (ev) => {
       const text = ev?.message?.content
         || ev?.userMessageAdded?.content?.[0]?.text
@@ -145,7 +161,6 @@ export default defineAgent({
       }
     });
 
-    // On user speech — broadcast to chat
     agent.on('user_speech_committed', async (ev) => {
       const text = ev?.transcript || ev?.message?.content || ev?.text;
       const participant = ev?.participant;
@@ -160,10 +175,9 @@ export default defineAgent({
       }
     });
 
-    // Start the agent
+    // --- Start the session ---
     console.log('[Ananya] Starting session...');
     const session = new AgentSession();
-
     try {
       await session.start({ agent, room: ctx.room });
       console.log('[Ananya] ✓ Pipeline started');
@@ -172,7 +186,7 @@ export default defineAgent({
       return;
     }
 
-    // Enable audio
+    // Enable audio if available
     try {
       if (agent.session?.setAudioEnabled) {
         await agent.session.setAudioEnabled(true);
@@ -182,8 +196,11 @@ export default defineAgent({
       console.warn('[Ananya] setAudioEnabled not available:', e.message);
     }
 
-    // Wait then greet
+    // Wait, then greet
     await new Promise(r => setTimeout(r, 2000));
+
+    // STEP 4 — Memory before speaking
+    console.log('[Ananya] Memory before speaking:', Math.round(process.memoryUsage().rss / 1024 / 1024), 'MB RSS');
 
     const participantCount = ctx.room.remoteParticipants.size;
     const greeting = participantCount <= 1
@@ -198,7 +215,7 @@ export default defineAgent({
       console.error('[Ananya] Greeting error:', e.message);
     }
 
-    // Greet new participants
+    // --- Greet new participants ---
     const greeted = new Set(
       [...ctx.room.remoteParticipants.values()].map(p => p.identity)
     );
@@ -218,7 +235,7 @@ export default defineAgent({
       }
     });
 
-    // Silence breaker — if room quiet for 45s, ask a question
+    // --- Silence breaker ---
     const questions = [
       'What is the hardest part of learning your target language?',
       'Can you share a word you learned recently that surprised you?',
@@ -252,6 +269,10 @@ export default defineAgent({
   }
 });
 
+// STEP 3: Start command on Render should be:
+//   node --max-old-space-size=400 agent.js start
+// This caps heap at 400MB so Node fails predictably with OOM error
+// instead of being SIGKILLed silently (exit code 137).
 cli.runApp({
   agent: fileURLToPath(import.meta.url),
   agentName: 'agent-ananya',
