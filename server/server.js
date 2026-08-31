@@ -22,7 +22,7 @@ const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, 'db.json');
 
 const app = express();
-app.set('trust proxy', 1); // Trust the reverse proxy to get correct client IP for rate limiting
+app.set('trust proxy', true); // Trust all proxies to ensure we get the real client IP on Render
 const server = createServer(app);
 
 // CORS configuration - allow only explicit origins in production
@@ -49,7 +49,7 @@ app.use(cors(corsOptions));
 // Apply global rate limiting (100 reqs / 15 mins per IP)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5000,
+  max: 50000, // Massively increased to prevent false positive blocks
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -521,7 +521,7 @@ function isJunkText(str) {
 // Strict rate limiting for Room Creation (15 reqs / 15 mins)
 const roomCreationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 500,
   message: { error: 'Too many rooms created from this IP, please try again after 15 minutes.' }
 });
 
