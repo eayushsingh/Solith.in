@@ -23,7 +23,7 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
   };
 
   // Helper to prevent Firebase Admin hanging if Cloud Firestore API is disabled
-  const withTimeout = (promise, ms = 10000) => {
+  const withTimeout = (promise, ms = 30000) => {
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
@@ -52,9 +52,9 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
       const db = adminInstance.firestore();
       
       const [usersSnap, reportsSnap, pendingReportsSnap] = await Promise.all([
-        withTimeout(db.collection('users').count().get()),
-        withTimeout(db.collection('reports').count().get()),
-        withTimeout(db.collection('reports').where('status', '==', 'pending').count().get())
+        withTimeout(db.collection('users').count().get()).catch(() => ({ data: () => ({ count: 0 }) })),
+        withTimeout(db.collection('reports').count().get()).catch(() => ({ data: () => ({ count: 0 }) })),
+        withTimeout(db.collection('reports').where('status', '==', 'pending').count().get()).catch(() => ({ data: () => ({ count: 0 }) }))
       ]);
       
       const activeRoomsCount = getRooms().length;
