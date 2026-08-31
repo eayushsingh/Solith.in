@@ -43,7 +43,7 @@ export default function AdminPanel({ onBack, user }) {
     if (!user || !(await getFreshToken())) return null;
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     
     try {
       const res = await fetch(`${API_URL}${endpoint}`, {
