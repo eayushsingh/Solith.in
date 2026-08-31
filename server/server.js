@@ -22,6 +22,7 @@ const __dirname = path.dirname(__filename);
 const DB_PATH = path.join(__dirname, 'db.json');
 
 const app = express();
+app.set('trust proxy', 1); // Trust the reverse proxy to get correct client IP for rate limiting
 const server = createServer(app);
 
 // CORS configuration - allow only explicit origins in production
@@ -32,7 +33,10 @@ if (process.env.NODE_ENV === 'production') {
     .map(o => o.trim())
     .filter(Boolean);
 
-  corsOptions = { origin: allowedOrigins.length > 0 ? allowedOrigins : false };
+  if (!allowedOrigins.includes('https://www.solith.in')) allowedOrigins.push('https://www.solith.in');
+  if (!allowedOrigins.includes('https://solith.in')) allowedOrigins.push('https://solith.in');
+
+  corsOptions = { origin: allowedOrigins };
 } else {
   corsOptions = { origin: '*' };
 }
