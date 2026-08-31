@@ -895,7 +895,7 @@ export default function App() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout to allow for Render cold starts
 
       const res = await fetch(`${API_URL}/api/rooms`, {
         method: 'POST',
@@ -1163,14 +1163,18 @@ export default function App() {
   };
 
   // Local Microphone Mute controller
-  const toggleMute = () => {
-    const nextMute = !isMuted;
-    const resolved = LiveKitService.setLocalAudio(nextMute, isRealCall);
-    setIsMuted(resolved);
-
-    setParticipants(prev =>
-      prev.map(p => p.isLocal ? { ...p, muted: resolved } : p)
-    );
+  const toggleMute = async () => {
+    const nextMuted = !isMuted;
+    try {
+      await LiveKitService.setLocalAudio(nextMuted, isRealCall);
+      setIsMuted(nextMuted);
+      setParticipants(prev =>
+        prev.map(p => p.isLocal ? { ...p, muted: nextMuted } : p)
+      );
+    } catch (err) {
+      console.error('Microphone toggle failed:', err);
+      setToastMessage('Microphone access failed. Check browser permissions.');
+    }
   };
 
   const toggleScreenShare = async () => {
