@@ -1,4 +1,6 @@
 services:
+  # --- WEB SERVICE: Express API + Socket.io ---
+  # This ONLY runs the Express/Socket.io server. No agent spawned here.
   - type: web
     name: solith-backend
     env: node
@@ -7,6 +9,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: NODE_ENV
+        value: production
       - key: PORT
         value: 3000
       - key: ALLOWED_ORIGIN
@@ -16,4 +20,35 @@ services:
       - key: LIVEKIT_API_SECRET
         sync: false
       - key: LIVEKIT_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+
+  # --- BACKGROUND WORKER: LiveKit Agent (Ananya) ---
+  # Runs agent.js as a completely separate process with its OWN 512MB memory budget.
+  # Uses --max-old-space-size=400 so Node fails loudly (OOM error) instead of
+  # being SIGKILLed silently with exit code 137.
+  - type: worker
+    name: solith-agent
+    env: node
+    buildCommand: npm install --prefix server
+    startCommand: node --max-old-space-size=400 server/agent.js start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: SERVER_URL
+        # Set this to your backend web service URL so the agent can broadcast chat
+        # e.g. https://talk2me-backend-loh6.onrender.com
         sync: false

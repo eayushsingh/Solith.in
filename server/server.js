@@ -1,5 +1,4 @@
 import express from 'express';
-import { spawn } from 'child_process';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
@@ -2033,46 +2032,12 @@ if (fs.existsSync(clientDistPath)) {
 }
 
 // Start Server
+// NOTE: The LiveKit agent (Ananya) is deployed as a SEPARATE Render Background Worker.
+// It is NOT spawned here — running both in one process was causing OOM kills on the free 512MB tier.
 const PORT = process.env.PORT || 3000;
 loadDB();
 
-let agentWorker = null;
-let agentRestartCount = 0;
-
-const startAgentWorker = () => {
-  if (agentRestartCount > 10) {
-    console.error(chalk.red('[agent-worker] Too many restarts — giving up'));
-    return;
-  }
-
-  console.log(chalk.yellow(`[agent-worker] Starting (attempt ${agentRestartCount + 1})...`));
-
-  const agentPath = path.join(__dirname, 'agent.js');
-  agentWorker = spawn('node', [agentPath, 'start'], {
-    stdio: 'inherit',
-    env: { ...process.env }
-  });
-
-  agentWorker.on('spawn', () => {
-    agentRestartCount = 0;
-    console.log(chalk.green('[agent-worker] ✓ Spawned successfully'));
-  });
-
-  agentWorker.on('exit', (code, signal) => {
-    console.warn(chalk.red(`[agent-worker] Exited — code: ${code}, signal: ${signal}`));
-    agentWorker = null;
-    agentRestartCount++;
-    const delay = Math.min(3000 * agentRestartCount, 30000);
-    console.log(chalk.yellow(`[agent-worker] Restarting in ${delay}ms...`));
-    setTimeout(startAgentWorker, delay);
-  });
-
-  agentWorker.on('error', (err) => {
-    console.error(chalk.red(`[agent-worker] Spawn error: ${err.message}`));
-  });
-};
-
 server.listen(PORT, () => {
   console.log(chalk.cyan.bold(`🚀 Solith Backend running on port ${PORT}`));
-  startAgentWorker();
+  console.log(chalk.yellow('[agent] Ananya runs as a separate Background Worker service — not spawned here.'));
 });
