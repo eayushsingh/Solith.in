@@ -36,6 +36,15 @@ Rules:
 
 export default defineAgent({
   entry: async (ctx) => {
+    const required = ['GROQ_API_KEY', 'ELEVENLABS_API_KEY'];
+    for (const key of required) {
+      if (!process.env[key]) {
+        console.error(`[Ananya] ✗ FATAL: missing env var ${key}`);
+        throw new Error(`Missing required env var: ${key}`);
+      }
+    }
+    console.log('[Ananya] ✓ All required env vars present');
+
     console.log(`[Ananya] ✓ Entered room: ${ctx.room.name}`);
 
     const port = process.env.PORT || 3000;
@@ -59,37 +68,59 @@ export default defineAgent({
       }
     };
 
+    console.log('[Ananya] Step: connecting to room...');
     await ctx.connect();
-    console.log('[Ananya] ✓ Connected to room');
+    console.log('[Ananya] ✓ Connected');
 
+    const vadPromise = Promise.race([
+      silero.VAD.load(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('VAD load timeout after 8s')), 8000))
+    ]);
+
+    let vad;
+    try {
+      console.log('[Ananya] Step: loading VAD...');
+      vad = await vadPromise;
+      console.log('[Ananya] ✓ VAD loaded');
+    } catch (e) {
+      console.error('[Ananya] ✗ VAD load failed:', e.message);
+      throw e;
+    }
+
+    console.log('[Ananya] Step: constructing STT...');
+    const stt = new openai.STT({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: 'https://api.groq.com/openai/v1',
+      model: 'whisper-large-v3',
+      language: 'en',
+    });
+    console.log('[Ananya] ✓ STT constructed');
+
+    console.log('[Ananya] Step: constructing LLM...');
+    const llmClient = new openai.LLM({
+      apiKey: process.env.GROQ_API_KEY,
+      baseURL: 'https://api.groq.com/openai/v1',
+      model: 'llama-3.1-8b-instant',
+    });
+    console.log('[Ananya] ✓ LLM constructed');
+
+    console.log('[Ananya] Step: constructing TTS...');
+    const tts = new elevenlabs.TTS({
+      apiKey: process.env.ELEVENLABS_API_KEY,
+      voiceId: 'EXAVITQu4vr4xnSDxMaL', // "Sarah" — warm female voice
+      modelId: 'eleven_turbo_v2_5',
+      stability: 0.5,
+      similarityBoost: 0.8,
+    });
+    console.log('[Ananya] ✓ TTS constructed');
+
+    console.log('[Ananya] Step: constructing Agent pipeline...');
     // Build pipeline components for Voice Pipeline
     const agent = new Agent({
-      // VAD — voice activity detection
-      vad: await silero.VAD.load(),
-
-      // STT — speech to text using Groq Whisper
-      stt: new openai.STT({
-        apiKey: process.env.GROQ_API_KEY,
-        baseURL: 'https://api.groq.com/openai/v1',
-        model: 'whisper-large-v3',
-        language: 'en',
-      }),
-
-      // LLM — Groq Llama 3 for ultra-fast responses
-      llm: new openai.LLM({
-        apiKey: process.env.GROQ_API_KEY,
-        baseURL: 'https://api.groq.com/openai/v1',
-        model: 'llama-3.1-8b-instant',
-      }),
-
-      // TTS — ElevenLabs for natural voice
-      tts: new elevenlabs.TTS({
-        apiKey: process.env.ELEVENLABS_API_KEY,
-        voiceId: 'EXAVITQu4vr4xnSDxMaL', // "Sarah" — warm female voice
-        modelId: 'eleven_turbo_v2_5',
-        stability: 0.5,
-        similarityBoost: 0.8,
-      }),
+      vad,
+      stt,
+      llm: llmClient,
+      tts,
 
       // Agent options
       chatCtx: new llm.ChatContext().append({
