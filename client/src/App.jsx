@@ -571,12 +571,12 @@ export default function App() {
 
   const toggleFollow = async () => {
     if (!user || !targetProfile) return;
-    const isFollowing = user.following?.includes(targetProfile.id);
+    const isFollowing = user?.following?.includes(targetProfile.id);
 
     // Optimistic UI update
     const newFollowing = isFollowing
-      ? (user.following || []).filter(id => id !== targetProfile.id)
-      : [...(user.following || []), targetProfile.id];
+      ? (user?.following || []).filter(id => id !== targetProfile.id)
+      : [...(user?.following || []), targetProfile.id];
 
     const newTargetFollowers = isFollowing
       ? (targetProfile.followers || []).filter(id => id !== user.id)
@@ -1510,7 +1510,7 @@ export default function App() {
               <button onClick={() => { handleStartDM(activeActionUser.id, activeActionUser.name); setActiveActionUser(null); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all">PM</button>
               <button
                 onClick={async () => {
-                  const isFollowing = user.following?.includes(activeActionUser.id);
+                  const isFollowing = user?.following?.includes(activeActionUser.id);
                   const targetProfileSnap = await getDoc(doc(db, 'users', activeActionUser.id));
                   if (targetProfileSnap.exists()) {
                     setTargetProfile({ id: activeActionUser.id, ...targetProfileSnap.data() });
@@ -1519,7 +1519,7 @@ export default function App() {
                 }}
                 className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all"
               >
-                {user.following?.includes(activeActionUser.id) ? 'Unfollow' : 'Follow'}
+                {user?.following?.includes(activeActionUser.id) ? 'Unfollow' : 'Follow'}
               </button>
               <button onClick={() => { alert('Reconnected audio link'); }} className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all col-span-2">Reconnect</button>
             </div>
@@ -2269,9 +2269,9 @@ export default function App() {
                 <div className="w-px bg-yellow-500/20"></div>
                 <div
                   className="text-center cursor-pointer hover:scale-110 transition-transform"
-                  onClick={() => setFollowListState({ isOpen: true, type: 'following', ids: user.following || [], title: 'Following' })}
+                  onClick={() => setFollowListState({ isOpen: true, type: 'following', ids: user?.following || [], title: 'Following' })}
                 >
-                  <div className="font-extrabold text-xl text-yellow-100">{user.following?.length || 0}</div>
+                  <div className="font-extrabold text-xl text-yellow-100">{user?.following?.length || 0}</div>
                   <div className="text-[9px] font-bold text-yellow-500/50 uppercase tracking-widest mt-1">Following</div>
                 </div>
               </div>
@@ -2352,12 +2352,12 @@ export default function App() {
                 {user && (
                   <button
                     onClick={toggleFollow}
-                    className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${user.following?.includes(targetProfile.id)
+                    className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${user?.following?.includes(targetProfile.id)
                       ? 'bg-[#121212] border border-yellow-500/20 text-yellow-500/80 hover:text-yellow-500 hover:bg-yellow-500/10'
                       : 'bg-[var(--accent-primary)] text-white hover:scale-[1.02] hover:shadow-[0_0_15px_var(--accent-primary-glow)]'
                       }`}
                   >
-                    {user.following?.includes(targetProfile.id) ? (
+                    {user?.following?.includes(targetProfile.id) ? (
                       <>
                         <UserMinus className="w-4 h-4" /> Unfollow
                       </>

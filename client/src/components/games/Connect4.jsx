@@ -46,7 +46,7 @@ export default function Connect4({ activeGame, socket, roomId, currentUser, myPl
 
   // Determine player color based on join order
   useEffect(() => {
-    const pIndex = activeGame.players?.findIndex(p => p.id === currentUser.id) ?? -1;
+    const pIndex = activeGame.players?.findIndex(p => p?.id === currentUser.id) ?? -1;
     if (pIndex === 0) setPlayerColor('red');
     else if (pIndex === 1) setPlayerColor('yellow');
     else setPlayerColor('spectator');
@@ -117,7 +117,7 @@ export default function Connect4({ activeGame, socket, roomId, currentUser, myPl
     return cells;
   };
 
-  const activePlayerName = activeGame.players.find(p => p.id === currentTurnId)?.name || 'Player';
+  const activePlayerName = activeGame.players.find(p => p?.id === currentTurnId)?.name || 'Player';
   const isMyTurn = currentTurnId === myPlayerId;
 
   return (

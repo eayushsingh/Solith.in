@@ -21,7 +21,7 @@ export default function ScrabbleGame({ activeGame, currentUser, socket, roomId }
   const [direction, setDirection] = useState('horizontal');
 
   const isMyTurn = activeGame?.currentTurnId === currentUser?.id;
-  const isPlayer = activeGame?.players.some(p => p.id === currentUser?.id);
+  const isPlayer = activeGame?.players.some(p => p?.id === currentUser?.id);
 
   useEffect(() => {
     socket.on('scrabble-rack', ({ rack }) => setMyRack(rack));
@@ -101,7 +101,7 @@ export default function ScrabbleGame({ activeGame, currentUser, socket, roomId }
         background: isMyTurn ? 'rgba(24,119,242,0.2)' : 'rgba(255,255,255,0.05)',
         color: isMyTurn ? '#60a5fa' : 'rgba(255,255,255,0.4)'
       }}>
-        {isMyTurn ? '🟢 Your Turn — Place tiles on board' : `⏳ ${activeGame?.players.find(p => p.id === activeGame?.currentTurnId)?.name}'s turn`}
+        {isMyTurn ? '🟢 Your Turn — Place tiles on board' : `⏳ ${activeGame?.players.find(p => p?.id === activeGame?.currentTurnId)?.name}'s turn`}
       </div>
 
       {/* Scores */}

@@ -10,7 +10,7 @@ export default function UnoGame({ activeGame, currentUser, socket, roomId }) {
   const [pendingWild, setPendingWild] = useState(null);
 
   const isMyTurn = activeGame?.currentTurnId === currentUser?.id;
-  const myPlayerIndex = activeGame?.players.findIndex(p => p.id === currentUser?.id);
+  const myPlayerIndex = activeGame?.players.findIndex(p => p?.id === currentUser?.id);
 
   useEffect(() => {
     socket.on('uno-hand', ({ hand, topCard: tc }) => {
@@ -139,12 +139,12 @@ export default function UnoGame({ activeGame, currentUser, socket, roomId }) {
         color: isMyTurn ? '#60a5fa' : 'rgba(255,255,255,0.4)',
         fontWeight: 700, fontSize: 13
       }}>
-        {isMyTurn ? '🟢 Your Turn!' : `⏳ ${activeGame.players.find(p => p.id === activeGame.currentTurnId)?.name}'s turn`}
+        {isMyTurn ? '🟢 Your Turn!' : `⏳ ${activeGame.players.find(p => p?.id === activeGame.currentTurnId)?.name}'s turn`}
       </div>
 
       {/* Other players hand counts */}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-        {activeGame.players.filter(p => p.id !== currentUser.id).map(p => (
+        {activeGame.players.filter(p => p?.id !== currentUser.id).map(p => (
           <div key={p.id} style={{
             padding: '4px 10px', borderRadius: 20, fontSize: 12,
             background: activeGame.currentTurnId === p.id ? 'rgba(24,119,242,0.15)' : 'rgba(255,255,255,0.06)',

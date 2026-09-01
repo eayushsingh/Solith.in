@@ -26,7 +26,7 @@ export default function GameContainer({ activeGame, socket, roomId, currentUser 
   const players = activeGame.players || [];
   const initiator = activeGame.initiator || {};
   const isInitiator = initiator.id === currentUser.id;
-  const hasJoined = players.some(p => p.id === currentUser.id);
+  const hasJoined = players.some(p => p?.id === currentUser.id);
   const isFull = players.length >= rules.max;
   const canStart = players.length >= rules.min;
 

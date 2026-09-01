@@ -37,7 +37,7 @@ export default function TicTacToe({ activeGame, socket, roomId, currentUser, myP
 
   // Determine player symbol based on join order
   useEffect(() => {
-    const pIndex = activeGame.players?.findIndex(p => p.id === currentUser.id) ?? -1;
+    const pIndex = activeGame.players?.findIndex(p => p?.id === currentUser.id) ?? -1;
     if (pIndex === 0) setPlayerSymbol('X');
     else if (pIndex === 1) setPlayerSymbol('O');
     else setPlayerSymbol('spectator');
@@ -92,7 +92,7 @@ export default function TicTacToe({ activeGame, socket, roomId, currentUser, myP
     status = `Next player: ${xIsNext ? 'X' : 'O'}`;
   }
 
-  const activePlayerName = activeGame.players.find(p => p.id === currentTurnId)?.name || 'Player';
+  const activePlayerName = activeGame.players.find(p => p?.id === currentTurnId)?.name || 'Player';
   const isMyTurn = currentTurnId === myPlayerId;
   const gameOver = !!activeGame.winner;
 

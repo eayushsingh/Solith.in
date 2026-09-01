@@ -23,7 +23,7 @@ export default function ChessGame({ activeGame, socket, roomId, currentUser, myP
 
   // Determine player color based on join order
   useEffect(() => {
-    const pIndex = activeGame.players?.findIndex(p => p.id === currentUser.id) ?? -1;
+    const pIndex = activeGame.players?.findIndex(p => p?.id === currentUser.id) ?? -1;
     if (pIndex === 0) setPlayerColor('white');
     else if (pIndex === 1) setPlayerColor('black');
     else setPlayerColor('spectator');
@@ -72,7 +72,7 @@ export default function ChessGame({ activeGame, socket, roomId, currentUser, myP
     }
   }
 
-  const activePlayerName = activeGame.players.find(p => p.id === currentTurnId)?.name || 'Player';
+  const activePlayerName = activeGame.players.find(p => p?.id === currentTurnId)?.name || 'Player';
   const isMyTurn = currentTurnId === myPlayerId;
 
   return (
