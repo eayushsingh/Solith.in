@@ -784,11 +784,13 @@ app.post('/api/rooms/:id/ping', verifyToken, (req, res) => {
   const secondsElapsed = (now - lastPing) / 1000;
   participant.lastPing = now;
 
-  // Only award XP if ping interval is realistic (3-6 seconds)
-  // Prevents abuse from manual POST requests
-  if (secondsElapsed >= 3 && secondsElapsed <= 10) {
+  // Cap at 2 minutes retroactive to handle Chrome background tab throttling (1 minute)
+  // while preventing massive abuse from manual POST requests
+  const validSeconds = Math.min(secondsElapsed, 120);
+  if (validSeconds >= 3) {
     const isSpeaking = req.body.isSpeaking || false;
-    const xpToAward = isSpeaking ? 10 : 5; // per ~4s ping = same rate as client
+    const xpPerSecond = isSpeaking ? 2.5 : 1.25; // per ~4s ping = same rate as client (10 or 5 XP)
+    const xpToAward = Math.round(validSeconds * xpPerSecond);
     
     // Fire and forget
     awardUserXP(userId, xpToAward);
@@ -807,8 +809,9 @@ app.post('/api/rooms/:id/leave', verifyToken, (req, res) => {
     const participant = room.participants.find(p => p.id === userId);
     if (participant && participant.lastPing) {
       const secondsSinceLastPing = (Date.now() - participant.lastPing) / 1000;
-      if (secondsSinceLastPing > 3) {
-        awardUserXP(userId, Math.floor(secondsSinceLastPing * (5 / 4)));
+      const validSeconds = Math.min(secondsSinceLastPing, 120);
+      if (validSeconds > 3) {
+        awardUserXP(userId, Math.floor(validSeconds * 1.25));
       }
     }
     room.participants = room.participants.filter(p => p.id !== userId);
@@ -925,8 +928,9 @@ app.post('/api/rooms/:id/kick', verifyToken, (req, res) => {
   const targetParticipant = room.participants.find(p => p.id === targetUserId);
   if (targetParticipant && targetParticipant.lastPing) {
     const secondsSinceLastPing = (Date.now() - targetParticipant.lastPing) / 1000;
-    if (secondsSinceLastPing > 3) {
-      awardUserXP(targetUserId, Math.floor(secondsSinceLastPing * (5 / 4)));
+    const validSeconds = Math.min(secondsSinceLastPing, 120);
+    if (validSeconds > 3) {
+      awardUserXP(targetUserId, Math.floor(validSeconds * 1.25));
     }
   }
 
