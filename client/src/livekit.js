@@ -227,7 +227,7 @@ export const LiveKitService = {
   /**
    * Mute/Unmute local user microphone
    */
-  setLocalAudio: (muted, isReal) => {
+  setLocalAudio: async (muted, isReal) => {
     if (!isReal) {
       console.log(`LiveKitService: Set mock audio muted to ${muted}`);
       LiveKitService.isMutedMock = muted;
@@ -236,8 +236,7 @@ export const LiveKitService = {
     }
 
     if (roomObject) {
-      roomObject.localParticipant.setMicrophoneEnabled(!muted)
-        .catch(err => console.error('Failed to set microphone state:', err));
+      await roomObject.localParticipant.setMicrophoneEnabled(!muted);
       return muted;
     }
     return true;

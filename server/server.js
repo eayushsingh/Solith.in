@@ -774,7 +774,7 @@ app.post('/api/rooms/:id/ping', verifyToken, (req, res) => {
   const userId = req.user.uid;
 
   const room = rooms.find(r => r.id === id);
-  if (!room) return res.status(404).json({ error: 'Room not found' });
+  if (!room) return res.status(200).json({ error: 'Room not found', roomDeleted: true });
 
   const participant = room.participants.find(p => p.id === userId);
   if (!participant) return res.status(400).json({ error: 'Not in room' });

@@ -14,7 +14,7 @@ export default function GameLobby({ gameLobby, currentUser, onAccept, onCancel, 
 
   const info = GAME_INFO[gameLobby.gameType];
   const isInitiator = gameLobby.initiator.id === currentUser.id;
-  const hasJoined = gameLobby.players.find(p => p.id === currentUser.id);
+  const hasJoined = gameLobby.players.find(p => p?.id === currentUser.id);
   const canStart = isInitiator && gameLobby.players.length >= info.min;
   const isFull = gameLobby.players.length >= info.max;
 
