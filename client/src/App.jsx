@@ -211,7 +211,7 @@ export default function App() {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     now.forEach(p => {
-      if (!prev.find(pp => pp.id === p.id) && !p.isLocal) {
+      if (!prev.find(pp => pp?.id === p?.id) && !p.isLocal) {
         setJoinEvents(e => [...e.slice(-19), {
           text: `[${time}] ${p.name} joined.`,
           initials: p.name?.slice(0, 2).toUpperCase() || '??',
@@ -220,7 +220,7 @@ export default function App() {
       }
     });
     prev.forEach(p => {
-      if (!now.find(pp => pp.id === p.id) && !p.isLocal) {
+      if (!now.find(pp => pp?.id === p?.id) && !p.isLocal) {
         setJoinEvents(e => [...e.slice(-19), {
           text: `[${time}] ${p.name} left.`,
           initials: p.name?.slice(0, 2).toUpperCase() || '??',
@@ -788,7 +788,7 @@ export default function App() {
       const roomId = urlParams.get('room');
 
       if (roomId) {
-        const roomToJoin = rooms.find(r => r.id === roomId);
+        const roomToJoin = rooms.find(r => r?.id === roomId);
         if (roomToJoin) {
           // Join the room
           joinVoiceRoom(roomToJoin);
@@ -822,7 +822,7 @@ export default function App() {
 
       // Update active room details in real-time
       if (activeRoom) {
-        const updated = data.find(r => r.id === activeRoom.id);
+        const updated = data.find(r => r?.id === activeRoom?.id);
         if (updated) {
           // Sync changes if needed
         }
@@ -1048,7 +1048,7 @@ export default function App() {
             
             setParticipants(prev => {
               if (!hasRealAnanya) {
-                const optimisticAnanya = prev.find(p => p.id === 'agent-ananya-optimistic');
+                const optimisticAnanya = prev.find(p => p?.id === 'agent-ananya-optimistic');
                 if (optimisticAnanya) {
                   return [...validParticipants, optimisticAnanya];
                 }
@@ -1418,7 +1418,7 @@ export default function App() {
 
   const getRole = (userId) => {
     if (!activeRoom) return 'guest';
-    const currentRoomData = rooms.find(r => r.id === activeRoom.id);
+    const currentRoomData = rooms.find(r => r?.id === activeRoom?.id);
     return currentRoomData?.roles?.[userId] || 'guest';
   };
 
@@ -2498,7 +2498,7 @@ export default function App() {
                   </div>
                 </div>
                 <button onClick={() => {
-                  const room = rooms.find(r => r.id === p.roomId);
+                  const room = rooms.find(r => r?.id === p?.roomId);
                   if (room) { joinVoiceRoom(room); setShowSocialPanel(false); }
                 }} style={{
                   background: 'rgba(24,119,242,0.15)', border: '1px solid rgba(24,119,242,0.3)',
@@ -3201,7 +3201,7 @@ export default function App() {
         {(() => {
           if (!activeRoom) return null;
 
-          const currentRoomData = rooms.find(r => r.id === activeRoom.id) || activeRoom;
+          const currentRoomData = rooms.find(r => r?.id === activeRoom?.id) || activeRoom;
           const safeParticipants = (participants || []).filter(p => p != null && p.id != null);
           const speakingQueue = currentRoomData.speakingQueue || [];
           const allowedSpeakers = currentRoomData.allowedSpeakers || [];
@@ -3350,7 +3350,7 @@ export default function App() {
                       <div className="w-full lg:w-[240px] flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
                         {safeParticipants.map(p => {
                           const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                          const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                          const backendP = currentRoomData.participants?.find(bp => bp?.id === p?.id);
                           const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
                           const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
                           const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
@@ -3436,7 +3436,7 @@ export default function App() {
                     }}>
                       {safeParticipants.map(p => {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                        const backendP = currentRoomData.participants?.find(bp => bp.id === p.id);
+                        const backendP = currentRoomData.participants?.find(bp => bp?.id === p?.id);
                         const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
                         const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
                         const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
