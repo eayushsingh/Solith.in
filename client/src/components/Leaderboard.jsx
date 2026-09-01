@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCircle, RefreshCw, Crown, Activity } from 'lucide-react';
-import { db, collection, getDocs } from '../firebase';
+import { db, collection, onSnapshot } from '../firebase';
 import { Meteors } from './Meteors';
 
 export default function Leaderboard({ onBack, user, openUserProfile }) {
@@ -10,18 +10,11 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true);
-      setError('');
+    setLoading(true);
+    setError('');
+
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
       try {
-        // Fetch all users with a 15-second timeout protection in case Cloud Firestore API is disabled
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Firebase connection timeout. Please make sure the Cloud Firestore API is enabled in your Firebase Console project (solith-df915).")), 15000)
-        );
-        const snapshot = await Promise.race([
-          getDocs(collection(db, 'users')),
-          timeoutPromise
-        ]);
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         const now = new Date();
@@ -58,15 +51,19 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
         }
 
         setLeaders(mappedLeaders.slice(0, 50));
+        setLoading(false);
       } catch (err) {
-        console.error('Failed to fetch leaderboard:', err);
-        setError(err.message || 'Failed to load leaderboard. Check your connection.');
-      } finally {
+        console.error('Failed to process leaderboard data:', err);
+        setError(err.message || 'Failed to load leaderboard.');
         setLoading(false);
       }
-    };
+    }, (err) => {
+      console.error('Leaderboard snapshot error:', err);
+      setError('Firebase connection failed. Check your config.');
+      setLoading(false);
+    });
 
-    fetchLeaderboard();
+    return () => unsubscribe();
   }, [activeTab]);
 
   const userRankIndex = leaders.findIndex(l => l.id === user?.id);
