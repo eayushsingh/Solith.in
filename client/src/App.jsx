@@ -197,6 +197,7 @@ export default function App() {
   const [ytUrlInput, setYtUrlInput] = useState('');
   const [participants, setParticipants] = useState([]);
   const [activeActionUser, setActiveActionUser] = useState(null);
+  const [focusedVideoParticipant, setFocusedVideoParticipant] = useState(null);
   const [kickModalInfo, setKickModalInfo] = useState({ kicked: false, by: '' });
   const [onlineStats, setOnlineStats] = useState({ online: 1, total: 1 });
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
@@ -2585,10 +2586,23 @@ export default function App() {
           <Users size={22} color="white" />
         </button>
       )}
+
+      {/* Focused Video Modal */}
+      {focusedVideoParticipant && focusedVideoParticipant.cameraTrack && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 bg-black/90 backdrop-blur-md animate-fade-in" onClick={() => setFocusedVideoParticipant(null)}>
+          <div className="relative w-full max-w-5xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10" onClick={e => e.stopPropagation()}>
+            <VideoTrack track={focusedVideoParticipant.cameraTrack} className="w-full h-full object-contain" />
+            <div className="absolute bottom-6 left-6 px-4 py-2 bg-black/60 backdrop-blur-md rounded-xl text-white font-bold text-lg">
+              {focusedVideoParticipant.name || 'User'}
+            </div>
+            <button onClick={() => setFocusedVideoParticipant(null)} className="absolute top-6 right-6 p-3 rounded-full bg-black/50 hover:bg-white/20 text-white transition-colors backdrop-blur-md">
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-
-  // Removed early returns to keep components mounted for instant tab switching
 
   if (view === 'admin') {
     if (authLoading) {
@@ -2821,8 +2835,9 @@ export default function App() {
           <Leaderboard user={user} onBack={() => { setView('lobby'); window.history.pushState({}, '', '/'); }} openUserProfile={openUserProfile} />
         </div>
 
-        {/* Lobby View */}
         <div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
+        <div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
+
           {/* Global Header */}
           <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 bg-bg-base/95 backdrop-blur-md sticky top-0 z-30 border-b border-border-color">
 
@@ -3453,7 +3468,13 @@ export default function App() {
                               border: isSpeaking ? (p.isAI ? '2.5px solid #a855f7' : '2.5px solid #1877f2') : '2.5px solid rgba(255,255,255,0.12)',
                               boxShadow: isSpeaking ? (p.isAI ? '0 0 20px rgba(168,85,247,0.6)' : '0 0 20px rgba(24,119,242,0.6)') : 'none',
                               transition: 'all 0.2s ease',
-                              background: pColor, position: 'relative', flexShrink: 0
+                              flexShrink: 0, cursor: (p.isCameraOn && p.cameraTrack) ? 'zoom-in' : 'inherit'
+                            }}
+                            onClick={(e) => {
+                              if (p.isCameraOn && p.cameraTrack) {
+                                e.stopPropagation();
+                                setFocusedVideoParticipant(p);
+                              }
                             }}>
                               {p.isCameraOn && p.cameraTrack ? (
                                 <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover" />
@@ -3601,7 +3622,8 @@ export default function App() {
             </div>
           </div>
         )}
-      </>
+      </div>
+    </>
     )
   );
 }
