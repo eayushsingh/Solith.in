@@ -244,17 +244,33 @@ export default function RoomPanel({
 
     setTimeout(() => {
       setAiTyping(false);
-      let aiResponse = "Interesting! Could you elaborate on how you would design or explain that concept in a real interview context?";
+      let aiResponse = "";
       const lowerText = userText.toLowerCase();
 
-      if (lowerText.includes('frontend') || lowerText.includes('react')) {
-        aiResponse = "Excellent. In React, what is the difference between useMemo and useCallback, and when should you avoid using them?";
+      if (lowerText.includes('full stack') || lowerText.includes('full-stack') || lowerText.includes('fullstack') || lowerText.includes('full stack')) {
+        const questions = [
+          "As a seasoned engineer, I like to look at the big picture. Imagine we are building a globally distributed e-commerce platform. How would you design the data layer to handle eventual consistency while ensuring inventory isn't oversold during a flash sale?",
+          "Let's talk about the full stack. If you have a React frontend and a Node.js microservices backend, how would you architect your authentication flow to prevent CSRF and XSS while maintaining stateless horizontal scalability?",
+          "A classic full-stack challenge: A user reports that a specific page is loading slowly. Walk me through your entire debugging process, from the browser's rendering engine and network waterfall, down through the CDN, load balancers, application servers, to the database query execution plan."
+        ];
+        aiResponse = questions[Math.floor(Math.random() * questions.length)];
+      } else if (lowerText.includes('what is c') || (lowerText.includes('c') && lowerText.split(' ').length < 5)) {
+        aiResponse = "Ah, C. The mother of modern systems programming. With my decades of experience, I always ask this: How would you implement your own memory allocator (malloc/free) to minimize fragmentation in a long-running embedded system?";
+      } else if (lowerText.includes('frontend') || lowerText.includes('react')) {
+        aiResponse = "Let's dive deep into the frontend. Explain the React reconciliation algorithm (Fiber) to me, and how you would architect a complex web app to avoid unnecessary re-renders in a deeply nested component tree with global state.";
       } else if (lowerText.includes('backend') || lowerText.includes('database')) {
-        aiResponse = "Great. How would you handle database replication lag in a high-traffic social media application?";
-      } else if (lowerText.includes('behavioral') || lowerText.includes('star')) {
-        aiResponse = "Let's do a behavioral question: Tell me about a time you had a conflict with a teammate. How did you resolve it?";
-      } else if (lowerText.includes('usememo')) {
-        aiResponse = "Perfect. That is correct. Let's move on to coding. How would you find the longest palindromic substring in a string?";
+        aiResponse = "On the backend side: We have a PostgreSQL database experiencing high CPU load and slow query times during peak hours. What metrics do you check first, and how do you decide between adding indexes, partitioning tables, or moving to a read-replica architecture?";
+      } else if (lowerText.includes('system design')) {
+        aiResponse = "System design is my favorite. Design a rate limiter for a public API that needs to handle 10 million requests per second globally, ensuring low latency and high availability. What algorithms and datastores would you use?";
+      } else if (lowerText.includes('what is')) {
+        aiResponse = `You asked about a specific concept. Instead of a textbook definition, tell me: what are the trade-offs of using it in a production environment at scale? Where does it fail, and what alternatives would you consider?`;
+      } else {
+        const genericQuestions = [
+          "Interesting point. In my 50 years of engineering, I've found that the hardest problems aren't technical, but architectural. How would you ensure this approach scales not just for machines, but for a team of 100 developers working on the same codebase?",
+          "I see. Now, let's play devil's advocate. What is the single biggest point of failure in the approach you just described, and how would you mitigate it?",
+          "That's a fair answer. But let's go deeper. If you had to implement this without using any external libraries or frameworks, just bare-metal code, what would be the most difficult part?"
+        ];
+        aiResponse = genericQuestions[Math.floor(Math.random() * genericQuestions.length)];
       }
 
       setMockInterviewMsgs(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: aiResponse }]);
