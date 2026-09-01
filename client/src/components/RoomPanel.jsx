@@ -537,7 +537,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
 
             {/* Join/Leave Feed */}
             {joinEvents && joinEvents.length > 0 && (
-              <div style={{borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0}}>
+              <div className="hide-scrollbar" style={{borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0, maxHeight: '80px', overflowY: 'auto'}}>
                 {joinEvents.map((ev, i) => (
                   <div key={i} style={{
                     display:'flex', alignItems:'center', justifyContent:'space-between',
@@ -556,7 +556,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
             )}
 
             {/* Messages Scroll View */}
-            <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3" id="chat-container">
+            <div className="flex-1 px-4 pt-4 pb-12 overflow-y-auto flex flex-col gap-3 min-h-0" id="chat-container">
               {chatMessages.length === 0 && (
                 <div className="text-center text-white/20 text-xs italic my-auto">
                   Messages are ephemeral and disappear when you leave the room.
