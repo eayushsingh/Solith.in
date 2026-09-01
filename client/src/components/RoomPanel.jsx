@@ -18,7 +18,6 @@ export default function RoomPanel({
   setChatInput,
   chatEndRef,
   participants,
-  joinEvents,
   activeRoom,
   user,
   setUser,
@@ -535,25 +534,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
               {activeRoom?.topic && <div style={{color:'rgba(255,255,255,0.4)',fontSize:11,marginTop:2}}>Topic: {activeRoom.topic}</div>}
             </div>
 
-            {/* Join/Leave Feed */}
-            {joinEvents && joinEvents.length > 0 && (
-              <div className="hide-scrollbar" style={{borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0, maxHeight: '80px', overflowY: 'auto'}}>
-                {joinEvents.map((ev, i) => (
-                  <div key={i} style={{
-                    display:'flex', alignItems:'center', justifyContent:'space-between',
-                    padding:'6px 16px', fontSize:11, color:'rgba(255,255,255,0.3)'
-                  }}>
-                    <span>{ev.text}</span>
-                    <div style={{
-                      width:20, height:20, borderRadius:'50%',
-                      background: ev.color || '#333',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                      fontSize:8, fontWeight:700, color:'white', flexShrink:0
-                    }}>{ev.initials}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+
 
             {/* Messages Scroll View */}
             <div className="flex-1 px-4 pt-4 pb-12 overflow-y-auto flex flex-col gap-3 min-h-0" id="chat-container">
@@ -563,7 +544,17 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                 </div>
               )}
               
-              {chatMessages.map(msg => (
+              {chatMessages.map(msg => {
+                if (msg.isSystem) {
+                  return (
+                    <div key={msg.id} className="flex justify-center items-center my-1">
+                      <span className="text-[10px] text-white/30 bg-white/5 px-3 py-1 rounded-full font-medium">
+                        {msg.text}
+                      </span>
+                    </div>
+                  );
+                }
+                return (
                 <div 
                   key={msg.id} 
                   id={`chat-msg-${msg.id}`}
@@ -680,7 +671,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
               <div ref={chatEndRef} />
             </div>
 

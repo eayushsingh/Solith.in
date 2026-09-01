@@ -202,7 +202,7 @@ export default function App() {
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
   const [audioLevels, setAudioLevels] = useState({});
   const [chatMessages, setChatMessages] = useState([]);
-  const [joinEvents, setJoinEvents] = useState([]);
+
   const prevParticipantsRef = useRef([]);
 
   useEffect(() => {
@@ -212,19 +212,19 @@ export default function App() {
 
     now.forEach(p => {
       if (!prev.find(pp => pp?.id === p?.id) && !p.isLocal) {
-        setJoinEvents(e => [...e.slice(-19), {
-          text: `[${time}] ${p.name} joined.`,
-          initials: p.name?.slice(0, 2).toUpperCase() || '??',
-          color: p.color || '#333'
+        setChatMessages(prevMsg => [...prevMsg, {
+          id: `sys-${Date.now()}-${p.id}-join`,
+          isSystem: true,
+          text: `[${time}] ${p.name} joined.`
         }]);
       }
     });
     prev.forEach(p => {
       if (!now.find(pp => pp?.id === p?.id) && !p.isLocal) {
-        setJoinEvents(e => [...e.slice(-19), {
-          text: `[${time}] ${p.name} left.`,
-          initials: p.name?.slice(0, 2).toUpperCase() || '??',
-          color: p.color || '#333'
+        setChatMessages(prevMsg => [...prevMsg, {
+          id: `sys-${Date.now()}-${p.id}-leave`,
+          isSystem: true,
+          text: `[${time}] ${p.name} left.`
         }]);
       }
     });
