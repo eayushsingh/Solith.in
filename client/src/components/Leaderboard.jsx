@@ -36,18 +36,22 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
             dailyXpVal: isDailyCurrent ? (u.dailyXp || 0) : 0,
             weeklyXpVal: isWeeklyCurrent ? (u.weeklyXp || 0) : 0,
             monthlyXpVal: isMonthlyCurrent ? (u.monthlyXp || 0) : 0,
-            allTimeXpVal: u.xp || 0
+            allTimeXpVal: u.xp || 0,
+            dailyTalkTimeVal: isDailyCurrent ? (u.dailyTalkTimeSeconds ?? ((u.dailyXp || 0) / 1.25)) : 0,
+            weeklyTalkTimeVal: isWeeklyCurrent ? (u.weeklyTalkTimeSeconds ?? ((u.weeklyXp || 0) / 1.25)) : 0,
+            monthlyTalkTimeVal: isMonthlyCurrent ? (u.monthlyTalkTimeSeconds ?? ((u.monthlyXp || 0) / 1.25)) : 0,
+            allTimeTalkTimeVal: u.talkTimeSeconds ?? ((u.xp || 0) / 1.25)
           };
         });
 
         if (activeTab === 'daily') {
-          mappedLeaders.sort((a, b) => b.dailyXpVal - a.dailyXpVal || b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
+          mappedLeaders.sort((a, b) => b.dailyTalkTimeVal - a.dailyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || a.name.localeCompare(b.name));
         } else if (activeTab === 'weekly') {
-          mappedLeaders.sort((a, b) => b.weeklyXpVal - a.weeklyXpVal || b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
+          mappedLeaders.sort((a, b) => b.weeklyTalkTimeVal - a.weeklyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || a.name.localeCompare(b.name));
         } else if (activeTab === 'monthly') {
-          mappedLeaders.sort((a, b) => b.monthlyXpVal - a.monthlyXpVal || b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
+          mappedLeaders.sort((a, b) => b.monthlyTalkTimeVal - a.monthlyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || a.name.localeCompare(b.name));
         } else {
-          mappedLeaders.sort((a, b) => b.allTimeXpVal - a.allTimeXpVal || a.name.localeCompare(b.name));
+          mappedLeaders.sort((a, b) => b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || a.name.localeCompare(b.name));
         }
 
         setLeaders(mappedLeaders.slice(0, 50));
@@ -76,8 +80,8 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
     return <span className="font-mono text-[#555861] w-5 text-center font-bold">{index + 1}</span>;
   };
 
-  const formatMinutes = (xp) => {
-    const mins = Math.floor((xp || 0) / 75);
+  const formatMinutes = (seconds) => {
+    const mins = Math.floor((seconds || 0) / 60);
     return mins > 0 ? mins.toLocaleString() : "0";
   };
 
@@ -226,7 +230,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                     
                     <div className="text-right flex flex-col items-end justify-center">
                       <div className="font-bold text-[20px] sm:text-[22px] text-white tracking-tight leading-none mb-1">
-                        {formatMinutes(activeTab === 'daily' ? leader.dailyXpVal : (activeTab === 'weekly' ? leader.weeklyXpVal : (activeTab === 'monthly' ? leader.monthlyXpVal : leader.allTimeXpVal)))}
+                        {formatMinutes(activeTab === 'daily' ? leader.dailyTalkTimeVal : (activeTab === 'weekly' ? leader.weeklyTalkTimeVal : (activeTab === 'monthly' ? leader.monthlyTalkTimeVal : leader.allTimeTalkTimeVal)))}
                       </div>
                       <div className="text-[10px] text-[#555861] font-bold uppercase tracking-[0.1em]">Minutes</div>
                     </div>
