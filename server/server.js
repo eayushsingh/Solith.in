@@ -74,6 +74,10 @@ let runtimeConfig = {
   livekitUrl: process.env.LIVEKIT_URL || ''
 };
 
+console.log('[config] LIVEKIT_URL:', runtimeConfig.livekitUrl);
+console.log('[config] LIVEKIT_API_KEY set:', !!runtimeConfig.livekitApiKey);
+console.log('[config] LIVEKIT_API_SECRET set:', !!runtimeConfig.livekitApiSecret);
+
 // Rooms Database State
 let rooms = [];
 
@@ -145,6 +149,32 @@ const setAdminRoles = async () => {
   }
 };
 
+const fixStoredRoomUrls = async () => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) return;
+  try {
+    const db = adminInstance.firestore();
+    const snapshot = await db.collection('rooms').get();
+    const batch = db.batch();
+    let fixed = 0;
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.livekitUrl && data.livekitUrl !== runtimeConfig.livekitUrl) {
+        batch.update(doc.ref, { livekitUrl: runtimeConfig.livekitUrl });
+        fixed++;
+      }
+    });
+    if (fixed > 0) {
+      await batch.commit();
+      console.log(`[fix] Updated livekitUrl in ${fixed} stored rooms`);
+    }
+    // Also fix in-memory rooms
+    rooms.forEach(r => { r.livekitUrl = runtimeConfig.livekitUrl; });
+  } catch (e) {
+    console.error('[fix] fixStoredRoomUrls error:', e.message);
+  }
+};
+
 const loadDB = async () => {
   const adminInstance = initFirebaseAdmin();
   if (adminInstance) {
@@ -165,6 +195,7 @@ const loadDB = async () => {
       }
       
       await setAdminRoles();
+      await fixStoredRoomUrls();
       return;
     } catch (err) {
       console.warn(`[Firestore] Error loading rooms (fallback to local DB): ${err.message}`);
@@ -642,22 +673,19 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
   rooms.push(newRoom);
   saveDB();
 
-  // Dispatch Ananya to new room
-  if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret && runtimeConfig.livekitUrl) {
-    (async () => {
-      try {
-        const dispatchClient = new AgentDispatchClient(
-          runtimeConfig.livekitUrl,
-          runtimeConfig.livekitApiKey,
-          runtimeConfig.livekitApiSecret
-        );
-
-        await dispatchClient.createDispatch(roomId, 'agent-ananya');
-        console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`);
-      } catch (dispatchErr) {
-        console.error('[dispatch] Failed to dispatch Ananya:', dispatchErr.message);
-      }
-    })();
+  // Dispatch Ananya
+  if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
+    try {
+      const dispatchClient = new AgentDispatchClient(
+        runtimeConfig.livekitUrl,
+        runtimeConfig.livekitApiKey,
+        runtimeConfig.livekitApiSecret
+      );
+      await dispatchClient.createDispatch(roomId, 'agent-ananya');
+      console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`);
+    } catch (e) {
+      console.error('[dispatch] ✗ Failed:', e.message);
+    }
   }
 
   res.status(201).json(newRoom);

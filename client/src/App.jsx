@@ -1064,33 +1064,24 @@ export default function App() {
 
       // Setup LiveKit WebRTC callbacks (must happen before connect)
       LiveKitService.setCallbacks({
+        onParticipantsChange: (pList) => {
+          setParticipants(pList);
+        },
         onAudioLevels: (levels) => {
           setAudioLevels(levels);
         },
-        onParticipantsChange: (pList) => {
-          const validParticipants = pList.filter(p => p && p.id);
-          if (validParticipants.length > 0) {
-            const hasRealAnanya = validParticipants.some(p => (p.id || '').startsWith('agent') && p.id !== 'agent-ananya-optimistic');
-            
-            setParticipants(prev => {
-              if (!hasRealAnanya) {
-                const optimisticAnanya = prev.find(p => p?.id === 'agent-ananya-optimistic');
-                if (optimisticAnanya) {
-                  return [...validParticipants, optimisticAnanya];
-                }
-              }
-              return validParticipants;
-            });
-          }
-        },
-        onConnectionChange: ({ state, isMock, error }) => {
-          setCallState(state);
-          if (state === 'error') {
+        onConnectionChange: ({ state, error }) => {
+          console.log('[Room] Connection state:', state, error);
+          if (state === 'joined' || state === 'connected') {
+            setCallState('joined');
+          } else if (state === 'error') {
             const msg = error || '';
             if (!msg.includes('Client initiated disconnect')) {
               setToastMessage(`Connection error: ${msg}`);
             }
             setActiveRoom(null);
+            setCallState('left');
+          } else if (state === 'left') {
             setCallState('left');
           }
         }
