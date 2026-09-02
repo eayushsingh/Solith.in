@@ -85,6 +85,7 @@ let cachedUserCountTime = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const socketToIdentity = new Map();
 const authenticatedOnline = new Set();
+const disconnectTimers = new Map(); // identity -> timeout (grace period before removing participant)
 
 const ROOM_GRACE_PERIOD_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -801,8 +802,19 @@ app.post('/api/rooms/:id/ping', verifyToken, (req, res) => {
   const room = rooms.find(r => r.id === id);
   if (!room) return res.status(200).json({ error: 'Room not found', roomDeleted: true });
 
-  const participant = room.participants.find(p => p.id === userId);
-  if (!participant) return res.status(400).json({ error: 'Not in room' });
+  let participant = room.participants.find(p => p.id === userId);
+  if (!participant) {
+    // Self-healing: re-add participant if they were dropped by a socket disconnect grace period
+    // This prevents ping 400s after transport upgrades or brief reconnections
+    participant = {
+      id: userId,
+      name: req.user.name || 'Reconnected User',
+      joinedAt: Date.now(),
+      lastPing: Date.now()
+    };
+    room.participants.push(participant);
+    console.log(chalk.blue(`↻ Self-healed participant ${userId} back into room ${id}`));
+  }
 
   const now = Date.now();
   const lastPing = participant.lastPing || now;
@@ -1465,6 +1477,13 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     if (identity) {
       socketToIdentity.set(socket.id, identity);
+      
+      // Cancel any pending disconnect removal for this user (reconnection scenario)
+      if (disconnectTimers.has(identity)) {
+        clearTimeout(disconnectTimers.get(identity));
+        disconnectTimers.delete(identity);
+        console.log(chalk.green(`✓ Cancelled disconnect grace timer for ${identity} (reconnected)`));
+      }
     }
     
     // Send existing message history and shared YouTube video to the user joining
@@ -1889,13 +1908,32 @@ io.on('connection', (socket) => {
     
     const identity = socketToIdentity.get(socket.id);
     if (identity) {
-      for (const room of rooms) {
-        const before = room.participants.length;
-        room.participants = room.participants.filter(p => p != null && p.id != null && p.id !== identity);
-        if (room.participants.length !== before) break;
-      }
       socketToIdentity.delete(socket.id);
-      purgeEmptyRooms();
+      
+      // Grace period: wait 15s before removing participant
+      // This prevents transport upgrades (polling→websocket) and brief network blips
+      // from kicking users out of rooms
+      if (disconnectTimers.has(identity)) {
+        clearTimeout(disconnectTimers.get(identity));
+      }
+      
+      const timer = setTimeout(() => {
+        // Check if user reconnected with a new socket in the meantime
+        const stillConnected = Array.from(socketToIdentity.values()).includes(identity);
+        if (!stillConnected) {
+          console.log(chalk.yellow(`✗ Grace period expired for ${identity} — removing from rooms`));
+          for (const room of rooms) {
+            const before = room.participants.length;
+            room.participants = room.participants.filter(p => p != null && p.id != null && p.id !== identity);
+            if (room.participants.length !== before) break;
+          }
+          purgeEmptyRooms();
+          broadcastOnlineStats();
+        }
+        disconnectTimers.delete(identity);
+      }, 15000); // 15 second grace period
+      
+      disconnectTimers.set(identity, timer);
     }
     
     broadcastOnlineStats();
