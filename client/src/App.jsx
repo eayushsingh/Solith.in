@@ -570,24 +570,30 @@ export default function App() {
     setProfileLoading(false);
   };
 
-  const toggleFollow = async () => {
-    if (!user || !targetProfile) return;
-    const isFollowing = user?.following?.includes(targetProfile.id);
+  const toggleFollow = async (targetUserId) => {
+    const idToFollow = typeof targetUserId === 'string' ? targetUserId : targetProfile?.id;
+    if (!user || !idToFollow) return;
+    const isFollowing = user?.following?.includes(idToFollow);
 
     // Optimistic UI update
     const newFollowing = isFollowing
-      ? (user?.following || []).filter(id => id !== targetProfile.id)
-      : [...(user?.following || []), targetProfile.id];
+      ? (user?.following || []).filter(id => id !== idToFollow)
+      : [...(user?.following || []), idToFollow];
 
-    const newTargetFollowers = isFollowing
-      ? (targetProfile.followers || []).filter(id => id !== user.id)
-      : [...(targetProfile.followers || []), user.id];
+    let newTargetFollowers = null;
+    if (targetProfile && targetProfile.id === idToFollow) {
+      newTargetFollowers = isFollowing
+        ? (targetProfile.followers || []).filter(id => id !== user.id)
+        : [...(targetProfile.followers || []), user.id];
+    }
 
     setUser(prev => ({ ...prev, following: newFollowing }));
-    setTargetProfile(prev => ({ ...prev, followers: newTargetFollowers }));
+    if (newTargetFollowers) {
+      setTargetProfile(prev => ({ ...prev, followers: newTargetFollowers }));
+    }
 
     try {
-      const res = await fetch(`${API_URL}/api/users/${targetProfile.id}/toggle-follow`, {
+      const res = await fetch(`${API_URL}/api/users/${idToFollow}/toggle-follow`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${await getFreshToken()}`
@@ -596,7 +602,7 @@ export default function App() {
       if (!res.ok) throw new Error('Failed to toggle follow on server');
     } catch (e) {
       console.error("Failed to toggle follow", e);
-      setUser(prev => ({ ...prev, following: isFollowing ? [...(prev.following || []), targetProfile.id] : prev.following.filter(id => id !== targetProfile.id) }));
+      setUser(prev => ({ ...prev, following: isFollowing ? [...(prev.following || []), idToFollow] : prev.following.filter(id => id !== idToFollow) }));
       alert("Action failed, please try again.");
     }
   };
@@ -1512,10 +1518,10 @@ export default function App() {
               <button
                 onClick={async () => {
                   const isFollowing = user?.following?.includes(activeActionUser.id);
+                  toggleFollow(activeActionUser.id);
                   const targetProfileSnap = await getDoc(doc(db, 'users', activeActionUser.id));
                   if (targetProfileSnap.exists()) {
                     setTargetProfile({ id: activeActionUser.id, ...targetProfileSnap.data() });
-                    toggleFollow();
                   }
                 }}
                 className="py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold rounded-xl transition-all"

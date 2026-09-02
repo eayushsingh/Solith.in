@@ -159,10 +159,10 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
   };
 
   return (
-    <div className="w-full h-full min-h-[100dvh] flex flex-col bg-[var(--bg)] relative animate-fade-in overflow-hidden">
+    <div className="w-full h-full min-h-[100dvh] flex flex-col bg-[#0B0D14] relative animate-fade-in overflow-hidden">
       {/* Header */}
-      <div className="min-h-16 px-4 py-3 border-b border-[var(--line-subtle)] flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 bg-[var(--bg)]/80 backdrop-blur-md z-10 sticky top-0">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="min-h-16 px-4 py-3 border-b border-white/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 bg-[#0B0D14]/80 backdrop-blur-xl z-10 sticky top-0 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center gap-4 min-w-0">
           <button 
             onClick={onBack}
             className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors text-text-secondary hover:text-text-primary"
@@ -217,17 +217,18 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-4 custom-scrollbar flex flex-col gap-4 min-h-0">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar flex flex-col gap-5 min-h-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1877f2]/5 via-[#0B0D14] to-[#0B0D14]">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-text-secondary animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#1877f2] animate-spin" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-            <div className="w-16 h-16 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center mb-4">
-              <Shield className="w-6 h-6 text-text-secondary" />
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#1877f2]/20 to-[#6c47ff]/20 flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(24,119,242,0.2)] border border-white/5">
+              <Shield className="w-8 h-8 text-[#1877f2]" />
             </div>
-            <p className="text-text-secondary max-w-sm">This is the beginning of your direct message history with {targetProfile.name}. Be respectful and follow community guidelines.</p>
+            <h2 className="text-xl font-bold text-white mb-2">Say Hello to {targetProfile.name.split(' ')[0]}</h2>
+            <p className="text-[#888A92] max-w-sm text-sm leading-relaxed">This is the beginning of your direct message history. Be respectful and follow community guidelines.</p>
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -243,10 +244,10 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
                 )}
                 <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
                   <div 
-                    className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed break-words shadow-sm flex flex-col gap-2 ${
+                    className={`max-w-[80%] md:max-w-[65%] px-5 py-3.5 text-[15px] leading-relaxed break-words flex flex-col gap-2 ${
                       isMe 
-                        ? 'bg-blue-600 text-text-primary rounded-br-sm' 
-                        : 'bg-[var(--bg-secondary)] border border-[var(--line-subtle)] text-text-primary rounded-bl-sm'
+                        ? 'bg-gradient-to-tr from-[#1877f2] to-[#6c47ff] text-white shadow-xl shadow-[#1877f2]/20 rounded-2xl rounded-br-sm' 
+                        : 'bg-[#1A1D27]/90 backdrop-blur-md border border-white/5 text-[#E0E2E8] shadow-lg shadow-black/40 rounded-2xl rounded-bl-sm'
                     }`}
                   >
                     {msg.imageUrl && (
@@ -263,59 +264,59 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-[var(--line-subtle)] bg-[var(--bg)] shrink-0 flex flex-col gap-2 relative">
-        {selectedImage && (
-          <div className="max-w-4xl mx-auto w-full relative">
-            <div className="relative inline-block rounded-xl overflow-hidden border border-[var(--line-subtle)] w-24 h-24 bg-black/20">
+      <div className="p-4 sm:p-6 shrink-0 flex flex-col gap-2 relative bg-transparent pointer-events-none">
+        <div className="max-w-4xl mx-auto w-full flex flex-col gap-3 pointer-events-auto">
+          {selectedImage && (
+            <div className="relative inline-block rounded-2xl overflow-hidden border border-white/10 w-24 h-24 bg-black/40 shadow-xl backdrop-blur-md">
               <img src={URL.createObjectURL(selectedImage)} className="w-full h-full object-cover" alt="Preview" />
               <button 
                 type="button" 
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black transition-colors"
+                className="absolute top-1.5 right-1.5 bg-black/70 text-white rounded-full p-1 hover:bg-black transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
-        )}
-        <form onSubmit={handleSendMessage} className="relative flex items-center max-w-4xl mx-auto w-full gap-2">
-          <input 
-            type="file" 
-            accept="image/*" 
-            ref={fileInputRef} 
-            className="hidden" 
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                setSelectedImage(e.target.files[0]);
-              }
-            }}
-          />
-          <button 
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-text-secondary hover:text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10 transition-colors"
-          >
-            <ImageIcon className="w-5 h-5" />
-          </button>
-          
-          <div className="relative flex-1">
+          )}
+          <form onSubmit={handleSendMessage} className="relative flex items-center w-full gap-2 bg-[#12141C]/90 backdrop-blur-xl border border-white/10 rounded-[2rem] p-1.5 shadow-2xl">
             <input 
-              type="text" 
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))} // Client side limit
-              placeholder="Type a message..." 
-              className="w-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] rounded-full pl-5 pr-12 py-3.5 text-[15px] text-text-primary placeholder-[var(--ink-tertiary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all min-w-0"
-              autoFocus={!selectedImage}
+              type="file" 
+              accept="image/*" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setSelectedImage(e.target.files[0]);
+                }
+              }}
             />
             <button 
-              type="submit"
-              disabled={sending || (!newMessage.trim() && !selectedImage)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-blue-500 hover:bg-blue-500/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center text-[#888A92] hover:text-[#1877f2] hover:bg-[#1877f2]/10 transition-colors ml-1"
             >
-              {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              <ImageIcon className="w-5 h-5" />
             </button>
-          </div>
-        </form>
+            
+            <div className="relative flex-1">
+              <input 
+                type="text" 
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))} // Client side limit
+                placeholder="Type your message..." 
+                className="w-full bg-transparent border-none py-3.5 text-[15px] text-white placeholder-[#555861] focus:outline-none focus:ring-0 transition-all min-w-0"
+                autoFocus={!selectedImage}
+              />
+              <button 
+                type="submit"
+                disabled={sending || (!newMessage.trim() && !selectedImage)}
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-r from-[#1877f2] to-[#6c47ff] text-white hover:opacity-90 disabled:opacity-30 disabled:from-[#2A2E39] disabled:to-[#2A2E39] disabled:text-[#555861] transition-all shadow-lg"
+              >
+                {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
       {showReportModal && (
