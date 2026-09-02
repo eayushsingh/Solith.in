@@ -22,7 +22,7 @@ export default function PremiumSubscription({ onBack, user }) {
   useEffect(() => {
     fetchSettings();
     fetchPaymentStatus();
-  }, [user]);
+  }, [user?.id]);
 
   const getFreshToken = async () => {
     if (!auth?.currentUser) return user?.token || '';

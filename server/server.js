@@ -1996,19 +1996,19 @@ app.get('/api/payments/status', verifyToken, async (req, res) => {
     const db = adminInstance.firestore();
     const requestsSnap = await db.collection('payment_requests')
       .where('userId', '==', req.user.uid)
-      .orderBy('submittedAt', 'desc')
-      .limit(1)
       .get();
       
     if (requestsSnap.empty) {
       return res.json({ hasRequest: false });
     }
     
-    const requestData = requestsSnap.docs[0].data();
+    // Sort in memory to avoid needing a composite index
+    const docs = requestsSnap.docs.sort((a, b) => b.data().submittedAt - a.data().submittedAt);
+    const requestData = docs[0].data();
     res.json({
       hasRequest: true,
       request: {
-        id: requestsSnap.docs[0].id,
+        id: docs[0].id,
         status: requestData.status,
         utr: requestData.utr,
         submittedAt: requestData.submittedAt
