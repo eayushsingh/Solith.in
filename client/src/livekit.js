@@ -52,8 +52,8 @@ export const LiveKitService = {
   /**
    * Join a room (Real LiveKit connection OR Mock connection)
    */
-  join: async (url, token, isReal, localUser) => {
-    if (!isReal) {
+  join: async (livekitUrl, token, isRealCall, user) => {
+    if (!isRealCall) {
       console.log('LiveKitService: Joining in Mock Demo Mode');
       connectionCallback?.({ state: 'joining' });
 
@@ -79,7 +79,7 @@ export const LiveKitService = {
       }, 1000);
 
       // Trigger initial mock participant list
-      LiveKitService.localUserMock = localUser;
+      LiveKitService.localUserMock = user;
       LiveKitService.isMutedMock = true;
       LiveKitService.triggerMockParticipantsList();
 
@@ -87,7 +87,7 @@ export const LiveKitService = {
     }
 
     try {
-      console.log(`LiveKitService: Joining real room at: ${url}`);
+      console.log(`[LiveKit] Joining room at:`, livekitUrl);
       connectionCallback?.({ state: 'joining' });
 
       // Cleanup existing room object if any
@@ -177,7 +177,7 @@ export const LiveKitService = {
           const levels = {};
           if (speakers) {
             speakers.forEach(speaker => {
-              const speakerId = speaker.isLocal ? localUser.id : speaker.identity;
+              const speakerId = speaker.isLocal ? user.id : speaker.identity;
               levels[speakerId] = speaker.audioLevel || 0.8;
             });
           }
@@ -186,7 +186,7 @@ export const LiveKitService = {
       });
 
       // Join the room
-      await roomObject.connect(url, token);
+      await roomObject.connect(livekitUrl, token);
       
       // Start microphone muted by default (fire-and-forget for faster join)
       roomObject.localParticipant.setMicrophoneEnabled(false).catch(() => {});
