@@ -751,31 +751,9 @@ export default function App() {
         console.log('[socket] Re-joining room after reconnect:', activeRoom.id);
         socket.emit('join-room', { roomName: activeRoom.id, identity: user.id });
 
-        // Don't use cached livekitUrl — fetch fresh from API
-        try {
-          const token = await getFreshToken();
-          const res = await fetch(`${API_URL}/api/rooms/${activeRoom.id}/join`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              userId: user.id,
-              name: user.name,
-              color: user.color,
-              emoji: user.emoji,
-              photoUrl: user.photoUrl
-            })
-          });
-          const data = await res.json();
-          if (data.livekitUrl) {
-            // Reconnect LiveKit with fresh URL and token
-            await LiveKitService.join(data.livekitUrl, data.token, data.isRealConnection, user);
-          }
-        } catch (e) {
-          console.error('[reconnect] Failed to re-join:', e.message);
-        }
+        // Note: We intentionally DO NOT call LiveKitService.join() here.
+        // LiveKit SDK handles its own WebRTC reconnections automatically.
+        // Calling join() here creates a race condition that instantly disconnects the user.
       }
     };
     socket.on('connect', handleRoomRejoin);
@@ -988,8 +966,8 @@ export default function App() {
       setNewRoomTopic('');
       setNewRoomTags('Casual');
       setIsCreatingRoom(false);
-      // Auto-join newly created room in a new tab
-      window.open('/?room=' + newRoom.id, '_blank');
+      // Auto-join newly created room in the same tab
+      joinVoiceRoom(newRoom);
     } catch (err) {
       setIsCreatingRoom(false);
       console.error('Error creating room:', err);
@@ -1108,7 +1086,7 @@ export default function App() {
             setActiveRoom(null);
             setCallState('left');
           } else if (state === 'left') {
-            setCallState('left');
+            teardownVoiceRoom();
           }
         }
       });
