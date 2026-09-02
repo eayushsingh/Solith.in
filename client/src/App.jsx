@@ -3556,7 +3556,6 @@ export default function App() {
                 setChatInput={setChatInput}
                 chatEndRef={chatEndRef}
                 participants={safeParticipants}
-                joinEvents={joinEvents}
                 activeRoom={activeRoom}
                 user={user}
                 setUser={setUser}

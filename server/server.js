@@ -384,7 +384,7 @@ app.post('/api/bot-token', async (req, res) => {
   }
 });
 
-const awardUserXP = async (userId, xpEarned) => {
+const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
   if (!userId || xpEarned <= 0) return;
 
   const adminInstance = initFirebaseAdmin();
@@ -430,6 +430,21 @@ const awardUserXP = async (userId, xpEarned) => {
         newDailyXp = data.dailyXp + xpEarned;
       }
 
+      let newWeeklyTalkTime = secondsElapsed;
+      if (data.weeklyXpId === currentWeekId && typeof data.weeklyTalkTimeSeconds === 'number') {
+        newWeeklyTalkTime = data.weeklyTalkTimeSeconds + secondsElapsed;
+      }
+
+      let newMonthlyTalkTime = secondsElapsed;
+      if (data.monthlyXpId === currentMonthId && typeof data.monthlyTalkTimeSeconds === 'number') {
+        newMonthlyTalkTime = data.monthlyTalkTimeSeconds + secondsElapsed;
+      }
+
+      let newDailyTalkTime = secondsElapsed;
+      if (data.dailyXpId === currentDayId && typeof data.dailyTalkTimeSeconds === 'number') {
+        newDailyTalkTime = data.dailyTalkTimeSeconds + secondsElapsed;
+      }
+
       transaction.update(userRef, {
         xp: admin.firestore.FieldValue.increment(xpEarned),
         weeklyXp: newWeeklyXp,
@@ -437,7 +452,11 @@ const awardUserXP = async (userId, xpEarned) => {
         monthlyXp: newMonthlyXp,
         monthlyXpId: currentMonthId,
         dailyXp: newDailyXp,
-        dailyXpId: currentDayId
+        dailyXpId: currentDayId,
+        talkTimeSeconds: admin.firestore.FieldValue.increment(secondsElapsed),
+        weeklyTalkTimeSeconds: newWeeklyTalkTime,
+        monthlyTalkTimeSeconds: newMonthlyTalkTime,
+        dailyTalkTimeSeconds: newDailyTalkTime
       });
     });
 
@@ -793,7 +812,7 @@ app.post('/api/rooms/:id/ping', verifyToken, (req, res) => {
     const xpToAward = Math.round(validSeconds * xpPerSecond);
     
     // Fire and forget
-    awardUserXP(userId, xpToAward);
+    awardUserXP(userId, xpToAward, validSeconds);
   }
 
   res.json({ success: true });
@@ -811,7 +830,7 @@ app.post('/api/rooms/:id/leave', verifyToken, (req, res) => {
       const secondsSinceLastPing = (Date.now() - participant.lastPing) / 1000;
       const validSeconds = Math.min(secondsSinceLastPing, 120);
       if (validSeconds > 3) {
-        awardUserXP(userId, Math.floor(validSeconds * 1.25));
+        awardUserXP(userId, Math.floor(validSeconds * 1.25), validSeconds);
       }
     }
     room.participants = room.participants.filter(p => p.id !== userId);
@@ -930,7 +949,7 @@ app.post('/api/rooms/:id/kick', verifyToken, (req, res) => {
     const secondsSinceLastPing = (Date.now() - targetParticipant.lastPing) / 1000;
     const validSeconds = Math.min(secondsSinceLastPing, 120);
     if (validSeconds > 3) {
-      awardUserXP(targetUserId, Math.floor(validSeconds * 1.25));
+      awardUserXP(targetUserId, Math.floor(validSeconds * 1.25), validSeconds);
     }
   }
 
