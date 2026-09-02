@@ -8,7 +8,12 @@ if (!globalThis[globalSocketKey]) {
   globalThis[globalSocketKey] = io(API_URL, {
     autoConnect: true,
     reconnection: true,
-    transports: ['websocket', 'polling'],
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: Infinity,
+    timeout: 20000, // 20s handshake timeout — tolerates Render cold starts
+    transports: ['polling', 'websocket'], // Start with polling (always works), auto-upgrade to websocket
+    upgrade: true,
   });
 }
 

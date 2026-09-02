@@ -717,6 +717,15 @@ export default function App() {
       setToastMessage(message);
     });
 
+    // Socket.IO reconnection handler — re-authenticate and re-join active room
+    const handleReconnect = () => {
+      console.log('[socket] Reconnected — re-authenticating and re-joining room');
+      if (auth?.currentUser) {
+        socket.emit('authenticate', auth.currentUser.uid);
+      }
+    };
+    socket.on('connect', handleReconnect);
+
     return () => {
       socket.off('chat-history', handleChatHistory);
       socket.off('chat-message', handleChatMessage);
@@ -731,8 +740,21 @@ export default function App() {
       socket.off('game-state');
       socket.off('game-ended');
       socket.off('game-error');
+      socket.off('connect', handleReconnect);
     };
   }, []);
+
+  // Re-join socket.io room on reconnection (ensures chat/games/yt resume after network blips)
+  useEffect(() => {
+    const handleRoomRejoin = () => {
+      if (activeRoom && user?.id) {
+        console.log('[socket] Re-joining room after reconnect:', activeRoom.id);
+        socket.emit('join-room', { roomName: activeRoom.id, identity: user.id });
+      }
+    };
+    socket.on('connect', handleRoomRejoin);
+    return () => socket.off('connect', handleRoomRejoin);
+  }, [activeRoom, user?.id]);
 
   // Sync Call Status and Ping Server
   useEffect(() => {
@@ -1040,10 +1062,7 @@ export default function App() {
 
       setIsRealCall(data.isRealConnection);
 
-      // Join Socket.IO room for chat
-      socket.emit('join-room', { roomName: room.id, identity: user.id });
-
-      // Setup LiveKit WebRTC
+      // Setup LiveKit WebRTC callbacks (must happen before connect)
       LiveKitService.setCallbacks({
         onAudioLevels: (levels) => {
           setAudioLevels(levels);
@@ -1077,11 +1096,23 @@ export default function App() {
         }
       });
 
-      // Connect via LiveKit helper
+      // Emit socket join with connected-guard (ensures emit isn't lost during cold start)
+      const emitSocketJoin = () => {
+        if (socket.connected) {
+          socket.emit('join-room', { roomName: room.id, identity: user.id });
+        } else {
+          socket.once('connect', () => {
+            socket.emit('join-room', { roomName: room.id, identity: user.id });
+          });
+        }
+      };
+
+      // Run Socket.IO join and LiveKit connect in PARALLEL for zero-latency
+      emitSocketJoin();
       await LiveKitService.join(data.livekitUrl, data.token, data.isRealConnection, user);
 
       setRoomJoinTime(Date.now());
-      fetchRooms(); // refresh listing UI
+      fetchRooms().catch(() => {}); // refresh listing UI (non-blocking)
       return true;
     } catch (err) {
       console.error('Error joining call room:', err);
