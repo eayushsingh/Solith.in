@@ -3266,6 +3266,23 @@ export default function App() {
 
           return (
             <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-col z-50 overflow-hidden">
+              {callState === 'joining' && (
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  color: 'rgba(255,255,255,0.6)', fontSize: 16, fontWeight: 600,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+                  zIndex: 100
+                }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: '50%',
+                    border: '3px solid rgba(24,119,242,0.3)',
+                    borderTop: '3px solid #1877f2',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                  Connecting to room...
+                </div>
+              )}
 
               {/* Top Floating Controls — icon-only pill */}
               <div style={{
