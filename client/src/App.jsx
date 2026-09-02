@@ -746,15 +746,41 @@ export default function App() {
 
   // Re-join socket.io room on reconnection (ensures chat/games/yt resume after network blips)
   useEffect(() => {
-    const handleRoomRejoin = () => {
+    const handleRoomRejoin = async () => {
       if (activeRoom && user?.id) {
         console.log('[socket] Re-joining room after reconnect:', activeRoom.id);
         socket.emit('join-room', { roomName: activeRoom.id, identity: user.id });
+
+        // Don't use cached livekitUrl — fetch fresh from API
+        try {
+          const token = await getFreshToken();
+          const res = await fetch(`${API_URL}/api/rooms/${activeRoom.id}/join`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              userId: user.id,
+              name: user.name,
+              color: user.color,
+              emoji: user.emoji,
+              photoUrl: user.photoUrl
+            })
+          });
+          const data = await res.json();
+          if (data.livekitUrl) {
+            // Reconnect LiveKit with fresh URL and token
+            await LiveKitService.join(data.livekitUrl, data.token, data.isRealConnection, user);
+          }
+        } catch (e) {
+          console.error('[reconnect] Failed to re-join:', e.message);
+        }
       }
     };
     socket.on('connect', handleRoomRejoin);
     return () => socket.off('connect', handleRoomRejoin);
-  }, [activeRoom, user?.id]);
+  }, [activeRoom, user]);
 
   // Sync Call Status and Ping Server
   useEffect(() => {
