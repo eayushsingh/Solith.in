@@ -196,6 +196,23 @@ const loadDB = async () => {
       
       await setAdminRoles();
       await fixStoredRoomUrls();
+      
+      // Fix any rooms with wrong LiveKit URL
+      const correctUrl = runtimeConfig.livekitUrl;
+      if (correctUrl) {
+        let fixed = 0;
+        rooms.forEach(room => {
+          if (room.livekitUrl && room.livekitUrl !== correctUrl) {
+            room.livekitUrl = correctUrl;
+            fixed++;
+          }
+        });
+        if (fixed > 0) {
+          console.log(`[startup] Fixed livekitUrl in ${fixed} in-memory rooms`);
+          saveDB();
+        }
+      }
+      
       return;
     } catch (err) {
       console.warn(`[Firestore] Error loading rooms (fallback to local DB): ${err.message}`);
