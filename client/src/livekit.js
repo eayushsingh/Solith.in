@@ -99,6 +99,7 @@ export const LiveKitService = {
       roomObject = new Room({
         adaptiveStream: false,
         dynacast: false,
+        disconnectOnPageLeave: false, // Prevents background ping timeouts
         publishDefaults: {
           audioBitrate: 32_000,
         },
@@ -111,12 +112,14 @@ export const LiveKitService = {
 
       // Bind LiveKit events
       roomObject.on(RoomEvent.Connected, () => {
+        console.log('LiveKitService: RoomEvent.Connected fired!');
         playSound('join');
         connectionCallback?.({ state: 'joined', isMock: false });
         updateParticipantsList();
       });
 
       roomObject.on(RoomEvent.Disconnected, () => {
+        console.log('LiveKitService: RoomEvent.Disconnected fired!');
         playSound('leave');
         connectionCallback?.({ state: 'left' });
         cleanupRealCall();
@@ -172,8 +175,6 @@ export const LiveKitService = {
       roomObject.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
         if (audioLevelCallback) {
           const levels = {};
-          // LiveKit provides an array of active participants
-          // We'll give active speakers a baseline level of 0.8 to trigger our UI pulsing
           if (speakers) {
             speakers.forEach(speaker => {
               const speakerId = speaker.isLocal ? localUser.id : speaker.identity;
@@ -187,8 +188,8 @@ export const LiveKitService = {
       // Join the room
       await roomObject.connect(url, token);
       
-      // Start microphone muted by default
-      await roomObject.localParticipant.setMicrophoneEnabled(false);
+      // Start microphone muted by default (fire-and-forget for faster join)
+      roomObject.localParticipant.setMicrophoneEnabled(false).catch(() => {});
 
       return true;
     } catch (err) {

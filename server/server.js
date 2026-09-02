@@ -47,7 +47,13 @@ if (process.env.NODE_ENV === 'production') {
   corsOptions = { origin: '*' };
 }
 
-const io = new Server(server, { cors: corsOptions });
+const io = new Server(server, {
+  cors: corsOptions,
+  pingTimeout: 60000,        // 60s — tolerates background tab throttling
+  pingInterval: 25000,       // 25s heartbeat
+  transports: ['polling', 'websocket'], // Match client: start with polling, upgrade to websocket
+  allowUpgrades: true,
+});
 
 app.use(helmet()); // Set basic HTTP security headers
 app.use(cors(corsOptions));
