@@ -636,7 +636,6 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     ownerIsPremium,
     messages: [],
     emptySince: Date.now(),
-    livekitUrl,
     createdAt: Date.now()
   };
 
@@ -766,7 +765,7 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
 
   res.json({
     room,
-    livekitUrl: isRealConnection ? runtimeConfig.livekitUrl : room.livekitUrl,
+    livekitUrl: runtimeConfig.livekitUrl,  // always use current config, not stored room value
     token,
     isRealConnection
   });
