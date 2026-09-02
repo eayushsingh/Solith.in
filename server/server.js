@@ -644,39 +644,17 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
   saveDB();
 
   // Dispatch Ananya to new room
-  if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
+  if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret && runtimeConfig.livekitUrl) {
     (async () => {
       try {
-        const { AgentDispatchClient } = await import('@livekit/agents');
         const dispatchClient = new AgentDispatchClient(
           runtimeConfig.livekitUrl,
           runtimeConfig.livekitApiKey,
           runtimeConfig.livekitApiSecret
         );
 
-        // Check if already dispatched (idempotency)
-        const adminInstance = initFirebaseAdmin();
-        let alreadyDispatched = false;
-        if (adminInstance) {
-          const db = adminInstance.firestore();
-          const dispatchRef = db.collection('settings').doc('global');
-          const snap = await dispatchRef.get();
-          const dispatched = snap.exists ? (snap.data().dispatchedRooms || []) : [];
-          alreadyDispatched = dispatched.includes(roomId);
-          if (!alreadyDispatched) {
-            await dispatchRef.set(
-              { dispatchedRooms: [...dispatched, roomId] },
-              { merge: true }
-            );
-          }
-        }
-
-        if (!alreadyDispatched) {
-          await dispatchClient.createDispatch(roomId, 'agent-ananya', {
-            metadata: JSON.stringify({ roomId, roomName: newRoom.name })
-          });
-          console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`);
-        }
+        await dispatchClient.createDispatch(roomId, 'agent-ananya');
+        console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`);
       } catch (dispatchErr) {
         console.error('[dispatch] Failed to dispatch Ananya:', dispatchErr.message);
       }
@@ -800,40 +778,15 @@ app.post('/api/rooms/:id/ping', verifyToken, (req, res) => {
   const userId = req.user.uid;
 
   const room = rooms.find(r => r.id === id);
-  if (!room) return res.status(200).json({ error: 'Room not found', roomDeleted: true });
+  if (!room) return res.status(404).json({ error: 'Room not found' });
 
-  let participant = room.participants.find(p => p.id === userId);
-  if (!participant) {
-    // Self-healing: re-add participant if they were dropped by a socket disconnect grace period
-    // This prevents ping 400s after transport upgrades or brief reconnections
-    participant = {
-      id: userId,
-      name: req.user.name || 'Reconnected User',
-      joinedAt: Date.now(),
-      lastPing: Date.now()
-    };
-    room.participants.push(participant);
-    console.log(chalk.blue(`↻ Self-healed participant ${userId} back into room ${id}`));
+  const participant = room.participants.find(p => p.id === userId);
+  if (participant) {
+    participant.lastPing = Date.now();
+    res.json({ success: true });
+  } else {
+    res.status(400).json({ error: 'Not in room' });
   }
-
-  const now = Date.now();
-  const lastPing = participant.lastPing || now;
-  const secondsElapsed = (now - lastPing) / 1000;
-  participant.lastPing = now;
-
-  // Cap at 2 minutes retroactive to handle Chrome background tab throttling (1 minute)
-  // while preventing massive abuse from manual POST requests
-  const validSeconds = Math.min(secondsElapsed, 120);
-  if (validSeconds >= 3) {
-    const isSpeaking = req.body.isSpeaking || false;
-    const xpPerSecond = isSpeaking ? 2.5 : 1.25; // per ~4s ping = same rate as client (10 or 5 XP)
-    const xpToAward = Math.round(validSeconds * xpPerSecond);
-    
-    // Fire and forget
-    awardUserXP(userId, xpToAward, validSeconds);
-  }
-
-  res.json({ success: true });
 });
 
 // API Endpoint: Leave Room
