@@ -998,6 +998,7 @@ export default function App() {
     setJoiningRoomId(room.id);
     setIsMuted(true);
     setChatMessages([]);
+    setCallState('joining');
 
     // Optimistically show room UI for zero-latency feel
     setActiveRoom(room);
@@ -1493,7 +1494,7 @@ export default function App() {
   const renderAppLayout = (children) => (
     <div className="layout-container lobby-bg relative min-h-[100dvh] overflow-x-hidden">
 
-      {!activeRoom && <Sidebar {...layoutProps} />}
+      <Sidebar {...layoutProps} />
       <div className="main-content hide-scrollbar z-10 relative">
         {children}
       </div>
@@ -3098,7 +3099,8 @@ export default function App() {
           </header>
 
           {/* Main Content Area */}
-          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center gap-5 relative">
+          {!activeRoom && (
+            <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center gap-5 relative">
 
             {/* Main Hero Video Banner */}
             <div className="w-full relative rounded-2xl border border-border-color overflow-hidden shadow-2xl bg-black group">
@@ -3242,9 +3244,10 @@ export default function App() {
               </div>
             )}
           </div>
+          )}
         </div>
 
-        {/* Full-Screen Active Room Redesign */}
+        {/* Active Room */}
         {(() => {
           if (!activeRoom) return null;
 
@@ -3260,7 +3263,7 @@ export default function App() {
           const hasRaisedHand = speakingQueue.includes(user?.id);
 
           return (
-            <div className="call-room-bg font-sans animate-fade-in fixed inset-0 flex flex-col z-50 overflow-hidden">
+            <div className="call-room-bg font-sans animate-fade-in flex-1 w-full h-full relative flex flex-col overflow-hidden">
               {callState === 'joining' && (
                 <div style={{
                   position: 'absolute', top: '50%', left: '50%',
