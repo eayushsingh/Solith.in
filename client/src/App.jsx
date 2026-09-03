@@ -2865,7 +2865,6 @@ export default function App() {
         </div>
 
         <div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
-        <div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
 
           {/* Global Header */}
           <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 bg-bg-base/95 backdrop-blur-md sticky top-0 z-30 border-b border-border-color">
@@ -3261,7 +3260,7 @@ export default function App() {
           const hasRaisedHand = speakingQueue.includes(user?.id);
 
           return (
-            <div className="call-room-bg font-sans animate-fade-in flex-1 w-full h-full relative flex flex-col overflow-hidden">
+            <div className="call-room-bg font-sans animate-fade-in w-full h-screen relative flex flex-col overflow-hidden">
               {callState === 'joining' && (
                 <div style={{
                   position: 'absolute', top: '50%', left: '50%',
@@ -3671,8 +3670,7 @@ export default function App() {
             </div>
           </div>
         )}
-      </div>
-    </>
+      </>
     )
   );
 }
