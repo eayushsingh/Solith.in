@@ -87,8 +87,8 @@ export const LiveKitService = {
     }
 
     try {
-      // Never connect to Free4Talk's server
-      if (!livekitUrl || livekitUrl.includes('freetalk')) {
+      // Validate LiveKit URL is present and looks like a valid WebSocket URL
+      if (!livekitUrl || !livekitUrl.startsWith('wss://')) {
         console.error('[LiveKit] Invalid URL rejected:', livekitUrl);
         throw new Error('Invalid LiveKit URL configured. Please check server settings.');
       }
