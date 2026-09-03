@@ -69,7 +69,11 @@ const lazyWithRetry = (componentImport) =>
     }
   });
 
-const GlobalChatView = lazyWithRetry(() => import('./components/GlobalChatView'));
+const GlobalChatView = React.lazy(() =>
+  import('./components/GlobalChatView').catch(() => ({
+    default: () => <div style={{color:'white',padding:20}}>Chat unavailable</div>
+  }))
+);
 // XP / Fluency level bands
 const getLevelInfo = (xp) => {
   if (xp < 100) return { title: 'A1 Beginner', min: 0, max: 100, level: 1, next: 'A2' };
@@ -108,15 +112,7 @@ export default function App() {
     user.role === 'admin' ||
     ADMIN_EMAILS.includes(user.email)
   );
-  const [view, setView] = useState(() => {
-    const hash = window.location.hash.replace('#', '');
-    const path = window.location.pathname.replace('/', '');
-    const hasSeenLanding = localStorage.getItem('seenLanding');
-
-    if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(hash)) return hash;
-    if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(path)) return path;
-    return hasSeenLanding ? 'lobby' : 'landing';
-  });
+  const [view, setView] = useState('lobby');
   const [activeDm, setActiveDm] = useState(null); // { id: string, profile: object }
   const [msgTab, setMsgTab] = useState('global'); // 'global' or 'direct'
   const [isConnected, setIsConnected] = useState(false);
@@ -3098,8 +3094,9 @@ export default function App() {
             </div>
           </header>
 
-          {/* Main Content Area */}
+          {/* Main Content Area — hidden when in a room */}
           {!activeRoom && (
+            <>
             <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center gap-5 relative">
 
             {/* Main Hero Video Banner */}
@@ -3244,6 +3241,7 @@ export default function App() {
               </div>
             )}
           </div>
+          </>
           )}
         </div>
 

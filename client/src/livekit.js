@@ -87,7 +87,12 @@ export const LiveKitService = {
     }
 
     try {
-      console.log(`[LiveKit] Joining room at:`, livekitUrl);
+      // Never connect to Free4Talk's server
+      if (!livekitUrl || livekitUrl.includes('freetalk')) {
+        console.error('[LiveKit] Invalid URL rejected:', livekitUrl);
+        throw new Error('Invalid LiveKit URL configured. Please check server settings.');
+      }
+      console.log(`[LiveKit] Connecting to:`, livekitUrl);
       connectionCallback?.({ state: 'joining' });
 
       // Cleanup existing room object if any
