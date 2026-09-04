@@ -269,17 +269,28 @@ textarea:focus-visible {
 }
 
 .filter-pill {
-  padding: 0.625rem 0.875rem;
+  padding: 0.5rem 1rem;
+  min-height: 38px;
   border-radius: 999px;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  background: var(--bg-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #888A92;
+  background: rgba(20, 22, 28, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 11px;
+}
+
+.filter-pill:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(30, 32, 40, 0.8);
 }
 
 .filter-pill.active {
-  color: var(--text-primary);
-  border-color: var(--accent-primary);
-  background: var(--accent-primary-bg);
+  color: #ffffff;
+  border-color: rgba(59, 130, 246, 0.6);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(29, 78, 216, 0.9));
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
 }
 
 .create-room-btn {
