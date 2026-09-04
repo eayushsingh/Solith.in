@@ -2878,7 +2878,7 @@ export default function App() {
                 onClick={() => { if (user) setShowCreateModal(true); else setShowAuthModal(true); }}
                 className="px-3 sm:px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(37,99,235,0.4)] hover:scale-105 active:scale-95 whitespace-nowrap"
               >
-                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
+                <Plus className="w-4 h-4" /> <span>Start a Room</span>
               </button>
 
               <button
@@ -2890,7 +2890,7 @@ export default function App() {
                   color: '#fbbf24'
                 }}
               >
-                <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden xs:inline sm:inline">Go Premium</span><span className="xs:hidden sm:hidden">PRO</span>
+                <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span>Go Premium</span>
               </button>
             </div>
 
