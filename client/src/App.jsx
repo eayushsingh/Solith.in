@@ -2869,43 +2869,43 @@ export default function App() {
 
         <div className={view !== 'lobby' || activeRoom ? 'hidden' : "w-full pb-28 flex flex-col items-center min-h-screen"}>
 
-          {/* Global Header */}
-          <header className="w-full flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 bg-bg-base/95 backdrop-blur-md sticky top-0 z-30 border-b border-border-color">
+          {/* Global Header — Apple Grade Glassmorphism */}
+          <header className="w-full flex items-center justify-between px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 bg-[#0B0D14]/80 backdrop-blur-2xl sticky top-0 z-30 border-b border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
 
             {/* Left: Actions */}
-            <div className="flex-1 flex items-center justify-start gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => { if (user) setShowCreateModal(true); else setShowAuthModal(true); }}
-                className="px-4 py-2 bg-[var(--accent-primary)] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-2 hover:bg-[var(--accent-primary-hover)] transition-all shadow-[0_4px_20px_var(--accent-primary-glow)] hover:scale-105 whitespace-nowrap"
+                className="px-3 sm:px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(37,99,235,0.4)] hover:scale-105 active:scale-95 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
               </button>
-              {/* This button must be in the header for ALL users (logged in or not): */}
+
               <button
                 onClick={() => { setView('premium'); window.location.hash = 'premium'; }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm"
+                className="flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all hover:scale-105 active:scale-95 whitespace-nowrap shadow-sm"
                 style={{
                   background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.15))',
                   border: '1px solid rgba(251,191,36,0.4)',
                   color: '#fbbf24'
                 }}
               >
-                <Crown className="w-4 h-4" /> Go Premium
+                <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden xs:inline sm:inline">Go Premium</span><span className="xs:hidden sm:hidden">PRO</span>
               </button>
             </div>
 
             {/* Center: Brand Identity */}
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setView('lobby')}>
-                <span className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center select-none">
+            <div className="flex items-center justify-center min-w-0 mx-2">
+              <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setView('lobby')}>
+                <span className="text-xl sm:text-3xl font-black tracking-tight text-white flex items-center select-none">
                   solith
-                  <span className="text-[var(--accent-primary)] font-bold flex items-center">
+                  <span className="text-[#3B82F6] font-bold flex items-center">
                     .
                     <span className="relative inline-block mx-[1px]">
                       <span className="opacity-0">i</span>
                       <span className="absolute inset-0 flex justify-center">
                         <span className="absolute bottom-0 leading-none">ı</span>
-                        <span className="absolute bottom-[60%] sm:bottom-[65%] w-[12px] h-[12px] sm:w-[15px] sm:h-[15px] rounded-full overflow-hidden bg-white shadow-sm pointer-events-none z-10 border border-[var(--accent-primary)]/20">
+                        <span className="absolute bottom-[60%] sm:bottom-[65%] w-[10px] h-[10px] sm:w-[15px] sm:h-[15px] rounded-full overflow-hidden bg-white shadow-sm pointer-events-none z-10 border border-[#3B82F6]/20">
                           <video src="/freevideo2.mp4" autoPlay loop muted playsInline className="w-full h-full object-cover scale-[1.1]" />
                         </span>
                       </span>
@@ -2917,7 +2917,7 @@ export default function App() {
             </div>
 
             {/* Right: Controls & User */}
-            <div className="flex-1 flex items-center justify-end gap-3 sm:gap-6">
+            <div className="flex items-center justify-end gap-2 sm:gap-4">
 
               {/* More Dropdown */}
               <div className="relative group">
@@ -3099,22 +3099,22 @@ export default function App() {
           {/* Main Content Area — hidden when in a room */}
           {!activeRoom && (
             <>
-            <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center gap-5 relative">
+            <div className="w-full max-w-[1400px] px-3 sm:px-6 lg:px-8 py-3 sm:py-8 flex flex-col items-center gap-3 sm:gap-5 relative">
 
             {/* Main Hero Video Banner */}
-            <div className="w-full relative rounded-2xl border border-border-color overflow-hidden shadow-2xl bg-black group">
+            <div className="w-full relative rounded-2xl border border-white/10 overflow-hidden shadow-2xl bg-black group">
               <video
                 src="/freevideo.mp4"
                 autoPlay
                 loop
                 muted
                 playsInline
-                className="w-full h-[180px] sm:h-[240px] lg:h-[300px] object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
+                className="w-full h-[150px] sm:h-[240px] lg:h-[300px] object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-[var(--bg-base)]/10 to-transparent pointer-events-none"></div>
-              <div className="absolute bottom-6 left-0 right-0 text-center z-10 px-4 pointer-events-none">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">Practice languages live on solith.in</h2>
-                <p className="text-sm sm:text-base text-white/90 max-w-lg mx-auto leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-medium">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0E] via-[#0A0B0E]/20 to-transparent pointer-events-none"></div>
+              <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 text-center z-10 px-3 pointer-events-none">
+                <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight mb-1 sm:mb-2 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">Practice languages live on solith.in</h2>
+                <p className="text-xs sm:text-base text-white/90 max-w-lg mx-auto leading-normal sm:leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-medium">
                   Join live voice rooms, talk with native speakers, and improve your pronunciation in real-time.
                 </p>
               </div>
@@ -3189,13 +3189,13 @@ export default function App() {
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-2 pb-4 flex items-center gap-2.5 flex-wrap animate-slide-up-delayed-2">
+          {/* Filters — Horizontal Scroll for Mobile with Native Touch Snap */}
+          <div className="w-full max-w-[1400px] px-3 sm:px-6 lg:px-8 pt-1 pb-3 overflow-x-auto custom-scrollbar flex items-center gap-2 flex-nowrap scroll-smooth snap-x snap-mandatory">
             {LANGUAGES.map(lang => (
               <button
                 key={lang}
                 onClick={() => setSelectedLanguage(lang)}
-                className={`filter-pill text-[11px] uppercase tracking-wider font-bold whitespace-nowrap ${selectedLanguage === lang ? 'active' : ''
+                className={`filter-pill text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap snap-start transition-all shrink-0 ${selectedLanguage === lang ? 'active' : ''
                   }`}
               >
                 {lang}
