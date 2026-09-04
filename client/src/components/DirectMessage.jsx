@@ -159,31 +159,43 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
   };
 
   return (
-    <div className="w-full h-full min-h-[100dvh] flex flex-col bg-[#0B0D14] relative animate-fade-in overflow-hidden">
+    <div className="w-full h-full min-h-[100dvh] flex flex-col bg-[#07080C] relative animate-fade-in overflow-hidden">
+      {/* Background Glows */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#1877f2]/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#8b5cf6]/10 rounded-full blur-[120px] pointer-events-none" />
+
       {/* Header */}
-      <div className="min-h-16 px-4 py-3 border-b border-white/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 bg-[#0B0D14]/80 backdrop-blur-xl z-10 sticky top-0 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="h-16 px-6 border-b border-white/[0.08] flex items-center justify-between shrink-0 bg-[#0B0D14]/70 backdrop-blur-2xl z-20 sticky top-0 shadow-[0_4px_30px_rgba(0,0,0,0.6)]">
         <div className="flex items-center gap-4 min-w-0">
           <button 
             onClick={onBack}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors text-text-secondary hover:text-text-primary"
+            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] transition-all text-[#888A92] hover:text-white shadow-inner"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           
           <div 
             onClick={() => openUserProfile && openUserProfile(targetProfile.id)}
-            className="flex items-center gap-3 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center gap-3.5 min-w-0 cursor-pointer group"
           >
-            {targetProfile.photoUrl ? (
-              <img src={targetProfile.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-[var(--line-subtle)]" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] border border-[var(--line-subtle)] flex items-center justify-center">
-                <span className="text-text-secondary font-bold">{targetProfile.name?.charAt(0)}</span>
-              </div>
-            )}
+            <div className="relative">
+              {targetProfile.photoUrl ? (
+                <img src={targetProfile.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white/10 shadow-md group-hover:border-[#1877f2]/50 transition-colors" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1E212B] to-[#12141C] border border-white/10 flex items-center justify-center shadow-md group-hover:border-[#1877f2]/50 transition-colors" style={{ backgroundColor: targetProfile.color || '#1E212B' }}>
+                  <span className="text-white font-bold text-sm">{targetProfile.name?.charAt(0)}</span>
+                </div>
+              )}
+              <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0B0D14] shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            </div>
             <div>
-              <h3 className="text-base font-bold text-text-primary">{targetProfile.name}</h3>
-              <p className="text-xs text-text-secondary">Level {Math.max(1, Math.floor((targetProfile.xp || 0)/100))}</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-[15px] font-bold text-white tracking-tight group-hover:text-[#60A5FA] transition-colors">{targetProfile.name}</h3>
+              </div>
+              <p className="text-[11px] font-medium text-[#888A92] flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Active • Level {Math.max(1, Math.floor((targetProfile.xp || 0)/100))}
+              </p>
             </div>
           </div>
         </div>
@@ -192,24 +204,24 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
         <div className="relative">
           <button 
             onClick={() => setShowOptions(!showOptions)}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[var(--bg-secondary)] transition-colors text-text-secondary hover:text-text-primary"
+            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] transition-all text-[#888A92] hover:text-white"
           >
             <MoreVertical className="w-5 h-5" />
           </button>
 
           {showOptions && (
-            <div className="absolute top-12 right-0 w-[min(18rem,calc(100vw-2rem))] bg-[var(--bg-elevated)] border border-[var(--line-subtle)] shadow-2xl rounded-xl overflow-hidden py-1 z-50">
+            <div className="absolute top-12 right-0 w-52 bg-[#12141C]/95 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-2xl overflow-hidden p-1.5 z-50 animate-in fade-in zoom-in-95">
               <button 
                 onClick={() => { setShowOptions(false); handleBlock(); }}
-                className="w-full px-4 py-2.5 text-left text-sm font-medium hover:bg-[var(--bg-hover)] text-red-500 flex items-center gap-2 transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-xl text-left text-xs font-semibold hover:bg-red-500/10 text-red-400 flex items-center gap-2.5 transition-all"
               >
-                <Shield className="w-4 h-4" /> Block User
+                <Shield className="w-4 h-4 text-red-400" /> Block User
               </button>
               <button 
                 onClick={() => { setShowOptions(false); setShowReportModal(true); }}
-                className="w-full px-4 py-2.5 text-left text-sm font-medium hover:bg-[var(--bg-hover)] text-text-secondary flex items-center gap-2 transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-xl text-left text-xs font-semibold hover:bg-white/[0.06] text-[#888A92] hover:text-white flex items-center gap-2.5 transition-all"
               >
-                <Flag className="w-4 h-4" /> Report User
+                <Flag className="w-4 h-4 text-[#888A92]" /> Report User
               </button>
             </div>
           )}
@@ -217,18 +229,18 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar flex flex-col gap-5 min-h-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1877f2]/5 via-[#0B0D14] to-[#0B0D14]">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar flex flex-col gap-4 min-h-0 bg-[#07080C] relative">
         {loading ? (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-[#1877f2] animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#3B82F6] animate-spin" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#1877f2]/20 to-[#6c47ff]/20 flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(24,119,242,0.2)] border border-white/5">
-              <Shield className="w-8 h-8 text-[#1877f2]" />
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#3B82F6]/20 via-[#8b5cf6]/10 to-transparent flex items-center justify-center mb-5 shadow-[0_0_50px_rgba(59,130,246,0.15)] border border-white/10">
+              <Shield className="w-8 h-8 text-[#60A5FA]" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Say Hello to {targetProfile.name.split(' ')[0]}</h2>
-            <p className="text-[#888A92] max-w-sm text-sm leading-relaxed">This is the beginning of your direct message history. Be respectful and follow community guidelines.</p>
+            <h2 className="text-xl font-bold text-white mb-1.5 tracking-tight">Direct Conversation with {targetProfile.name.split(' ')[0]}</h2>
+            <p className="text-[#888A92] max-w-sm text-xs leading-relaxed font-medium">Send a message to start practicing together in private.</p>
           </div>
         ) : (
           messages.map((msg, index) => {
@@ -238,22 +250,22 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
             return (
               <React.Fragment key={msg.id}>
                 {showTime && msg.sentAt && (
-                  <div className="text-center text-[10px] uppercase font-bold tracking-widest text-text-secondary my-2">
+                  <div className="text-center text-[10px] uppercase font-bold tracking-widest text-[#555861] my-3">
                     {msg.sentAt.toDate().toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 )}
                 <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
                   <div 
-                    className={`max-w-[80%] md:max-w-[65%] px-5 py-3.5 text-[15px] leading-relaxed break-words flex flex-col gap-2 ${
+                    className={`max-w-[85%] md:max-w-[65%] px-5 py-3.5 text-[14.5px] leading-relaxed break-words flex flex-col gap-2 border transition-all ${
                       isMe 
-                        ? 'bg-gradient-to-tr from-[#1877f2] to-[#6c47ff] text-white shadow-xl shadow-[#1877f2]/20 rounded-2xl rounded-br-sm' 
-                        : 'bg-[#1A1D27]/90 backdrop-blur-md border border-white/5 text-[#E0E2E8] shadow-lg shadow-black/40 rounded-2xl rounded-bl-sm'
+                        ? 'bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] border-blue-400/30 text-white shadow-[0_8px_25px_rgba(37,99,235,0.35)] rounded-[22px] rounded-br-[6px]' 
+                        : 'bg-[#12141C]/90 backdrop-blur-xl border-white/[0.08] text-[#E2E8F0] shadow-[0_8px_25px_rgba(0,0,0,0.4)] rounded-[22px] rounded-bl-[6px]'
                     }`}
                   >
                     {msg.imageUrl && (
-                      <img src={msg.imageUrl} alt="attachment" className="max-w-full rounded-xl object-contain max-h-[300px]" />
+                      <img src={msg.imageUrl} alt="attachment" className="max-w-full rounded-xl object-contain max-h-[320px] shadow-md border border-black/20" />
                     )}
-                    {msg.text && <span>{msg.text}</span>}
+                    {msg.text && <span className="font-medium tracking-normal">{msg.text}</span>}
                   </div>
                 </div>
               </React.Fragment>
@@ -264,21 +276,21 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       </div>
 
       {/* Input Area */}
-      <div className="p-4 sm:p-6 shrink-0 flex flex-col gap-2 relative bg-transparent pointer-events-none">
-        <div className="max-w-4xl mx-auto w-full flex flex-col gap-3 pointer-events-auto">
+      <div className="p-4 sm:p-6 shrink-0 flex flex-col gap-2 relative bg-gradient-to-t from-[#07080C] via-[#07080C]/90 to-transparent">
+        <div className="max-w-4xl mx-auto w-full flex flex-col gap-3">
           {selectedImage && (
-            <div className="relative inline-block rounded-2xl overflow-hidden border border-white/10 w-24 h-24 bg-black/40 shadow-xl backdrop-blur-md">
+            <div className="relative inline-block rounded-2xl overflow-hidden border border-white/10 w-24 h-24 bg-black/40 shadow-2xl backdrop-blur-md">
               <img src={URL.createObjectURL(selectedImage)} className="w-full h-full object-cover" alt="Preview" />
               <button 
                 type="button" 
                 onClick={() => setSelectedImage(null)}
-                className="absolute top-1.5 right-1.5 bg-black/70 text-white rounded-full p-1 hover:bg-black transition-colors"
+                className="absolute top-1.5 right-1.5 bg-black/80 text-white rounded-full p-1 hover:bg-black transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
-          <form onSubmit={handleSendMessage} className="relative flex items-center w-full gap-2 bg-[#12141C]/90 backdrop-blur-xl border border-white/10 rounded-[2rem] p-1.5 shadow-2xl">
+          <form onSubmit={handleSendMessage} className="relative flex items-center w-full gap-2 bg-[#12141C]/95 backdrop-blur-2xl border border-white/10 rounded-[24px] p-2 shadow-[0_10px_40px_rgba(0,0,0,0.6)] group focus-within:border-[#3B82F6]/60 transition-all">
             <input 
               type="file" 
               accept="image/*" 
@@ -293,26 +305,26 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
             <button 
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center text-[#888A92] hover:text-[#1877f2] hover:bg-[#1877f2]/10 transition-colors ml-1"
+              className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-[#888A92] hover:text-[#60A5FA] hover:bg-white/[0.05] transition-all ml-1"
             >
               <ImageIcon className="w-5 h-5" />
             </button>
             
-            <div className="relative flex-1">
+            <div className="relative flex-1 flex items-center">
               <input 
                 type="text" 
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))} // Client side limit
-                placeholder="Type your message..." 
-                className="w-full bg-transparent border-none py-3.5 text-[15px] text-white placeholder-[#555861] focus:outline-none focus:ring-0 transition-all min-w-0"
+                onChange={(e) => setNewMessage(e.target.value.slice(0, 2000))} 
+                placeholder="Write a message..." 
+                className="w-full bg-transparent border-none py-2.5 pr-12 text-[14.5px] text-white placeholder-[#555861] focus:outline-none focus:ring-0 transition-all min-w-0 font-medium"
                 autoFocus={!selectedImage}
               />
               <button 
                 type="submit"
                 disabled={sending || (!newMessage.trim() && !selectedImage)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-r from-[#1877f2] to-[#6c47ff] text-white hover:opacity-90 disabled:opacity-30 disabled:from-[#2A2E39] disabled:to-[#2A2E39] disabled:text-[#555861] transition-all shadow-lg"
+                className="absolute right-1 w-9 h-9 rounded-xl flex items-center justify-center bg-[#2563EB] text-white hover:bg-[#1D4ED8] disabled:opacity-30 disabled:bg-[#1E212B] disabled:text-[#555861] transition-all shadow-md"
               >
-                {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
             </div>
           </form>
