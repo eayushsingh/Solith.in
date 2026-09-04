@@ -11,7 +11,7 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
     });
   }, [userId]);
 
-  if (!profile) return null;
+  if (!profile || !currentUser || !currentUser.id) return null;
 
   const convoId = currentUser.id < userId
     ? `${currentUser.id}_${userId}`

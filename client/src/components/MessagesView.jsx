@@ -9,7 +9,7 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!currentUser || !db) {
+    if (!currentUser || !currentUser.id || !db) {
       setLoading(false);
       return;
     }
