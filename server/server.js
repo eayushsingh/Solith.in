@@ -564,9 +564,13 @@ app.get('/api/config', (req, res) => {
   if (!runtimeConfig.livekitApiKey || !runtimeConfig.livekitApiSecret) {
     console.warn('⚠️ WARNING: LiveKit credentials are not configured.');
   }
+  let url = runtimeConfig.livekitUrl || 'wss://livekit.solith.in';
+  if (url.includes('freetalk')) {
+    url = url.replace(/freetalk/g, 'solith');
+  }
   res.json({
     hasApiKey: !!runtimeConfig.livekitApiKey,
-    livekitUrl: runtimeConfig.livekitUrl
+    livekitUrl: url
   });
 });
 

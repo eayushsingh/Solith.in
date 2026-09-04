@@ -103,7 +103,7 @@ export default function PremiumSubscription({ onBack, user }) {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0B0D12] relative overflow-x-hidden font-sans text-text-primary selection:bg-amber-500/30">
+    <div data-testid="premium-page" className="w-full min-h-screen bg-[#0B0D12] relative overflow-x-hidden font-sans text-text-primary selection:bg-amber-500/30">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-amber-600/10 blur-[150px] rounded-full mix-blend-screen"></div>
         <div className="absolute top-[40%] -right-[10%] w-[40%] h-[60%] bg-amber-500/10 blur-[150px] rounded-full mix-blend-screen"></div>
@@ -162,6 +162,7 @@ export default function PremiumSubscription({ onBack, user }) {
                  <Crown className="w-4 h-4 text-amber-400" />
                  <span className="text-[11px] font-black tracking-[0.2em] uppercase text-amber-400">Upgrade to Premium</span>
               </div>
+              <h2 className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-2">Premium</h2>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6 leading-[1.1] tracking-tight">
                 Unlock <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 drop-shadow-[0_0_30px_rgba(251,191,36,0.3)]">Premium</span> Features
               </h1>
