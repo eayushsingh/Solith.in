@@ -3189,13 +3189,13 @@ export default function App() {
             </div>
           </div>
 
-          {/* Filters — Horizontal Scroll for Mobile with Native Touch Snap */}
-          <div className="w-full max-w-[1400px] px-3 sm:px-6 lg:px-8 pt-1 pb-3 overflow-x-auto custom-scrollbar flex items-center gap-2 flex-nowrap scroll-smooth snap-x snap-mandatory">
+          {/* Filters — Wrapped on Desktop, Horizontal Scroll on Mobile */}
+          <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-2 pb-4 flex items-center gap-2 overflow-x-auto md:overflow-x-visible custom-scrollbar flex-nowrap md:flex-wrap scroll-smooth snap-x md:snap-none">
             {LANGUAGES.map(lang => (
               <button
                 key={lang}
                 onClick={() => setSelectedLanguage(lang)}
-                className={`filter-pill text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap snap-start transition-all shrink-0 ${selectedLanguage === lang ? 'active' : ''
+                className={`filter-pill text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap snap-start transition-all shrink-0 md:shrink border transition-all duration-200 ${selectedLanguage === lang ? 'active shadow-[0_4px_20px_rgba(37,99,235,0.4)] scale-[1.03]' : 'hover:border-white/20 hover:scale-[1.02]'
                   }`}
               >
                 {lang}
