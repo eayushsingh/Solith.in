@@ -808,6 +808,21 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
     }
   }
 
+  // Ensure Ananya is dispatched to room if LiveKit is configured
+  if (isRealConnection) {
+    try {
+      const dispatchClient = new AgentDispatchClient(
+        runtimeConfig.livekitUrl,
+        runtimeConfig.livekitApiKey,
+        runtimeConfig.livekitApiSecret
+      );
+      await dispatchClient.createDispatch(id, 'agent-ananya');
+      console.log(`[dispatch] ✓ Ananya dispatched on join to room ${id}`);
+    } catch (e) {
+      // Ignore if dispatch already exists or duplicate
+    }
+  }
+
   res.json({
     room,
     livekitUrl: runtimeConfig.livekitUrl,  // always use current config, not stored room value
