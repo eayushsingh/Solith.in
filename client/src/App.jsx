@@ -1454,10 +1454,13 @@ export default function App() {
 
   // Calculations
   const filteredRooms = rooms.filter(room => {
+    if (!room) return false;
     const matchLang = selectedLanguage === 'All Languages' || room.language === selectedLanguage;
-    const matchSearch = room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      room.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      room.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+    const searchLower = searchQuery.toLowerCase();
+    const matchSearch = !searchQuery ||
+      (room.name || '').toLowerCase().includes(searchLower) ||
+      (room.topic || '').toLowerCase().includes(searchLower) ||
+      (room.tags || []).some(t => (t || '').toLowerCase().includes(searchLower));
     return matchLang && matchSearch;
   }).sort((a, b) => {
     if (platformSettings?.premiumVisibilityBoost !== false) {
@@ -3231,7 +3234,7 @@ export default function App() {
                     key={room.id}
                     room={room}
                     inThisRoom={activeRoom?.id === room.id}
-                    onJoin={(room) => window.open(`/?room=${room.id}`, '_blank')}
+                    onJoin={(roomToJoin) => joinVoiceRoom(roomToJoin)}
                     userFollowing={user?.following || []}
                     isJoining={joiningRoomId === room.id}
                     anyRoomJoining={!!joiningRoomId}
