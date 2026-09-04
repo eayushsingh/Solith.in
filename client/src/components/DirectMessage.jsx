@@ -19,7 +19,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
   const previousMessagesLength = useRef(0);
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || !currentUser || !currentUser.id) return;
 
     const q = query(
       collection(db, 'conversations', conversationId, 'messages'),
@@ -34,7 +34,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       // Play sound on new message
       if (previousMessagesLength.current > 0 && msgs.length > previousMessagesLength.current) {
         const lastMsg = msgs[msgs.length - 1];
-        if (lastMsg && lastMsg.senderId !== currentUser.id) {
+        if (lastMsg && lastMsg.senderId !== currentUser?.id) {
           playSound('message');
         }
       }
@@ -42,7 +42,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       
       // Update read status for messages sent by the other user
       msgs.forEach(msg => {
-        if (msg.senderId !== currentUser.id && !msg.readAt) {
+        if (msg.senderId !== currentUser?.id && !msg.readAt) {
           updateDoc(doc(db, 'conversations', conversationId, 'messages', msg.id), {
             readAt: serverTimestamp()
           }).catch(console.error);
@@ -51,7 +51,7 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
     });
 
     return () => unsubscribe();
-  }, [conversationId, currentUser.id]);
+  }, [conversationId, currentUser?.id]);
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
