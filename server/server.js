@@ -826,7 +826,27 @@ app.post('/api/rooms/:id/ping', verifyToken, (req, res) => {
 
   const participant = room.participants.find(p => p.id === userId);
   if (participant) {
-    participant.lastPing = Date.now();
+    const now = Date.now();
+    if (participant.lastPing) {
+      const deltaSec = (now - participant.lastPing) / 1000;
+      // Cap max single ping jump to 10 seconds to avoid giant spikes
+      const validDelta = Math.min(Math.max(deltaSec, 0), 10);
+      if (validDelta > 0) {
+        participant.accumulatedTalkTime = (participant.accumulatedTalkTime || 0) + validDelta;
+        participant.lastFlush = participant.lastFlush || now;
+
+        // Flush talk time to Firestore every 300 seconds (5 minutes)
+        if (now - participant.lastFlush >= 300000 || participant.accumulatedTalkTime >= 300) {
+          const secondsToFlush = Math.floor(participant.accumulatedTalkTime);
+          if (secondsToFlush > 0) {
+            awardUserXP(userId, Math.floor(secondsToFlush * 1.25), secondsToFlush);
+            participant.accumulatedTalkTime -= secondsToFlush;
+            participant.lastFlush = now;
+          }
+        }
+      }
+    }
+    participant.lastPing = now;
     res.json({ success: true });
   } else {
     res.status(400).json({ error: 'Not in room' });
@@ -841,11 +861,10 @@ app.post('/api/rooms/:id/leave', verifyToken, (req, res) => {
   const room = rooms.find(r => r.id === id);
   if (room) {
     const participant = room.participants.find(p => p.id === userId);
-    if (participant && participant.lastPing) {
-      const secondsSinceLastPing = (Date.now() - participant.lastPing) / 1000;
-      const validSeconds = Math.min(secondsSinceLastPing, 120);
-      if (validSeconds > 3) {
-        awardUserXP(userId, Math.floor(validSeconds * 1.25), validSeconds);
+    if (participant) {
+      const remainingSeconds = Math.floor(participant.accumulatedTalkTime || 0);
+      if (remainingSeconds > 0) {
+        awardUserXP(userId, Math.floor(remainingSeconds * 1.25), remainingSeconds);
       }
     }
     room.participants = room.participants.filter(p => p.id !== userId);

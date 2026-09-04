@@ -74,9 +74,9 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
   const currentUserInTop50 = userRankIndex !== -1;
 
   const renderRankIcon = (index) => {
-    if (index === 0) return <Trophy className="w-5 h-5 text-[#3B82F6]" />;
-    if (index === 1) return <Medal className="w-5 h-5 text-[#888A92]" />;
-    if (index === 2) return <Medal className="w-5 h-5 text-[#D1D3D8]" />;
+    if (index === 0) return <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-300 via-amber-500 to-yellow-600 p-[1px] shadow-[0_0_15px_rgba(245,158,11,0.4)] flex items-center justify-center"><Trophy className="w-4 h-4 text-amber-950 fill-amber-300" /></div>;
+    if (index === 1) return <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 via-slate-400 to-slate-500 p-[1px] shadow-[0_0_12px_rgba(203,213,225,0.3)] flex items-center justify-center"><Medal className="w-4 h-4 text-slate-950 fill-slate-200" /></div>;
+    if (index === 2) return <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-600 via-amber-700 to-amber-900 p-[1px] shadow-[0_0_12px_rgba(217,119,6,0.3)] flex items-center justify-center"><Medal className="w-4 h-4 text-amber-950 fill-amber-600" /></div>;
     return <span className="font-mono text-[#555861] w-5 text-center font-bold">{index + 1}</span>;
   };
 
@@ -194,48 +194,64 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                   </p>
                 </div>
               ) : (
-                leaders.map((leader, index) => (
-                  <div 
-                    key={leader.id} 
-                    onClick={() => {
-                      if (openUserProfile) openUserProfile(leader.id);
-                    }}
-                    className={`flex items-center gap-4 sm:gap-6 px-6 sm:px-8 py-5 transition-all group cursor-pointer hover:bg-[#12141C] ${
-                      leader.id === user?.id ? 'bg-[#12141C]/50' : ''
-                    } ${index < 3 ? 'border-l-4 border-[#3B82F6]' : 'border-l-4 border-transparent'}`}
-                  >
-                    <div className="w-8 flex justify-center flex-shrink-0">
-                      {renderRankIcon(index)}
-                    </div>
-                    
-                    <div className="w-12 h-12 rounded-[14px] overflow-hidden bg-[#1E212B] flex items-center justify-center flex-shrink-0 shadow-sm border border-[#2A2E3B]" style={{ backgroundColor: leader.color || '#1E212B' }}>
-                      {leader.photoUrl ? (
-                        <img src={leader.photoUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xl">{leader.emoji || '👤'}</span>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-white text-[16px] truncate tracking-tight">{leader.name}</span>
-                        {leader.id === user?.id && (
-                          <span className="bg-[#212C45] border border-[#2A3B5C] text-[#60A5FA] text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-[6px]">You</span>
+                leaders.map((leader, index) => {
+                  let topStyling = 'border-l-4 border-transparent hover:bg-[#12141C]';
+                  let badgeTag = null;
+                  if (index === 0) {
+                    topStyling = 'bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent border-l-4 border-amber-400 shadow-[inset_0_1px_0_0_rgba(251,191,36,0.2)] hover:from-amber-500/20';
+                    badgeTag = <span className="bg-gradient-to-r from-amber-500 to-yellow-600 text-amber-950 font-extrabold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.4)]">1st Gold</span>;
+                  } else if (index === 1) {
+                    topStyling = 'bg-gradient-to-r from-slate-400/10 via-slate-500/5 to-transparent border-l-4 border-slate-300 shadow-[inset_0_1px_0_0_rgba(203,213,225,0.2)] hover:from-slate-400/20';
+                    badgeTag = <span className="bg-gradient-to-r from-slate-200 to-slate-400 text-slate-950 font-extrabold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(203,213,225,0.3)]">2nd Silver</span>;
+                  } else if (index === 2) {
+                    topStyling = 'bg-gradient-to-r from-amber-700/10 via-amber-800/5 to-transparent border-l-4 border-amber-600 shadow-[inset_0_1px_0_0_rgba(217,119,6,0.2)] hover:from-amber-700/20';
+                    badgeTag = <span className="bg-gradient-to-r from-amber-600 to-amber-800 text-amber-100 font-extrabold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(217,119,6,0.3)]">3rd Bronze</span>;
+                  }
+
+                  return (
+                    <div 
+                      key={leader.id} 
+                      onClick={() => {
+                        if (openUserProfile) openUserProfile(leader.id);
+                      }}
+                      className={`flex items-center gap-4 sm:gap-6 px-6 sm:px-8 py-5 transition-all group cursor-pointer ${
+                        leader.id === user?.id ? 'bg-[#12141C]/50' : ''
+                      } ${topStyling}`}
+                    >
+                      <div className="w-8 flex justify-center flex-shrink-0">
+                        {renderRankIcon(index)}
+                      </div>
+                      
+                      <div className={`w-12 h-12 rounded-[14px] overflow-hidden bg-[#1E212B] flex items-center justify-center flex-shrink-0 shadow-md border ${index === 0 ? 'border-amber-400/50 shadow-amber-500/20' : index === 1 ? 'border-slate-300/50 shadow-slate-400/20' : index === 2 ? 'border-amber-600/50 shadow-amber-700/20' : 'border-[#2A2E3B]'}`} style={{ backgroundColor: leader.color || '#1E212B' }}>
+                        {leader.photoUrl ? (
+                          <img src={leader.photoUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl">{leader.emoji || '👤'}</span>
                         )}
                       </div>
-                      <div className="text-[#555861] text-[13px] font-medium mt-1">
-                        {activeTab === 'allTime' ? 'Legend' : (activeTab === 'monthly' ? 'Dedicated' : 'Active Speaker')}
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                          <span className={`font-bold text-[16px] truncate tracking-tight ${index === 0 ? 'text-amber-200' : index === 1 ? 'text-slate-100' : index === 2 ? 'text-amber-300' : 'text-white'}`}>{leader.name}</span>
+                          {badgeTag}
+                          {leader.id === user?.id && (
+                            <span className="bg-[#212C45] border border-[#2A3B5C] text-[#60A5FA] text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-[6px]">You</span>
+                          )}
+                        </div>
+                        <div className="text-[#555861] text-[13px] font-medium mt-1">
+                          {activeTab === 'allTime' ? 'Legend' : (activeTab === 'monthly' ? 'Dedicated' : 'Active Speaker')}
+                        </div>
+                      </div>
+                      
+                      <div className="text-right flex flex-col items-end justify-center">
+                        <div className={`font-bold text-[20px] sm:text-[22px] tracking-tight leading-none mb-1 ${index === 0 ? 'text-amber-400' : index === 1 ? 'text-slate-200' : index === 2 ? 'text-amber-500' : 'text-white'}`}>
+                          {formatMinutes(activeTab === 'daily' ? leader.dailyTalkTimeVal : (activeTab === 'weekly' ? leader.weeklyTalkTimeVal : (activeTab === 'monthly' ? leader.monthlyTalkTimeVal : leader.allTimeTalkTimeVal)))}
+                        </div>
+                        <div className="text-[10px] text-[#555861] font-bold uppercase tracking-[0.1em]">Minutes</div>
                       </div>
                     </div>
-                    
-                    <div className="text-right flex flex-col items-end justify-center">
-                      <div className="font-bold text-[20px] sm:text-[22px] text-white tracking-tight leading-none mb-1">
-                        {formatMinutes(activeTab === 'daily' ? leader.dailyTalkTimeVal : (activeTab === 'weekly' ? leader.weeklyTalkTimeVal : (activeTab === 'monthly' ? leader.monthlyTalkTimeVal : leader.allTimeTalkTimeVal)))}
-                      </div>
-                      <div className="text-[10px] text-[#555861] font-bold uppercase tracking-[0.1em]">Minutes</div>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
             
