@@ -2621,20 +2621,112 @@ export default function App() {
         </button>
       )}
 
-      {/* Focused Video Modal */}
-      {focusedVideoParticipant && focusedVideoParticipant.cameraTrack && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 bg-black/90 backdrop-blur-md animate-fade-in" onClick={() => setFocusedVideoParticipant(null)}>
-          <div className="relative w-full max-w-5xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10" onClick={e => e.stopPropagation()}>
-            <VideoTrack track={focusedVideoParticipant.cameraTrack} className="w-full h-full object-contain" />
-            <div className="absolute bottom-6 left-6 px-4 py-2 bg-black/60 backdrop-blur-md rounded-xl text-white font-bold text-lg">
-              {focusedVideoParticipant.name || 'User'}
+      {/* Focused Video / Profile Fullscreen View */}
+      {focusedVideoParticipant && (() => {
+        const currentP = safeParticipants.find(sp => sp.id === focusedVideoParticipant.id) || focusedVideoParticipant;
+        const backendP = currentRoomData.participants?.find(bp => bp?.id === currentP?.id);
+        const pPhotoUrl = getAvatarUrl(currentP.isLocal ? user?.photoUrl : (backendP?.photoUrl || currentP.photoUrl), currentP.id);
+        const pName = currentP.isLocal ? (user?.name || 'You') : (backendP?.name || currentP.name || 'User');
+        const targetRole = getRole(currentP.id);
+
+        return (
+          <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-2 sm:p-6 bg-black/95 backdrop-blur-2xl animate-fade-in" onClick={() => setFocusedVideoParticipant(null)}>
+            <div className="relative w-full max-w-5xl h-[85vh] sm:h-[88vh] bg-[#0b0d14] rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col" onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/10 bg-black/40 backdrop-blur-md z-20">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={pPhotoUrl}
+                    className="w-10 h-10 rounded-full object-cover border border-white/20"
+                    alt=""
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <div>
+                    <div className="text-white font-bold text-sm sm:text-base flex items-center gap-2">
+                      {pName}
+                      {currentP.isAI && (
+                        <span className="bg-purple-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">AI HOST</span>
+                      )}
+                      {targetRole === 'owner' && (
+                        <span className="bg-blue-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Host</span>
+                      )}
+                    </div>
+                    <div className="text-[11px] sm:text-xs text-white/50">
+                      {currentP.isScreenSharing ? 'Sharing Screen' : currentP.isCameraOn ? 'Live Camera' : 'Voice Participant'}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!currentP.isLocal && (
+                    <button
+                      onClick={() => {
+                        setActiveActionUser(currentP);
+                        setFocusedVideoParticipant(null);
+                      }}
+                      className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5"
+                    >
+                      <Settings className="w-3.5 h-3.5" /> Options
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setFocusedVideoParticipant(null)}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Stream / Avatar Display area */}
+              <div className="flex-1 w-full h-full relative flex items-center justify-center overflow-hidden bg-black p-2 sm:p-4">
+                {currentP.isScreenSharing && currentP.screenShareTrack ? (
+                  <VideoTrack track={currentP.screenShareTrack} className="w-full h-full object-contain" />
+                ) : currentP.isCameraOn && currentP.cameraTrack ? (
+                  <VideoTrack track={currentP.cameraTrack} className="w-full h-full object-contain" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-4 animate-fade-in p-6 text-center">
+                    <div className="relative">
+                      <img
+                        src={pPhotoUrl}
+                        className="w-28 h-28 sm:w-44 sm:h-44 rounded-full object-cover border-4 border-blue-500/40 shadow-2xl"
+                        alt=""
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-md p-2 rounded-full border border-white/10">
+                        {currentP.muted ? (
+                          <MicOff className="w-5 h-5 text-red-500" />
+                        ) : (
+                          <Mic className="w-5 h-5 text-emerald-400 animate-pulse" />
+                        )}
+                      </div>
+                    </div>
+                    <h3 className="text-xl sm:text-3xl font-black text-white">{pName}</h3>
+                    <div className="flex items-center gap-3 mt-2">
+                      {!currentP.isLocal && (
+                        <button
+                          onClick={() => {
+                            const targetId = currentP.id;
+                            const targetProfile = { id: targetId, name: pName, photoUrl: currentP.photoUrl };
+                            setActiveDm({ id: targetId, profile: targetProfile });
+                            setMsgTab('direct');
+                            setView('messages');
+                            setFocusedVideoParticipant(null);
+                          }}
+                          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
+                        >
+                          Direct Message
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <button onClick={() => setFocusedVideoParticipant(null)} className="absolute top-6 right-6 p-3 rounded-full bg-black/50 hover:bg-white/20 text-white transition-colors backdrop-blur-md">
-              <X size={24} />
-            </button>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 
@@ -3481,7 +3573,10 @@ export default function App() {
                   return (
                     <div className="flex flex-col lg:flex-row flex-1 w-full h-full p-4 md:p-8 pt-24 pb-32 gap-6 overflow-hidden">
                       {/* Large Screen Share / YouTube Viewer / Game */}
-                      <div className="flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px]">
+                      <div 
+                        onClick={() => screenSharingParticipant && setFocusedVideoParticipant(screenSharingParticipant)}
+                        className={`flex-1 flex flex-col bg-bg-surface rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative min-h-[300px] ${screenSharingParticipant ? 'cursor-pointer hover:border-blue-500/30 transition-all' : ''}`}
+                      >
                         {activeGame ? (
                           <GameContainer activeGame={activeGame} socket={socket} roomId={activeRoom.id} currentUser={user} />
                         ) : screenSharingParticipant ? (
@@ -3535,9 +3630,9 @@ export default function App() {
 
                           return (
                             <div key={p.id}
-                              onClick={() => !p.isLocal && setActiveActionUser(p)}
-                              className="group flex-shrink-0"
-                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: p.isLocal ? 'default' : 'pointer' }}
+                              onClick={() => setFocusedVideoParticipant(p)}
+                              className="group flex-shrink-0 cursor-pointer"
+                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
                             >
                               <div style={{
                                 width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
@@ -3582,7 +3677,7 @@ export default function App() {
                                     <Settings size={10} color="white" />
                                   </div>
                                 )}
-                              </div>
+                               </div>
                               <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600, maxWidth: 80, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {pName}
                               </span>
@@ -3665,7 +3760,7 @@ export default function App() {
                         return (
                           <div 
                             key={p.id}
-                            onClick={() => !p.isLocal && setActiveActionUser(p)}
+                            onClick={() => setFocusedVideoParticipant(p)}
                             className="group relative w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden bg-[#131722] border border-white/10 shadow-2xl flex flex-col justify-between cursor-pointer transition-all duration-200 hover:scale-105"
                             style={{
                               borderColor: isSpeaking ? '#3B82F6' : 'rgba(255,255,255,0.1)',
