@@ -3178,6 +3178,8 @@ export default function App() {
             <div className="flex items-center gap-1.5 sm:gap-3">
               <button
                 onClick={() => { if (user) setShowCreateModal(true); else setShowAuthModal(true); }}
+                aria-label="Start a Room"
+                title="Start a Room"
                 className="px-2.5 sm:px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(37,99,235,0.4)] hover:scale-105 active:scale-95 whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
@@ -3716,6 +3718,7 @@ export default function App() {
               <div className="fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 sm:gap-2 bg-[#0B0D14]/85 backdrop-blur-2xl border border-white/10 rounded-2xl p-1.5 sm:p-2 shadow-2xl max-w-[calc(100vw-20px)] overflow-x-auto hide-scrollbar">
                 <button 
                   onClick={toggleMute} 
+                  aria-label={isMuted ? "Unmute Microphone" : "Mute Microphone"}
                   className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
                     isMuted ? 'bg-[#1877f2] text-white' : 'bg-white/10 text-white hover:bg-white/15'
                   }`}
@@ -3726,6 +3729,7 @@ export default function App() {
 
                 <button 
                   onClick={toggleCamera} 
+                  aria-label={isCameraOn ? "Turn off camera" : "Turn on camera"}
                   className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
                     isCameraOn ? 'bg-[#1877f2] text-white' : 'bg-white/10 text-white hover:bg-white/15'
                   }`}
@@ -3736,16 +3740,18 @@ export default function App() {
 
                 <button 
                   onClick={toggleScreenShare} 
+                  aria-label={isScreenSharing ? "Stop sharing screen" : "Share screen"}
                   className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
                     isScreenSharing ? 'bg-[#1877f2] text-white' : 'bg-white/10 text-white hover:bg-white/15'
                   }`}
-                  title={isScreenSharing ? "Stop sharing" : "Share screen"}
+                  title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
                 >
                   <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
 
                 <button 
                   onClick={() => setShowGameSelector(!showGameSelector)}
+                  aria-label="Games and Extras"
                   className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
                     showGameSelector ? 'bg-purple-600 text-white shadow-md' : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15'
                   }`}
@@ -3756,6 +3762,7 @@ export default function App() {
 
                 <button 
                   onClick={() => setIsChatOpen(!isChatOpen)}
+                  aria-label={isChatOpen ? "Close Chat Panel" : "Open Chat Panel"}
                   className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 relative ${
                     isChatOpen ? 'bg-blue-600 text-white shadow-md' : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15'
                   }`}
@@ -3773,6 +3780,7 @@ export default function App() {
                     setToastMessage('Room link copied to clipboard!');
                     setTimeout(() => setToastMessage(null), 3000);
                   }}
+                  aria-label="Share Room Link"
                   className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 text-white/70 hover:text-white hover:bg-white/15 flex items-center justify-center transition-all flex-shrink-0"
                   title="Share Room Link"
                 >
@@ -3781,6 +3789,7 @@ export default function App() {
 
                 <button 
                   onClick={leaveVoiceRoom} 
+                  aria-label="Leave Room"
                   className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#dc2626] hover:bg-red-700 text-white flex items-center justify-center transition-all flex-shrink-0"
                   title="Leave Room"
                 >
