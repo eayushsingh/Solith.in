@@ -30,9 +30,39 @@ import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectR
 import socket from './socket';
 
 const getAvatarUrl = (photoUrl, uid) => {
-  if (photoUrl && photoUrl.trim() !== '') return photoUrl;
-  return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(uid || 'default')}`;
+  if (photoUrl && typeof photoUrl === 'string' && photoUrl.trim() !== '') return photoUrl.trim();
+  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid || 'user')}`;
 };
+
+function ParticipantAvatar({ photoUrl, name, color, className = "w-14 h-14 sm:w-20 sm:h-20", isCameraOn, cameraTrack }) {
+  const [hasError, setHasError] = useState(false);
+  const initials = (name || 'U').slice(0, 2).toUpperCase();
+  const bgColor = color || '#2563eb';
+
+  if (isCameraOn && cameraTrack) {
+    return <VideoTrack track={cameraTrack} className="w-full h-full object-cover rounded-xl" />;
+  }
+
+  if (photoUrl && !hasError) {
+    return (
+      <img
+        src={photoUrl}
+        className={`${className} rounded-full object-cover shadow-lg border border-white/10`}
+        alt={name || ''}
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${className} rounded-full flex items-center justify-center text-lg sm:text-2xl font-extrabold text-white shadow-lg border border-white/10 select-none`}
+      style={{ background: `linear-gradient(135deg, ${bgColor}, #1e293b)` }}
+    >
+      {initials}
+    </div>
+  );
+}
 
 const getYoutubeId = (url) => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -2762,11 +2792,12 @@ export default function App() {
               {/* Header */}
               <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/10 bg-black/40 backdrop-blur-md z-20">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={pPhotoUrl}
-                    className="w-10 h-10 rounded-full object-cover border border-white/20"
-                    alt=""
-                    onError={(e) => { e.target.style.display = 'none'; }}
+                  <ParticipantAvatar
+                    photoUrl={pPhotoUrl}
+                    name={pName}
+                    color={currentP.color}
+                    className="w-10 h-10"
+                    isCameraOn={false}
                   />
                   <div>
                     <div className="text-white font-bold text-sm sm:text-base flex items-center gap-2">
@@ -2818,13 +2849,12 @@ export default function App() {
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-4 animate-fade-in p-6 text-center">
                     <div className="relative">
-                      <img
-                        src={pPhotoUrl}
-                        className="w-28 h-28 sm:w-44 sm:h-44 rounded-full object-cover border-4 border-blue-500/40 shadow-2xl"
-                        alt=""
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
+                      <ParticipantAvatar
+                        photoUrl={pPhotoUrl}
+                        name={pName}
+                        color={currentP.color}
+                        className="w-28 h-28 sm:w-44 sm:h-44"
+                        isCameraOn={false}
                       />
                       <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-md p-2 rounded-full border border-white/10">
                         {currentP.muted ? (
@@ -3784,23 +3814,14 @@ export default function App() {
                                 transition: 'all 0.2s ease',
                                 background: pColor, position: 'relative', flexShrink: 0
                               }}>
-                                {p.isCameraOn && p.cameraTrack ? (
-                                  <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover" />
-                                ) : pPhotoUrl ? (
-                                  <img
-                                    src={pPhotoUrl}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                    alt=""
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                      e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
-                                    }}
-                                  />
-                                ) : (
-                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
-                                    {pName.slice(0, 2).toUpperCase()}
-                                  </div>
-                                )}
+                                <ParticipantAvatar
+                                  photoUrl={pPhotoUrl}
+                                  name={pName}
+                                  color={pColor}
+                                  className="w-full h-full"
+                                  isCameraOn={p.isCameraOn}
+                                  cameraTrack={p.cameraTrack}
+                                />
                                 {p.muted && (
                                   <div style={{
                                     position: 'absolute', bottom: 3, right: 3,
@@ -3882,12 +3903,10 @@ export default function App() {
                         <Gamepad2 className="w-5 h-5" />
                       </button>
                       {showGameSelector && (
-                        <div className="fixed right-16 top-1/2 -translate-y-1/2 z-50">
-                          <GameSelector
-                            onSelect={handleGameSelect}
-                            onClose={() => setShowGameSelector(false)}
-                          />
-                        </div>
+                        <GameSelector
+                          onSelect={handleGameSelect}
+                          onClose={() => setShowGameSelector(false)}
+                        />
                       )}
 
                       <button 
@@ -3984,23 +4003,14 @@ export default function App() {
 
                             {/* Avatar / Camera Stream */}
                             <div className="flex-1 w-full h-full flex items-center justify-center relative p-2 overflow-hidden">
-                              {p.isCameraOn && p.cameraTrack ? (
-                                <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover rounded-xl" />
-                              ) : pPhotoUrl ? (
-                                <img
-                                  src={pPhotoUrl}
-                                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover shadow-lg border border-white/10"
-                                  alt=""
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.parentNode.innerHTML = `<div style="width:50px;height:50px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
-                                  }}
-                                />
-                              ) : (
-                                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-blue-600 flex items-center justify-center text-xl sm:text-2xl font-extrabold text-white shadow-lg">
-                                  {pName.slice(0, 2).toUpperCase()}
-                                </div>
-                              )}
+                              <ParticipantAvatar
+                                photoUrl={pPhotoUrl}
+                                name={pName}
+                                color={backendP?.color || p.color}
+                                className="w-14 h-14 sm:w-20 sm:h-20"
+                                isCameraOn={p.isCameraOn}
+                                cameraTrack={p.cameraTrack}
+                              />
                             </div>
 
                             {/* Bottom Card Strip (Name + Mic Status) */}
