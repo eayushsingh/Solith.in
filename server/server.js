@@ -235,7 +235,14 @@ const loadLocalDB = () => {
   }
 };
 
+const broadcastRoomsUpdated = () => {
+  if (io) {
+    io.emit('rooms-updated', { rooms: rooms.filter(r => r.accessType !== 'invite') });
+  }
+};
+
 const saveDB = async () => {
+  broadcastRoomsUpdated();
   const adminInstance = initFirebaseAdmin();
   if (adminInstance) {
     try {
@@ -263,9 +270,7 @@ const saveDB = async () => {
       console.error('Error writing to DB:', err);
     }
   }
-  if (io) {
-    io.emit('rooms-updated', { rooms: rooms.filter(r => r.accessType !== 'invite') });
-  }
+  broadcastRoomsUpdated();
 };
 
 const evictStalePingParticipants = () => {
@@ -710,13 +715,22 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     }
   }
 
+  broadcastRoomsUpdated();
   res.status(201).json(newRoom);
+});
+
+// API Endpoint: Get Single Room
+app.get('/api/rooms/:id', (req, res) => {
+  const { id } = req.params;
+  const room = rooms.find(r => r.id === id);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  res.json(room);
 });
 
 // API Endpoint: Join Room
 app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
   const { id } = req.params;
-  const { userId, name, color, emoji, photoUrl } = req.body;
+  const { userId, name, color, emoji, photoUrl, profileAnimation } = req.body;
 
   if (!userId || !name) {
     return res.status(400).json({ error: 'userId and name are required' });
@@ -783,6 +797,7 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
     color: color || '#1877f2',
     emoji: emoji || '😊',
     photoUrl: photoUrl || '',  // empty string not undefined
+    profileAnimation: profileAnimation || 'none',
     followersCount: followersCount || 0,
     joinedAt: Date.now(),
     lastPing: Date.now()
@@ -790,7 +805,13 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
   if (!participant || !participant.id) {
     return res.status(400).json({ error: 'Invalid participant data' });
   }
+  room.participants = room.participants.filter(p => p.id !== userId);
   room.participants.push(participant);
+  broadcastRoomsUpdated();
+  if (io) {
+    io.in(room.id).emit('room-participants', room.participants);
+    io.in(room.id).emit('user-joined', participant);
+  }
   saveDB();
 
   let token = '';
@@ -888,6 +909,11 @@ app.post('/api/rooms/:id/leave', verifyToken, (req, res) => {
       }
     }
     room.participants = room.participants.filter(p => p.id !== userId);
+    broadcastRoomsUpdated();
+    if (io) {
+      io.in(room.id).emit('room-participants', room.participants);
+      io.in(room.id).emit('user-left', userId);
+    }
     saveDB();
   }
 
@@ -1567,6 +1593,7 @@ function checkConnect4Winner(board) {
 
 io.on('connection', (socket) => {
   console.log(chalk.green(`✓ Socket connected: ${socket.id}`));
+  socket.emit('rooms-updated', { rooms: rooms.filter(r => r.accessType !== 'invite') });
   broadcastOnlineStats();
 
   socket.on('authenticate', (uid) => {
