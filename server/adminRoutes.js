@@ -163,6 +163,25 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
       
       const isPremium = action === 'grant';
       await userRef.update({ isPremium });
+
+      if (isPremium) {
+        const convoId = `system_${id}`;
+        const convoRef = db.collection('conversations').doc(convoId);
+        const notificationText = "You have successfully purchased Pro. Your Pro VIP features, custom badges, and Pro Customizations are now active!";
+        await convoRef.set({
+          participants: ['system', id],
+          lastMessageAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+          lastMessageText: notificationText,
+          lastMessageSenderId: 'system'
+        }, { merge: true });
+
+        await convoRef.collection('messages').add({
+          senderId: 'system',
+          text: notificationText,
+          sentAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+          readAt: null
+        });
+      }
       
       await logAdminAction(db, req.adminData.id, req.adminData.email, `subscription_${action}`, id, `Admin ${action}ed premium subscription`);
       res.json({ success: true });
@@ -346,6 +365,26 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
           isPremium: true,
           premiumPlan: data.plan || 'PREMIUM',
           premiumExpiresAt: isOwnerPlan ? new Date(now.getTime() + (100 * 365 * 24 * 60 * 60 * 1000)) : expiresAt
+        });
+
+        // Send Inbox Notification: "You have successfully purchased Pro."
+        const convoId = `system_${data.userId}`;
+        const convoRef = db.collection('conversations').doc(convoId);
+        const notificationText = "You have successfully purchased Pro. Your Pro VIP features, custom badges, and Pro Customizations are now active!";
+
+        transaction.set(convoRef, {
+          participants: ['system', data.userId],
+          lastMessageAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+          lastMessageText: notificationText,
+          lastMessageSenderId: 'system'
+        }, { merge: true });
+
+        const msgRef = convoRef.collection('messages').doc();
+        transaction.set(msgRef, {
+          senderId: 'system',
+          text: notificationText,
+          sentAt: adminInstance.firestore.FieldValue.serverTimestamp(),
+          readAt: null
         });
         
         logAdminAction(db, req.adminData.id, req.adminData.email, 'payment_approve', id, `Approved payment ${id} for user ${data.userId}`);

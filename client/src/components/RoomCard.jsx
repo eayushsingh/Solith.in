@@ -14,10 +14,14 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
     onJoin(room);
   };
 
+  const groupAnimClass = room.groupAnimation && room.groupAnimation !== 'none'
+    ? `pro-group-card-${room.groupAnimation}`
+    : '';
+
   return (
     <div 
       onClick={handleCardClick}
-      className={`relative flex flex-col gap-5 p-6 rounded-[24px] overflow-hidden transition-all duration-300 ${
+      className={`relative flex flex-col gap-5 p-6 rounded-[24px] overflow-hidden transition-all duration-300 ${groupAnimClass} ${
         isJoining 
           ? 'scale-[0.98] border-blue-500 bg-blue-900/10' 
           : 'border-white/10 bg-[#1A1C23]/80 backdrop-blur-xl hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_12px_40px_rgba(0,0,0,0.2)] hover:bg-[#1A1C23]'
@@ -84,9 +88,13 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
                 ? participant.photoUrl
                 : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
 
+              const pAnim = participant.profileAnimation && participant.profileAnimation !== 'none'
+                ? `pro-anim-${participant.profileAnimation}`
+                : '';
+
               return (
                 <div key={participant.id || idx} className="relative group/avatar z-[1] hover:z-10 transition-all">
-                  <div className={`w-12 h-12 rounded-full overflow-hidden border-[3px] border-[#1A1C23] bg-blue-500 shadow-sm ${idx === 0 ? 'ring-2 ring-blue-500/30' : ''}`}>
+                  <div className={`w-12 h-12 rounded-full overflow-hidden border-[3px] border-[#1A1C23] bg-blue-500 shadow-sm ${pAnim} ${idx === 0 ? 'ring-2 ring-blue-500/30' : ''}`}>
                     <img
                       src={avatarSrc}
                       alt={participant.name || ''}

@@ -1,12 +1,12 @@
 import { auth } from '../firebase';
 import React, { useState, useEffect } from 'react';
-import { Crown, ShieldCheck, Check, ArrowLeft, Star, Zap, Image as ImageIcon, Search } from 'lucide-react';
+import { Crown, ShieldCheck, Check, ArrowLeft, Star, Zap, Image as ImageIcon, Search, Sparkles } from 'lucide-react';
 import { Meteors } from './Meteors';
 import PremiumBadge from './PremiumBadge';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-export default function PremiumSubscription({ onBack, user }) {
+export default function PremiumSubscription({ onBack, user, onProCustomizationClick }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [utr, setUtr] = useState('');
@@ -143,15 +143,25 @@ export default function PremiumSubscription({ onBack, user }) {
               </div>
             )}
             
-            <button 
-              onClick={() => {
-                // Temporary override for testing or viewing plans
-                setStatus('VIEW_PLANS');
-              }}
-              className="px-6 py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-white font-bold transition-all flex items-center gap-2"
-            >
-              <Search className="w-4 h-4" /> View Subscription Plans
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              {onProCustomizationClick && (
+                <button 
+                  onClick={onProCustomizationClick}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 hover:opacity-90 text-black font-extrabold rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" /> Pro Customization
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  // Temporary override for testing or viewing plans
+                  setStatus('VIEW_PLANS');
+                }}
+                className="px-6 py-3 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-white font-bold transition-all flex items-center gap-2"
+              >
+                <Search className="w-4 h-4" /> View Subscription Plans
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-start">
