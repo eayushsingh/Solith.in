@@ -2270,14 +2270,22 @@ export default function App() {
 
             <div className="flex flex-col items-center mt-2 relative z-10">
               <div className="relative mb-6">
-
                 <img src={getAvatarUrl(user.photoUrl, user.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
-                {user.isPremium && (
-                  <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
-                )}
+                {isAdmin ? (
+                  <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-xl">FOUNDER</div>
+                ) : user.isPremium ? (
+                  <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black text-[10px] font-black px-2.5 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-xl">VIP</div>
+                ) : null}
               </div>
 
-              <h3 className="text-2xl font-black text-text-primary mb-1">{user.name}</h3>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <h3 className="text-2xl font-black text-text-primary">{user.name}</h3>
+                {isAdmin ? (
+                  <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">FOUNDER</span>
+                ) : user.isPremium ? (
+                  <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">VIP</span>
+                ) : null}
+              </div>
               <p className="text-xs text-yellow-500/60 mb-8 font-mono">{user.email}</p>
 
               <div className="w-full grid grid-cols-2 gap-4 mb-8">
@@ -2340,17 +2348,27 @@ export default function App() {
               <div className="flex flex-col items-center justify-center h-48 text-yellow-500/50 text-sm font-bold uppercase tracking-widest animate-pulse">
                 Loading...
               </div>
-            ) : (
-              <div className="flex flex-col items-center mt-2 relative z-10">
-                <div className="relative mb-6">
+            ) : (() => {
+              const isTargetAdmin = targetProfile.role === 'admin' || (targetProfile.email && ADMIN_EMAILS.includes(targetProfile.email));
+              return (
+                <div className="flex flex-col items-center mt-2 relative z-10">
+                  <div className="relative mb-6">
+                    <img src={getAvatarUrl(targetProfile.photoUrl, targetProfile.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
+                    {isTargetAdmin ? (
+                      <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-xl">FOUNDER</div>
+                    ) : targetProfile.isPremium ? (
+                      <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black text-[10px] font-black px-2.5 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-xl">VIP</div>
+                    ) : null}
+                  </div>
 
-                  <img src={getAvatarUrl(targetProfile.photoUrl, targetProfile.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
-                  {targetProfile.isPremium && (
-                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-lg">PRO</div>
-                  )}
-                </div>
-
-                <h3 className="text-2xl font-black text-text-primary mb-1">{targetProfile.name}</h3>
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <h3 className="text-2xl font-black text-text-primary">{targetProfile.name}</h3>
+                    {isTargetAdmin ? (
+                      <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">FOUNDER</span>
+                    ) : targetProfile.isPremium ? (
+                      <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-md">VIP</span>
+                    ) : null}
+                  </div>
                 <p className="text-xs text-yellow-500/60 mb-8 font-mono">Joined {new Date(targetProfile.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString()}</p>
 
                 <div className="w-full grid grid-cols-2 gap-4 mb-8">
@@ -2428,10 +2446,11 @@ export default function App() {
                   </button>
                 )}
               </div>
-            )}
-          </div>
+            );
+          })()}
         </div>
-      )}
+      </div>
+    )}
 
       {/* REPORT MODAL */}
       <ReportModal
@@ -2644,6 +2663,11 @@ export default function App() {
                   <div>
                     <div className="text-white font-bold text-sm sm:text-base flex items-center gap-2">
                       {pName}
+                      {(currentP.role === 'admin' || (currentP.email && ADMIN_EMAILS.includes(currentP.email)) || (currentP.isLocal && isAdmin)) ? (
+                        <span className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest shadow-md">FOUNDER</span>
+                      ) : (currentP.isPremium || (currentP.isLocal && user?.isPremium)) ? (
+                        <span className="bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-black text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-widest shadow-md">VIP</span>
+                      ) : null}
                       {currentP.isAI && (
                         <span className="bg-purple-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">AI HOST</span>
                       )}
@@ -3783,20 +3807,46 @@ export default function App() {
                               boxShadow: isSpeaking ? '0 0 25px rgba(59,130,246,0.6)' : '0 8px 30px rgba(0,0,0,0.5)'
                             }}
                           >
-                            {/* Top Left: Host / AI badge overlay inside profile picture area */}
-                            {(p.isAI || targetRole === 'owner') && (
-                              <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                                {p.isAI ? (
-                                  <span className="bg-purple-600/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-purple-400/30">
-                                    AI
-                                  </span>
-                                ) : (
-                                  <span className="bg-blue-600/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-blue-400/30">
-                                    Host
-                                  </span>
-                                )}
-                              </div>
-                            )}
+                            {/* Top Left: Founder / VIP / Host / AI badge overlay */}
+                            {(() => {
+                              const isPAdmin = p.role === 'admin' || (backendP?.role === 'admin') || (p.email && ADMIN_EMAILS.includes(p.email)) || (backendP?.email && ADMIN_EMAILS.includes(backendP.email)) || (p.isLocal && isAdmin);
+                              const isPVip = p.isPremium || backendP?.isPremium || (p.isLocal && user?.isPremium);
+
+                              if (isPAdmin) {
+                                return (
+                                  <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                                    <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-purple-400/30">
+                                      FOUNDER
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              if (isPVip) {
+                                return (
+                                  <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                                    <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-amber-300/40">
+                                      VIP
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              if (p.isAI || targetRole === 'owner') {
+                                return (
+                                  <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                                    {p.isAI ? (
+                                      <span className="bg-purple-600/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-purple-400/30">
+                                        AI
+                                      </span>
+                                    ) : (
+                                      <span className="bg-blue-600/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-blue-400/30">
+                                        Host
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
 
                             {/* Top Right: Gear / Action overlay */}
                             <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
