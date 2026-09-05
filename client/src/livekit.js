@@ -208,7 +208,10 @@ export const LiveKitService = {
       roomObject.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
         if (track.kind === Track.Kind.Audio) {
           const element = track.attach();
-          document.body.appendChild(element);
+          if (element) {
+            element.setAttribute('data-livekit-audio', 'true');
+            document.body.appendChild(element);
+          }
         }
         updateParticipantsList();
       });
@@ -367,6 +370,9 @@ function updateParticipantsList() {
  * Destroy room object and reset listeners
  */
 async function cleanupRealCall() {
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll('[data-livekit-audio="true"]').forEach(el => el.remove());
+  }
   if (roomObject) {
     const toDestroy = roomObject;
     roomObject = null; // clear reference first to prevent reentrancy

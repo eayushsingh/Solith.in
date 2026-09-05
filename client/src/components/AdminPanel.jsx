@@ -370,7 +370,9 @@ export default function AdminPanel({ onBack, user }) {
                                       <button 
                                         onClick={() => {
                                           const w = window.open("");
-                                          w.document.write(`<img src="${p.screenshot}" style="max-width:100%; display:block; margin:auto;" />`);
+                                          if (w && w.document) {
+                                            w.document.write(`<img src="${p.screenshot}" style="max-width:100%; display:block; margin:auto;" />`);
+                                          }
                                         }}
                                         className="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-1 rounded hover:bg-blue-500/30 transition-colors inline-flex items-center"
                                       >
