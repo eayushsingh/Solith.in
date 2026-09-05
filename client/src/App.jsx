@@ -3733,11 +3733,19 @@ export default function App() {
 
                       <button 
                         onClick={() => setShowGameSelector(!showGameSelector)} 
-                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
+                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all relative" 
                         title="Games & Extras"
                       >
                         <Gamepad2 className="w-5 h-5" />
                       </button>
+                      {showGameSelector && (
+                        <div className="fixed right-16 top-1/2 -translate-y-1/2 z-50">
+                          <GameSelector
+                            onSelect={handleGameSelect}
+                            onClose={() => setShowGameSelector(false)}
+                          />
+                        </div>
+                      )}
 
                       <button 
                         onClick={() => setShowSocialPanel(!showSocialPanel)} 
@@ -3877,47 +3885,8 @@ export default function App() {
                 setMsgTab={setMsgTab}
                 setView={setView}
                 joinVoiceRoom={joinVoiceRoom}
-                openUserProfile={openUserProfile}
               />
               )}
-
-              {/* Bottom Floating Controls */}
-              <div style={{
-                position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-                display: 'flex', alignItems: 'center', gap: 12,
-                background: 'rgba(15,21,32,0.85)', backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 28, padding: '10px 20px', zIndex: 50
-              }}>
-                <button onClick={hasRaisedHand ? lowerHand : raiseHand}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22 }}>
-                  ✋
-                </button>
-                <button onClick={() => setIsChatOpen(!isChatOpen)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: isChatOpen ? '#1877f2' : 'rgba(255,255,255,0.5)'
-                  }}>
-                  <MessageSquare size={20} />
-                </button>
-                <div className="relative">
-                  <button onClick={() => setShowGameSelector(!showGameSelector)}
-                    style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'rgba(255,255,255,0.5)'
-                    }}>
-                    <MoreVertical size={20} />
-                  </button>
-                  {/* Replace old game selector */}
-                  {showGameSelector && (
-                    <GameSelector
-                      onSelect={handleGameSelect}
-                      onClose={() => setShowGameSelector(false)}
-                    />
-                  )}
-                </div>
-              </div>
-
             </div>
           );
         })()}
