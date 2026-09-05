@@ -1,18 +1,41 @@
 import React, { useState } from 'react';
-import { Globe, Heart, Share2, Users } from 'lucide-react';
+import { Heart, Settings, Phone, Ban } from 'lucide-react';
+
+const BG_COLORS = [
+  'bg-[#a855f7]', // purple
+  'bg-[#0284c7]', // cyan / sky blue
+  'bg-[#4f46e5]', // indigo
+  'bg-[#c026d3]', // fuchsia
+  'bg-[#059669]', // emerald
+  'bg-[#d97706]', // amber
+];
+
+function getAvatarColor(name = '') {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return BG_COLORS[Math.abs(hash) % BG_COLORS.length];
+}
 
 export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJoining }) {
-  const [copied, setCopied] = useState(false);
   const participants = (room.participants || []).filter(p => p != null && p.id != null);
-  const MAX_SLOTS = 4;
-  const displaySlots = Array.from({ length: MAX_SLOTS }, (_, i) => participants[i] || null);
-  const extraCount = participants.length > MAX_SLOTS ? participants.length - MAX_SLOTS : 0;
   
-  const handleCardClick = () => {
-    if (participants.length >= 25) return;
+  // Calculate slots to show (based on room limit, default 2-4 slots)
+  const maxSlots = Math.min(room.maxParticipants || Math.max(participants.length + (participants.length >= 25 ? 0 : 1), 2), 4);
+  const displaySlots = Array.from({ length: maxSlots }, (_, i) => participants[i] || null);
+  const isFull = participants.length >= (room.maxParticipants || 25);
+
+  const handleCardClick = (e) => {
+    if (isFull) return;
     if (anyRoomJoining) return;
     onJoin(room);
   };
+
+  // Language & Level formatting
+  const language = room.language || 'English';
+  const level = room.level || 'Any Level';
+  const topicSubtitle = room.topic || room.name || (room.tags && room.tags.length > 0 ? room.tags[0] : '');
 
   const groupAnimClass = room.groupAnimation && room.groupAnimation !== 'none'
     ? `pro-group-card-${room.groupAnimation}`
@@ -21,126 +44,158 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
   return (
     <div 
       onClick={handleCardClick}
-      className={`relative flex flex-col gap-5 p-6 rounded-[24px] overflow-hidden transition-all duration-300 ${groupAnimClass} ${
+      className={`group relative flex flex-col justify-between p-4 sm:p-5 rounded-xl border border-[#263748] bg-[#18232e] hover:border-[#3b536b] transition-all duration-200 min-h-[250px] select-none ${groupAnimClass} ${
         isJoining 
-          ? 'scale-[0.98] border-blue-500 bg-blue-900/10' 
-          : 'border-white/10 bg-[#1A1C23]/80 backdrop-blur-xl hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_12px_40px_rgba(0,0,0,0.2)] hover:bg-[#1A1C23]'
+          ? 'scale-[0.99] border-sky-500 bg-sky-950/20' 
+          : ''
       } ${
-        (participants.length >= 25 || anyRoomJoining) && !isJoining ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+        isFull ? 'cursor-default' : 'cursor-pointer'
       }`}
-      style={{ borderWidth: '1px', borderStyle: 'solid' }}
     >
-      {/* Soft Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 pointer-events-none" />
+      {/* Top Header */}
+      <div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {/* Swirl Free4Talk Icon */}
+            <svg 
+              className="w-5 h-5 sm:w-6 sm:h-6 text-sky-400 flex-shrink-0" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.2" strokeDasharray="38 18" />
+              <circle cx="12" cy="12" r="4.5" fill="currentColor" />
+            </svg>
 
-      {inThisRoom && (
-        <div className="absolute top-4 right-4 bg-green-500/10 border border-green-500/20 rounded-full px-3 py-1 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-green-500 text-[10px] font-bold uppercase tracking-wide">You're here</span>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-[14px] bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-            <Globe className="w-6 h-6 text-blue-500" />
-          </div>
-          <div className="flex flex-col justify-center">
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-white font-bold text-lg leading-tight tracking-tight">{room.language}</h3>
+            {/* Language + Level Title */}
+            <div className="flex items-baseline flex-wrap gap-x-1.5 min-w-0">
+              <span className="font-bold text-white text-sm sm:text-[15px] leading-tight">
+                {language}
+              </span>
+              <span className="italic font-normal text-slate-300 text-xs sm:text-[13px] leading-tight">
+                {level}
+              </span>
+              {!room.isOpenMic && (
+                <span className="text-xs text-rose-400/90 ml-0.5" title="Mic Restricted">🔇</span>
+              )}
             </div>
-            <p className="text-white/40 text-sm font-medium mt-0.5 truncate max-w-[140px]">
-              {room.name || (room.tags?.[0] || 'Casual Talk')}
-            </p>
           </div>
+
+          {/* Settings / Gear Icon */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="text-sky-400/80 hover:text-sky-300 transition-colors p-0.5 flex-shrink-0"
+            title="Room Options"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
         </div>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            const url = `${window.location.origin}/?room=${room.id}`;
-            navigator.clipboard.writeText(url);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          }}
-          className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-          title="Share Room"
-        >
-          {copied ? <span className="text-[10px] font-bold text-green-400">✓</span> : <Share2 className="w-4 h-4" />}
-        </button>
+        {/* Subtitle / Topic line */}
+        {topicSubtitle && (
+          <div className="text-xs text-[#38bdf8] font-normal mt-1 pl-[26px] sm:pl-[30px] truncate max-w-full">
+            {topicSubtitle}
+          </div>
+        )}
       </div>
 
-      {participants.length === 0 && room.emptySince && (
-        <div className="text-xs text-orange-400/80 font-semibold flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-400/80 animate-pulse" />
-          Closes in {Math.max(0, 30 - Math.round((Date.now() - room.emptySince) / 60000))} min
-        </div>
-      )}
+      {/* Avatars Section */}
+      <div className="flex items-center justify-start gap-3 sm:gap-4 my-auto py-3">
+        {displaySlots.map((participant, idx) => {
+          if (participant) {
+            const name = participant.name || 'User';
+            const initials = name
+              .split(' ')
+              .map(n => n[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase() || 'U';
 
-      {/* Avatars */}
-      <div className="flex items-center gap-3 mt-2 relative z-10">
-        <div className="flex -space-x-3">
-          {displaySlots.map((participant, idx) => {
-            if (participant) {
-              const seed = participant.id || participant.name || `slot-${idx}`;
-              const avatarSrc = (participant.photoUrl && participant.photoUrl.trim() !== '')
-                ? participant.photoUrl
-                : `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodeURIComponent(seed)}`;
+            const hasPhoto = participant.photoUrl && participant.photoUrl.trim() !== '';
+            const likesCount = participant.followersCount || participant.likes || 0;
+            const isVerified = participant.isVerified;
 
-              const pAnim = participant.profileAnimation && participant.profileAnimation !== 'none'
-                ? `pro-anim-${participant.profileAnimation}`
-                : '';
+            const pAnim = participant.profileAnimation && participant.profileAnimation !== 'none'
+              ? `pro-anim-${participant.profileAnimation}`
+              : '';
 
-              return (
-                <div key={participant.id || idx} className="relative group/avatar z-[1] hover:z-10 transition-all">
-                  <div className={`w-12 h-12 rounded-full overflow-hidden border-[3px] border-[#1A1C23] bg-blue-500 shadow-sm ${pAnim} ${idx === 0 ? 'ring-2 ring-blue-500/30' : ''}`}>
+            return (
+              <div key={participant.id || idx} className="flex flex-col items-center">
+                <div 
+                  className={`w-16 h-16 sm:w-[72px] sm:h-[72px] md:w-[76px] md:h-[76px] rounded-full overflow-hidden flex flex-col items-center justify-center flex-shrink-0 shadow-md relative ${
+                    hasPhoto ? 'bg-slate-800' : getAvatarColor(name)
+                  } ${pAnim}`}
+                >
+                  {hasPhoto ? (
                     <img
-                      src={avatarSrc}
-                      alt={participant.name || ''}
-                      className="w-full h-full object-cover"
+                      src={participant.photoUrl}
+                      alt={name}
+                      className="w-full h-full object-cover rounded-full"
                       onError={(e) => {
                         e.target.style.display = 'none';
-                        e.target.parentNode.innerHTML = `<div class="w-full h-full flex items-center justify-center text-sm font-bold text-white bg-blue-600">${(participant.name || '?').slice(0,2).toUpperCase()}</div>`;
+                        if (e.target.parentNode) {
+                          e.target.parentNode.className = `w-16 h-16 sm:w-[72px] sm:h-[72px] md:w-[76px] md:h-[76px] rounded-full overflow-hidden flex flex-col items-center justify-center flex-shrink-0 shadow-md ${getAvatarColor(name)}`;
+                          e.target.parentNode.innerHTML = `<span class="text-xl sm:text-2xl font-bold text-white uppercase leading-none">${initials}</span><span class="text-[7px] sm:text-[8px] font-bold tracking-wider text-white/80 uppercase mt-0.5">${isVerified ? 'VERIFIED' : 'UNVERIFIED'}</span>`;
+                        }
                       }}
                     />
-                  </div>
+                  ) : (
+                    <>
+                      <span className="text-xl sm:text-2xl font-bold text-white uppercase leading-none">
+                        {initials}
+                      </span>
+                      <span className="text-[7px] sm:text-[8px] font-bold tracking-wider text-white/80 uppercase mt-0.5">
+                        {isVerified ? 'VERIFIED' : 'UNVERIFIED'}
+                      </span>
+                    </>
+                  )}
                 </div>
-              );
-            } else {
-              return (
-                <div key={`empty-${idx}`} className="w-12 h-12 rounded-full border-2 border-dashed border-white/10 bg-white/5" />
-              );
-            }
-          })}
-        </div>
 
-        {extraCount > 0 && (
-          <div className="text-xs font-bold text-white/50 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
-            +{extraCount}
-          </div>
-        )}
-
-        {participants[0] && (
-          <div className="ml-auto flex items-center gap-1.5 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">
-            <Heart className="w-3.5 h-3.5 text-blue-500" fill="currentColor" />
-            <span className="text-blue-500 text-xs font-bold">{participants[0].followersCount || 0}</span>
-          </div>
-        )}
+                {/* Heart & Likes Count below Avatar */}
+                <div className="flex items-center justify-center gap-1 text-[11px] sm:text-xs text-sky-400 font-semibold mt-1">
+                  <Heart className="w-3 h-3 fill-sky-400 text-sky-400" />
+                  <span>{likesCount}</span>
+                </div>
+              </div>
+            );
+          } else {
+            return (
+              <div key={`empty-${idx}`} className="flex flex-col items-center">
+                <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] md:w-[76px] md:h-[76px] rounded-full border border-dashed border-slate-600/80 bg-transparent flex items-center justify-center flex-shrink-0" />
+                <div className="h-4 mt-1" />
+              </div>
+            );
+          }
+        })}
       </div>
 
-      {/* Action Button */}
-      <button
-        onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
-        disabled={participants.length >= 25 || anyRoomJoining}
-        className={`mt-4 w-full py-3.5 rounded-[16px] font-bold text-sm transition-all flex items-center justify-center gap-2 relative z-10 ${
-          participants.length >= 25 
-            ? 'bg-white/5 text-white/40 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.2)]'
-        }`}
-      >
-        {participants.length >= 25 ? 'Room Full' : 'Join Room'}
-      </button>
+      {/* Bottom Button / Status Bar */}
+      <div>
+        {isFull ? (
+          <div className="w-full py-2.5 px-3 rounded-lg border border-dashed border-slate-700 bg-transparent text-slate-400 text-xs font-medium flex items-center justify-center gap-1.5 cursor-not-allowed">
+            <Ban className="w-3.5 h-3.5 text-slate-400" />
+            <span>This group is full.</span>
+          </div>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardClick();
+            }}
+            disabled={anyRoomJoining}
+            className="w-full py-2.5 px-3 rounded-lg border border-dashed border-sky-500/40 hover:border-sky-400 hover:bg-sky-500/5 text-sky-400 text-xs sm:text-[13px] font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer group-hover:border-sky-400"
+          >
+            <Phone className="w-3.5 h-3.5 text-sky-400" />
+            <span>Join and talk now!</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
+
