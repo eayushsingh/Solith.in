@@ -38,6 +38,11 @@ const getAvatarUrl = (photoUrl, uid) => {
 
 function ParticipantAvatar({ photoUrl, name, color, className = "w-16 h-16 sm:w-20 sm:h-20", isCameraOn, cameraTrack }) {
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [photoUrl]);
+
   const initials = (name || 'User')
     .trim()
     .split(/\s+/)
@@ -3828,6 +3833,8 @@ export default function App() {
                           const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
                           const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
                           const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
+                          const pAnim = p.profileAnimation || backendP?.profileAnimation || (p.isLocal && user?.profileAnimation);
+                          const pAnimClass = pAnim && pAnim !== 'none' ? `pro-anim-${pAnim}` : '';
                           const targetRole = getRole(p.id);
 
                           return (
@@ -3836,7 +3843,9 @@ export default function App() {
                               className="group flex-shrink-0 cursor-pointer"
                               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
                             >
-                              <div style={{
+                              <div 
+                                className={pAnimClass}
+                                style={{
                                 width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
                                 border: isSpeaking ? (p.isAI ? '2.5px solid #a855f7' : '2.5px solid #1877f2') : '2.5px solid rgba(255,255,255,0.12)',
                                 boxShadow: isSpeaking ? (p.isAI ? '0 0 20px rgba(168,85,247,0.6)' : '0 0 20px rgba(24,119,242,0.6)') : 'none',
