@@ -671,7 +671,7 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
   }
 
   const ownerIsPremium = !!req.body.ownerIsPremium;
-
+  const groupAnimation = typeof req.body.groupAnimation === 'string' ? req.body.groupAnimation : 'none';
 
   const newRoom = {
     id: roomId,
@@ -686,6 +686,7 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     participants: [],
     roles: req.user ? { [req.user.uid]: 'owner' } : {},
     ownerIsPremium,
+    groupAnimation,
     messages: [],
     emptySince: Date.now(),
     createdAt: Date.now()
@@ -1197,8 +1198,9 @@ app.get('/api/users/profiles', async (req, res) => {
 
   try {
     const db = adminInstance.firestore();
-    const refs = ids.map(id => db.collection('users').doc(id));
-    const docs = await db.getAll(...refs);
+    const realIds = ids.filter(id => id !== 'system');
+    const refs = realIds.map(id => db.collection('users').doc(id));
+    const docs = refs.length > 0 ? await db.getAll(...refs) : [];
     
     const profiles = docs
       .filter(doc => doc.exists)
@@ -1208,14 +1210,88 @@ app.get('/api/users/profiles', async (req, res) => {
           id: doc.id,
           name: data.name || 'Unknown',
           photoUrl: data.photoUrl || '',
-          xp: data.xp || 0
+          xp: data.xp || 0,
+          isPremium: !!data.isPremium,
+          role: data.role || 'user',
+          profileAnimation: data.profileAnimation || 'none',
+          groupAnimation: data.groupAnimation || 'none'
         };
       });
+
+    if (ids.includes('system')) {
+      profiles.push({
+        id: 'system',
+        name: 'Solith System',
+        photoUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=SolithSystem',
+        xp: 9999,
+        isPremium: true,
+        role: 'system'
+      });
+    }
 
     res.json({ profiles });
   } catch (error) {
     console.error('Error fetching user profiles:', error);
     res.status(500).json({ error: 'Failed to fetch profiles' });
+  }
+});
+
+// --- Pro Animation Customization ---
+const VALID_PRO_ANIMATIONS = ['none', 'neon-gradient', 'pulsing-glow', 'aurora', 'shimmer', 'electric'];
+
+app.post('/api/users/customization', verifyToken, async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) return res.status(503).json({ error: 'Firestore Admin not initialized.' });
+
+  const userId = req.user.uid;
+  const { profileAnimation, groupAnimation } = req.body;
+
+  try {
+    const db = adminInstance.firestore();
+    const userDoc = await db.collection('users').doc(userId).get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const userData = userDoc.data();
+    const isOwner = req.user.email === 'ayushsinghe07@gmail.com' || userData.role === 'admin';
+    const isPro = !!(userData.isPremium || isOwner);
+
+    // Free user protection: non-pro users cannot choose active animations
+    if (!isPro) {
+      if ((profileAnimation && profileAnimation !== 'none') || (groupAnimation && groupAnimation !== 'none')) {
+        return res.status(403).json({ error: 'Pro/VIP membership is required to unlock and use animations.' });
+      }
+    }
+
+    const updates = {};
+    if (profileAnimation !== undefined) {
+      if (!VALID_PRO_ANIMATIONS.includes(profileAnimation)) {
+        return res.status(400).json({ error: 'Invalid profile animation option.' });
+      }
+      updates.profileAnimation = profileAnimation;
+    }
+
+    if (groupAnimation !== undefined) {
+      if (!VALID_PRO_ANIMATIONS.includes(groupAnimation)) {
+        return res.status(400).json({ error: 'Invalid group animation option.' });
+      }
+      updates.groupAnimation = groupAnimation;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await db.collection('users').doc(userId).set(updates, { merge: true });
+    }
+
+    res.json({
+      success: true,
+      profileAnimation: updates.profileAnimation !== undefined ? updates.profileAnimation : (userData.profileAnimation || 'none'),
+      groupAnimation: updates.groupAnimation !== undefined ? updates.groupAnimation : (userData.groupAnimation || 'none')
+    });
+  } catch (error) {
+    console.error('Error updating customization:', error);
+    res.status(500).json({ error: 'Failed to update customization.' });
   }
 });
 

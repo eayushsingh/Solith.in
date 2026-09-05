@@ -28,7 +28,7 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
     onMouseLeave={e => e.currentTarget.style.background = 'none'}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }} className={profile.profileAnimation && profile.profileAnimation !== 'none' ? `pro-anim-${profile.profileAnimation} rounded-full` : ''}>
           <img
             src={profile.photoUrl || `https://api.dicebear.com/7.x/lorelei/svg?seed=${userId}`}
             style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}

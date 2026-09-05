@@ -1,6 +1,7 @@
-import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee, Users } from 'lucide-react';
+import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee, Users, Sparkles } from 'lucide-react';
 
-export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, isAdmin, onlineStats, activeRoom }) {
+export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, onProCustomizationClick, isAdmin, onlineStats, activeRoom }) {
+  const isPro = !!(user?.isPremium || isAdmin);
   const navItems = [
     { id: 'lobby', icon: Home, title: 'Home' },
     { id: 'feed', icon: Users, title: 'Community' },
@@ -8,6 +9,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
     { id: 'leaderboard', icon: Award, title: 'Leaderboard' },
     { id: 'guidelines', icon: BookOpen, title: 'Guidelines' },
     { id: 'premium', icon: Crown, title: 'Premium' },
+    ...(isPro && onProCustomizationClick ? [{ id: 'pro_custom', icon: Sparkles, title: 'Pro Customization', action: onProCustomizationClick, isCustomBadge: true }] : []),
     ...(isAdmin ? [{ id: 'admin', icon: Shield, title: 'Admin' }] : []),
   ];
 
@@ -51,7 +53,14 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
           return (
             <button
               key={item.id}
-              onClick={() => { setView(item.id); window.location.hash = item.id; }}
+              onClick={() => {
+                if (item.action) {
+                  item.action();
+                } else {
+                  setView(item.id);
+                  window.location.hash = item.id;
+                }
+              }}
               className={`relative w-11 h-11 md:w-12 md:h-12 rounded-full transition-all duration-200 group flex items-center justify-center ${
                 isActive 
                   ? 'text-[var(--accent-primary)] border border-[var(--accent-primary)]' 

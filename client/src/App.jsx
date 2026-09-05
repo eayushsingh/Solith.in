@@ -13,6 +13,7 @@ import CommunityFeed from './components/CommunityFeed';
 import PremiumSubscription from './components/PremiumSubscription';
 import RoomPanel from './components/RoomPanel';
 import SocialUserRow from './components/SocialUserRow';
+import ProCustomizationModal from './components/ProCustomizationModal';
 
 import StaticModals from './components/StaticModals';
 import {
@@ -142,6 +143,7 @@ export default function App() {
       .catch(err => console.error('Failed to fetch settings:', err));
   }, []);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showProCustomizationModal, setShowProCustomizationModal] = useState(false);
   const [targetProfile, setTargetProfile] = useState(null);
   const [showTargetProfileModal, setShowTargetProfileModal] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -940,7 +942,8 @@ export default function App() {
           tags: tagsArray,
           accessType: newRoomAccessType,
           isOpenMic: newRoomIsOpenMic,
-          ownerIsPremium: !!user?.isPremium
+          ownerIsPremium: !!user?.isPremium,
+          groupAnimation: user?.isPremium ? (user.groupAnimation || 'none') : 'none'
         }),
         signal: controller.signal
       });
@@ -1483,6 +1486,7 @@ export default function App() {
     onAuthClick: () => setShowAuthModal(true),
     onSettingsClick: () => setShowProfileModal(true),
     onLogoutClick: () => signOut(auth),
+    onProCustomizationClick: () => setShowProCustomizationModal(true),
     isAdmin,
     onlineStats,
     activeRoom
@@ -2270,7 +2274,9 @@ export default function App() {
 
             <div className="flex flex-col items-center mt-2 relative z-10">
               <div className="relative mb-6">
-                <img src={getAvatarUrl(user.photoUrl, user.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
+                <div className={`w-24 h-24 rounded-full overflow-hidden p-0.5 bg-[#12141C] ${user.profileAnimation && user.profileAnimation !== 'none' ? `pro-anim-${user.profileAnimation}` : ''}`}>
+                  <img src={getAvatarUrl(user.photoUrl, user.id)} alt="Profile" className="w-full h-full rounded-full border-[2px] border-[#221f18] relative z-10 shadow-2xl object-cover" />
+                </div>
                 {isAdmin ? (
                   <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-xl">FOUNDER</div>
                 ) : user.isPremium ? (
@@ -2319,6 +2325,17 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Pro Customization Button */}
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setShowProCustomizationModal(true);
+                }}
+                className="w-full mb-3 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500/15 via-yellow-500/20 to-amber-500/15 border border-amber-500/40 text-amber-300 hover:from-amber-500/25 hover:to-amber-500/25 transition-all shadow-lg shadow-amber-500/10"
+              >
+                <Sparkles className="w-4 h-4 text-amber-400" /> Pro Customization
+              </button>
+
               <button
                 onClick={() => {
                   signOut(auth);
@@ -2353,7 +2370,9 @@ export default function App() {
               return (
                 <div className="flex flex-col items-center mt-2 relative z-10">
                   <div className="relative mb-6">
-                    <img src={getAvatarUrl(targetProfile.photoUrl, targetProfile.id)} alt="Profile" className="w-24 h-24 rounded-full border-[3px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
+                    <div className={`w-24 h-24 rounded-full overflow-hidden p-0.5 bg-[#12141C] ${targetProfile.profileAnimation && targetProfile.profileAnimation !== 'none' ? `pro-anim-${targetProfile.profileAnimation}` : ''}`}>
+                      <img src={getAvatarUrl(targetProfile.photoUrl, targetProfile.id)} alt="Profile" className="w-full h-full rounded-full border-[2px] border-[#221f18] relative z-10 shadow-2xl object-cover bg-gray-900" />
+                    </div>
                     {isTargetAdmin ? (
                       <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full border-2 border-[#1a1814] z-20 uppercase tracking-widest shadow-xl">FOUNDER</div>
                     ) : targetProfile.isPremium ? (
@@ -2467,6 +2486,19 @@ export default function App() {
         onClose={() => setFollowListState({ ...followListState, isOpen: false })}
         title={followListState.title}
         ids={followListState.ids}
+      />
+
+      {/* PRO CUSTOMIZATION MODAL */}
+      <ProCustomizationModal
+        isOpen={showProCustomizationModal}
+        onClose={() => setShowProCustomizationModal(false)}
+        user={user}
+        isAdmin={isAdmin}
+        onUpdateUser={(custom) => setUser(prev => ({ ...prev, ...custom }))}
+        onUpgradeClick={() => {
+          setView('premium');
+          window.location.hash = 'premium';
+        }}
       />
 
       <StaticModals
@@ -2977,7 +3009,11 @@ export default function App() {
 
         {/* Premium Subscription View */}
         <div className={view === 'premium' ? 'block' : 'hidden'}>
-          <PremiumSubscription user={user} onBack={() => { setView('lobby'); window.history.pushState({}, '', '/'); }} />
+          <PremiumSubscription 
+            user={user} 
+            onBack={() => { setView('lobby'); window.history.pushState({}, '', '/'); }} 
+            onProCustomizationClick={() => setShowProCustomizationModal(true)} 
+          />
         </div>
 
         {/* Leaderboard View */}
@@ -3795,13 +3831,15 @@ export default function App() {
                         const backendP = currentRoomData.participants?.find(bp => bp?.id === p?.id);
                         const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
                         const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
+                        const pAnim = p.profileAnimation || backendP?.profileAnimation || (p.isLocal && user?.profileAnimation);
+                        const pAnimClass = pAnim && pAnim !== 'none' ? `pro-anim-${pAnim}` : '';
                         const targetRole = getRole(p.id);
 
                         return (
                           <div 
                             key={p.id}
                             onClick={() => setFocusedVideoParticipant(p)}
-                            className="group relative w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden bg-[#131722] border border-white/10 shadow-2xl flex flex-col justify-between cursor-pointer transition-all duration-200 hover:scale-105"
+                            className={`group relative w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden bg-[#131722] border border-white/10 shadow-2xl flex flex-col justify-between cursor-pointer transition-all duration-200 hover:scale-105 ${pAnimClass}`}
                             style={{
                               borderColor: isSpeaking ? '#3B82F6' : 'rgba(255,255,255,0.1)',
                               boxShadow: isSpeaking ? '0 0 25px rgba(59,130,246,0.6)' : '0 8px 30px rgba(0,0,0,0.5)'
