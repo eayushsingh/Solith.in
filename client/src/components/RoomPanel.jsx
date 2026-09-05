@@ -426,6 +426,8 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
     }
   };
 
+  if (!isChatOpen) return null;
+
   return (
     <div className={`absolute bottom-[90px] right-4 md:right-8 z-40 bg-[#0f1115]/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300 animate-fade-in ${
       isMinimized ? 'left-4 md:left-auto md:w-[380px] h-[55px]' : (isExpanded ? 'left-4 md:left-auto md:w-[680px] h-[580px] max-h-[80vh]' : 'left-4 md:left-auto md:w-[380px] h-[480px] max-h-[70vh]')

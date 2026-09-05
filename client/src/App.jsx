@@ -3672,7 +3672,22 @@ export default function App() {
                               boxShadow: isSpeaking ? '0 0 25px rgba(59,130,246,0.6)' : '0 8px 30px rgba(0,0,0,0.5)'
                             }}
                           >
-                            {/* Top Gear / Action overlay */}
+                            {/* Top Left: Host / AI badge overlay inside profile picture area */}
+                            {(p.isAI || targetRole === 'owner') && (
+                              <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                                {p.isAI ? (
+                                  <span className="bg-purple-600/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-purple-400/30">
+                                    AI
+                                  </span>
+                                ) : (
+                                  <span className="bg-blue-600/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-blue-400/30">
+                                    Host
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Top Right: Gear / Action overlay */}
                             <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={(e) => {
@@ -3708,19 +3723,14 @@ export default function App() {
 
                             {/* Bottom Card Strip (Name + Mic Status) */}
                             <div className="w-full bg-black/80 backdrop-blur-md px-2.5 py-1.5 flex items-center justify-between z-20 border-t border-white/10">
-                              <span className="text-[11px] font-bold text-white max-w-[80px] truncate">
+                              <span className="text-[11px] font-bold text-white max-w-[100px] sm:max-w-[120px] truncate" title={pName}>
                                 {pName}
                               </span>
                               <div className="flex items-center gap-1">
-                                {p.isAI ? (
-                                  <span className="bg-purple-500/30 text-purple-300 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">AI</span>
-                                ) : targetRole === 'owner' ? (
-                                  <span className="bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">Host</span>
-                                ) : null}
                                 {p.muted ? (
-                                  <MicOff className="w-3.5 h-3.5 text-red-500" />
+                                  <MicOff className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
                                 ) : (
-                                  <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                                  <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse flex-shrink-0" />
                                 )}
                               </div>
                             </div>
@@ -3732,10 +3742,11 @@ export default function App() {
                 );
               })()}
 
-              {/* Room Sidebar Panel — always visible */}
-              <RoomPanel
-                isChatOpen={true}
-                setIsChatOpen={setIsChatOpen}
+              {/* Room Sidebar Panel — only when open */}
+              {isChatOpen && (
+                <RoomPanel
+                  isChatOpen={isChatOpen}
+                  setIsChatOpen={setIsChatOpen}
                 chatMessages={chatMessages}
                 sendChatMessage={(e, customMsg) => {
                   if (customMsg) {
@@ -3765,6 +3776,7 @@ export default function App() {
                 joinVoiceRoom={joinVoiceRoom}
                 openUserProfile={openUserProfile}
               />
+              )}
 
               {/* Bottom Floating Controls */}
               <div style={{
