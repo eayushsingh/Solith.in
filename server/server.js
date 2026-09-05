@@ -1862,7 +1862,9 @@ io.on('connection', (socket) => {
     }
     
     // Validate player is in this game
-    if (!room.activeGame.players.find(p => p.id === playerId)) {
+    const players = room.activeGame.players || [];
+    const playerFound = players.find(p => (p?.id || p) === playerId);
+    if (!playerFound) {
       socket.emit('game-error', { message: 'You are not in this game' });
       return;
     }
@@ -1880,8 +1882,7 @@ io.on('connection', (socket) => {
     }
 
     // Advance turn (skip logic handled per game in newState.skipNextPlayer)
-    const players = room.activeGame.players;
-    const currentIndex = players.findIndex(p => p.id === playerId);
+    const currentIndex = players.findIndex(p => (p?.id || p) === playerId);
     
     // Handle UNO reverse
     if (newState.direction === -1 && !room.activeGame.direction) {
@@ -1893,7 +1894,8 @@ io.on('connection', (socket) => {
     const skipCount = newState.skipCount || 1;
     let nextIndex = (currentIndex + (direction * skipCount) + players.length) % players.length;
     
-    room.activeGame.currentTurnId = players[nextIndex].id;
+    const nextPlayer = players[nextIndex];
+    room.activeGame.currentTurnId = nextPlayer?.id || nextPlayer;
 
     // For UNO: if draw cards were assigned, emit private hand update
     if (data.gameType === 'uno' && newState.drawnCards) {
