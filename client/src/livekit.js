@@ -247,7 +247,7 @@ export const LiveKitService = {
           const levels = {};
           if (speakers) {
             speakers.forEach(speaker => {
-              const speakerId = speaker.isLocal ? user.id : speaker.identity;
+              const speakerId = speaker.isLocal ? (user?.id || 'local') : speaker.identity;
               levels[speakerId] = speaker.audioLevel || 0.8;
             });
           }

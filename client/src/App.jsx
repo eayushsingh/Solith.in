@@ -791,23 +791,28 @@ export default function App() {
 
   // Sync Call Status and Ping Server
   useEffect(() => {
-    if (callState !== 'joined' || !activeRoom) return;
+    if (callState !== 'joined' || !activeRoom?.id || !user?.id) return;
 
     // Send keep-alive ping to backend every 4 seconds
     const pingInterval = setInterval(async () => {
-      fetch(`${API_URL}/api/rooms/${activeRoom.id}/ping`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getFreshToken()}`
-        },
-        body: JSON.stringify({ userId: user.id, isSpeaking: !isMuted })
-      }).catch(err => console.warn('Ping error:', err));
+      if (!activeRoom?.id || !user?.id) return;
+      try {
+        const token = await getFreshToken();
+        if (!token || !activeRoom?.id || !user?.id) return;
+        fetch(`${API_URL}/api/rooms/${activeRoom.id}/ping`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId: user.id, isSpeaking: !isMuted })
+        }).catch(err => console.warn('Ping error:', err));
+      } catch (err) {}
     }, 4000);
 
     // Add robust tab close cleanup to prevent ghost participants
     const handleBeforeUnload = () => {
-      if (activeRoom && user && user.token) {
+      if (activeRoom?.id && user?.token) {
         // sendBeacon sends as text/plain body — our /leave-beacon endpoint reads the raw body as the token
         navigator.sendBeacon(
           `${API_URL}/api/rooms/${activeRoom.id}/leave-beacon`,
@@ -821,7 +826,7 @@ export default function App() {
       clearInterval(pingInterval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [callState, activeRoom, isMuted, participants, isRealCall, user]);
+  }, [callState, activeRoom?.id, isMuted, isRealCall, user?.id]);
 
   // Sync XP floater to real Firestore updates via auth onSnapshot
   const prevXpRef = useRef(user?.xp || 0);
