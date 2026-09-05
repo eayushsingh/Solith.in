@@ -8,7 +8,7 @@ export default function PremiumBadge({ className = "", showText = true }) {
       <Crown className="w-3.5 h-3.5 text-amber-400 drop-shadow-[0_0_5px_rgba(251,191,36,0.6)] group-hover:animate-pulse" />
       {showText && (
         <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 drop-shadow-sm group-hover:text-amber-300 transition-colors">
-          Premium
+          VIP
         </span>
       )}
     </div>

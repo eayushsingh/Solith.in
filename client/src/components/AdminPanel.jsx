@@ -279,10 +279,10 @@ export default function AdminPanel({ onBack, user }) {
                             <td className="px-6 py-4">
                               <div className="font-bold text-text-primary flex items-center gap-2">
                                 {u.name}
-                                {u.isPremium && <span className="bg-yellow-500 text-bg-base text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-widest">PRO</span>}
+                                {u.isPremium && <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">VIP</span>}
                               </div>
                               <div className="text-gray-500 text-xs">{u.email}</div>
-                              {u.role === 'admin' && <span className="inline-block mt-1 px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] rounded">ADMIN</span>}
+                              {u.role === 'admin' && <span className="inline-block mt-1 px-2.5 py-0.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-extrabold rounded-full uppercase tracking-widest shadow-sm">FOUNDER</span>}
                             </td>
                             <td className="px-6 py-4">
                               {u.isBanned ? (
@@ -310,9 +310,9 @@ export default function AdminPanel({ onBack, user }) {
                                 </>
                               )}
                               {u.isPremium ? (
-                                <button onClick={() => handleUserAction(u.id, 'remove_pro')} className="text-xs px-3 py-1 bg-gray-500/10 hover:bg-gray-500/20 text-text-secondary rounded transition-colors mt-1">Remove PRO</button>
+                                <button onClick={() => handleUserAction(u.id, 'remove_pro')} className="text-xs px-3 py-1 bg-gray-500/10 hover:bg-gray-500/20 text-text-secondary rounded transition-colors mt-1">Remove VIP</button>
                               ) : (
-                                <button onClick={() => handleUserAction(u.id, 'make_pro')} className="text-xs px-3 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded transition-colors mt-1">Make PRO</button>
+                                <button onClick={() => handleUserAction(u.id, 'make_pro')} className="text-xs px-3 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded transition-colors mt-1">Make VIP</button>
                               )}
                               {u.role !== 'admin' && (
                                 <button 

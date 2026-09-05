@@ -43,7 +43,14 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
           }} />
         </div>
         <div>
-          <div style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>{profile.name}</div>
+          <div style={{ color: 'white', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>{profile.name}</span>
+            {(profile.role === 'admin' || profile.email === 'ayushsinghe07@gmail.com') ? (
+              <span style={{ background: 'linear-gradient(to right, #9333ea, #4f46e5)', color: '#fff', fontSize: 9, fontWeight: 900, padding: '1px 6px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>FOUNDER</span>
+            ) : profile.isPremium ? (
+              <span style={{ background: 'linear-gradient(to right, #fbbf24, #f59e0b)', color: '#000', fontSize: 9, fontWeight: 900, padding: '1px 6px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>VIP</span>
+            ) : null}
+          </div>
           <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>
             {profile.xp || 0} XP
           </div>
