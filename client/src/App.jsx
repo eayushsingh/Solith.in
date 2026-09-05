@@ -815,22 +815,28 @@ export default function App() {
 
   // Auto-join room from URL parameter if present
   useEffect(() => {
-    if (rooms.length > 0 && user && user.id && callState === 'left' && !activeRoom) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const roomId = urlParams.get('room');
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('room');
 
-      if (roomId) {
-        const roomToJoin = rooms.find(r => r?.id === roomId);
-        if (roomToJoin) {
-          // Join the room
-          joinVoiceRoom(roomToJoin);
-
-          // Clean up URL to avoid infinite joins on refresh
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
+    if (roomId && user && user.id && callState === 'left' && !activeRoom && !joiningRoomId) {
+      const roomToJoin = rooms.find(r => r?.id === roomId);
+      if (roomToJoin) {
+        joinVoiceRoom(roomToJoin);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        // Fetch room directly from API in case rooms list is still loading
+        fetch(`${API_URL}/api/rooms/${roomId}`)
+          .then(res => res.json())
+          .then(r => {
+            if (r && r.id && !activeRoom && !joiningRoomId) {
+              joinVoiceRoom(r);
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+          })
+          .catch(console.error);
       }
     }
-  }, [rooms, user, callState, activeRoom]);
+  }, [rooms, user, callState, activeRoom, joiningRoomId]);
 
   const fetchConfig = async () => {
     try {
@@ -1052,7 +1058,8 @@ export default function App() {
           name: user.name,
           color: user.color,
           emoji: user.emoji,
-          photoUrl: user.photoUrl
+          photoUrl: user.photoUrl,
+          profileAnimation: user.profileAnimation || 'none'
         })
       });
 
@@ -3443,7 +3450,14 @@ export default function App() {
                     key={room.id}
                     room={room}
                     inThisRoom={activeRoom?.id === room.id}
-                    onJoin={(roomToJoin) => joinVoiceRoom(roomToJoin)}
+                    onJoin={(roomToJoin) => {
+                      if (!user || !user.id) {
+                        setShowAuthModal(true);
+                        return;
+                      }
+                      const url = `${window.location.origin}/?room=${roomToJoin.id}`;
+                      window.open(url, '_blank');
+                    }}
                     userFollowing={user?.following || []}
                     isJoining={joiningRoomId === room.id}
                     anyRoomJoining={!!joiningRoomId}
