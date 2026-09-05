@@ -18,7 +18,7 @@ import StaticModals from './components/StaticModals';
 import {
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, Camera,
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
-  Monitor, Youtube, Gamepad2, Crown, BarChart2
+  Monitor, Youtube, Gamepad2, Crown, BarChart2, PhoneCall
 } from 'lucide-react';
 import GameContainer from './components/games/GameContainer';
 import GameLobby from './components/games/GameLobby';
@@ -1483,7 +1483,8 @@ export default function App() {
     onSettingsClick: () => setShowProfileModal(true),
     onLogoutClick: () => signOut(auth),
     isAdmin,
-    onlineStats
+    onlineStats,
+    activeRoom
   };
 
   const usersInRooms = rooms.flatMap(r =>
@@ -2813,19 +2814,31 @@ export default function App() {
 
         {/* Messages View */}
         <div className={view === 'messages' ? "flex flex-col h-[calc(100vh-73px)] bg-bg-base overflow-hidden" : "hidden"}>
-          <div className="flex border-b border-border-color bg-bg-surface px-4 py-2 gap-4 flex-shrink-0">
-            <button
-              onClick={() => { setActiveDm(null); setMsgTab('global'); }}
-              className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${!activeDm && msgTab === 'global' ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
-            >
-              Global Chat
-            </button>
-            <button
-              onClick={() => { setActiveDm(null); setMsgTab('direct'); }}
-              className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${(activeDm || msgTab === 'direct') ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
-            >
-              Direct Messages
-            </button>
+          <div className="flex border-b border-border-color bg-bg-surface px-4 py-2 gap-4 flex-shrink-0 items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => { setActiveDm(null); setMsgTab('global'); }}
+                className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${!activeDm && msgTab === 'global' ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
+              >
+                Global Chat
+              </button>
+              <button
+                onClick={() => { setActiveDm(null); setMsgTab('direct'); }}
+                className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${(activeDm || msgTab === 'direct') ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
+              >
+                Direct Messages
+              </button>
+            </div>
+
+            {activeRoom && (
+              <button
+                onClick={() => { setView('lobby'); window.location.hash = 'lobby'; }}
+                className="px-3.5 py-1.5 bg-[var(--accent-primary)]/20 hover:bg-[var(--accent-primary)]/30 border border-[var(--accent-primary)]/40 text-[var(--accent-primary)] font-bold text-xs rounded-xl flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+              >
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>Return to Call ({activeRoom.name || 'Room'})</span>
+              </button>
+            )}
           </div>
 
           <div className="flex-1 min-h-0 relative overflow-hidden">
@@ -3261,6 +3274,59 @@ export default function App() {
           const isAllowedSpeaker = allowedSpeakers.includes(user?.id);
           const isListener = !isHostOrCoHost && !isAllowedSpeaker && !isOpenMic;
           const hasRaisedHand = speakingQueue.includes(user?.id);
+
+          if (view !== 'lobby') {
+            return (
+              <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9990] animate-fade-in flex items-center gap-3 bg-[#0D1117]/95 backdrop-blur-2xl border border-white/10 px-4 py-2.5 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-white select-none">
+                <div 
+                  className="flex items-center gap-2 cursor-pointer group"
+                  onClick={() => { setView('lobby'); window.location.hash = 'lobby'; }}
+                  title="Click to return to active call"
+                >
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                  <span className="text-xs font-bold text-white group-hover:text-[var(--accent-primary)] transition-colors max-w-[150px] truncate">
+                    {activeRoom.name || 'Active Room'}
+                  </span>
+                  <span className="text-[10px] text-white/60 bg-white/10 px-2 py-0.5 rounded-full font-mono flex-shrink-0">
+                    {safeParticipants.length} {safeParticipants.length === 1 ? 'user' : 'users'}
+                  </span>
+                </div>
+
+                <div className="h-4 w-[1px] bg-white/15" />
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleMute}
+                    className={`p-2 rounded-xl border transition-all ${
+                      isMuted 
+                        ? 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30' 
+                        : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+                    }`}
+                    title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
+                  >
+                    {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-emerald-400" />}
+                  </button>
+
+                  <button
+                    onClick={() => { setView('lobby'); window.location.hash = 'lobby'; }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold text-xs rounded-xl shadow-md transition-all hover:scale-105 active:scale-95"
+                    title="Return to Call"
+                  >
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    <span>Return to Call</span>
+                  </button>
+
+                  <button
+                    onClick={leaveVoiceRoom}
+                    className="p-2 bg-red-600/80 hover:bg-red-600 text-white rounded-xl transition-all hover:scale-105"
+                    title="Leave Call"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div className="call-room-bg font-sans animate-fade-in w-full h-screen relative flex flex-col overflow-hidden">

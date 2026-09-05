@@ -1,6 +1,6 @@
 import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee, Users } from 'lucide-react';
 
-export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, isAdmin, onlineStats }) {
+export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, isAdmin, onlineStats, activeRoom }) {
   const navItems = [
     { id: 'lobby', icon: Home, title: 'Home' },
     { id: 'feed', icon: Users, title: 'Community' },
@@ -61,6 +61,9 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
               aria-label={item.title}
             >
               <Icon className="w-5 h-5" />
+              {item.id === 'lobby' && activeRoom && (
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-bg-base animate-pulse" title="Active Call" />
+              )}
             </button>
           );
         })}
