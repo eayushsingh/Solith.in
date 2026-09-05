@@ -2814,31 +2814,19 @@ export default function App() {
 
         {/* Messages View */}
         <div className={view === 'messages' ? "flex flex-col h-[calc(100vh-73px)] bg-bg-base overflow-hidden" : "hidden"}>
-          <div className="flex border-b border-border-color bg-bg-surface px-4 py-2 gap-4 flex-shrink-0 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => { setActiveDm(null); setMsgTab('global'); }}
-                className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${!activeDm && msgTab === 'global' ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
-              >
-                Global Chat
-              </button>
-              <button
-                onClick={() => { setActiveDm(null); setMsgTab('direct'); }}
-                className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${(activeDm || msgTab === 'direct') ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
-              >
-                Direct Messages
-              </button>
-            </div>
-
-            {activeRoom && (
-              <button
-                onClick={() => { setView('lobby'); window.location.hash = 'lobby'; }}
-                className="px-3.5 py-1.5 bg-[var(--accent-primary)]/20 hover:bg-[var(--accent-primary)]/30 border border-[var(--accent-primary)]/40 text-[var(--accent-primary)] font-bold text-xs rounded-xl flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
-              >
-                <PhoneCall className="w-3.5 h-3.5" />
-                <span>Return to Call ({activeRoom.name || 'Room'})</span>
-              </button>
-            )}
+          <div className="flex border-b border-border-color bg-bg-surface px-4 py-2 gap-4 flex-shrink-0 items-center">
+            <button
+              onClick={() => { setActiveDm(null); setMsgTab('global'); }}
+              className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${!activeDm && msgTab === 'global' ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
+            >
+              Global Chat
+            </button>
+            <button
+              onClick={() => { setActiveDm(null); setMsgTab('direct'); }}
+              className={`px-4 py-2 font-bold text-sm rounded-xl transition-all ${(activeDm || msgTab === 'direct') ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_var(--accent-primary-glow)]' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
+            >
+              Direct Messages
+            </button>
           </div>
 
           <div className="flex-1 min-h-0 relative overflow-hidden">
