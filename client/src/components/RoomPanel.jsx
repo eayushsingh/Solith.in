@@ -280,8 +280,9 @@ export default function RoomPanel({
   const generateMeetingNotes = () => {
     setIsGeneratingNotes(true);
     setTimeout(() => {
-      const attendees = participants.map(p => p.name).join(', ') || user?.name || 'Anonymous';
-      const messagesText = chatMessages
+      const attendees = (participants || []).filter(p => p && p.name).map(p => p.name).join(', ') || user?.name || 'Anonymous';
+      const messagesText = (chatMessages || [])
+        .filter(m => m && m.senderName)
         .map(m => `- **${m.senderName}**: ${m.text || '[Sent a Photo]'}`)
         .join('\n');
 
@@ -738,7 +739,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
           <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3">
             <span className="text-[10px] font-bold uppercase tracking-wider text-white/30 mb-2">Connected Speakers</span>
             
-            {participants.map(p => {
+            {(participants || []).filter(p => p && p.id).map(p => {
               const role = getRole(p.id);
               const isMe = p.isLocal;
               return (
