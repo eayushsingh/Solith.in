@@ -30,24 +30,32 @@ import { auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectR
 import socket from './socket';
 
 const getAvatarUrl = (photoUrl, uid) => {
-  if (photoUrl && typeof photoUrl === 'string' && photoUrl.trim() !== '') return photoUrl.trim();
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid || 'user')}`;
+  if (photoUrl && typeof photoUrl === 'string' && photoUrl.trim() !== '' && !photoUrl.includes('dicebear')) {
+    return photoUrl.trim();
+  }
+  return '';
 };
 
-function ParticipantAvatar({ photoUrl, name, color, className = "w-14 h-14 sm:w-20 sm:h-20", isCameraOn, cameraTrack }) {
+function ParticipantAvatar({ photoUrl, name, color, className = "w-16 h-16 sm:w-20 sm:h-20", isCameraOn, cameraTrack }) {
   const [hasError, setHasError] = useState(false);
-  const initials = (name || 'U').slice(0, 2).toUpperCase();
-  const bgColor = color || '#2563eb';
+  const initials = (name || 'User')
+    .trim()
+    .split(/\s+/)
+    .map(w => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'U';
+  const bgColor = color || '#3b82f6';
 
   if (isCameraOn && cameraTrack) {
-    return <VideoTrack track={cameraTrack} className="w-full h-full object-cover rounded-xl" />;
+    return <VideoTrack track={cameraTrack} className="w-full h-full object-cover rounded-2xl" />;
   }
 
   if (photoUrl && !hasError) {
     return (
       <img
         src={photoUrl}
-        className={`${className} rounded-full object-cover shadow-lg border border-white/10`}
+        className={`${className} rounded-full object-cover shadow-xl border-2 border-white/20`}
         alt={name || ''}
         onError={() => setHasError(true)}
       />
@@ -56,8 +64,11 @@ function ParticipantAvatar({ photoUrl, name, color, className = "w-14 h-14 sm:w-
 
   return (
     <div
-      className={`${className} rounded-full flex items-center justify-center text-lg sm:text-2xl font-extrabold text-white shadow-lg border border-white/10 select-none`}
-      style={{ background: `linear-gradient(135deg, ${bgColor}, #1e293b)` }}
+      className={`${className} rounded-full flex items-center justify-center text-lg sm:text-2xl font-black text-white shadow-2xl border-2 border-white/20 select-none flex-shrink-0`}
+      style={{
+        background: `linear-gradient(135deg, ${bgColor}, #0f172a)`,
+        boxShadow: `0 8px 25px ${bgColor}50`
+      }}
     >
       {initials}
     </div>
@@ -3946,10 +3957,10 @@ export default function App() {
                           <div 
                             key={p.id}
                             onClick={() => setFocusedVideoParticipant(p)}
-                            className={`group relative w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden bg-[#131722] border border-white/10 shadow-2xl flex flex-col justify-between cursor-pointer transition-all duration-200 hover:scale-105 ${pAnimClass}`}
+                            className={`group relative w-32 h-36 sm:w-40 sm:h-48 md:w-44 md:h-52 rounded-3xl overflow-hidden bg-gradient-to-b from-[#151a2b]/95 to-[#0b0e18]/95 border border-white/15 shadow-2xl flex flex-col justify-between cursor-pointer transition-all duration-200 hover:scale-105 ${pAnimClass}`}
                             style={{
-                              borderColor: isSpeaking ? '#3B82F6' : 'rgba(255,255,255,0.1)',
-                              boxShadow: isSpeaking ? '0 0 25px rgba(59,130,246,0.6)' : '0 8px 30px rgba(0,0,0,0.5)'
+                              borderColor: isSpeaking ? '#3B82F6' : 'rgba(255,255,255,0.12)',
+                              boxShadow: isSpeaking ? '0 0 25px rgba(59,130,246,0.6)' : '0 10px 35px rgba(0,0,0,0.6)'
                             }}
                           >
                             {/* Top Left: Founder / VIP / Host / AI badge overlay */}
@@ -3959,8 +3970,8 @@ export default function App() {
 
                               if (isPAdmin) {
                                 return (
-                                  <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                                    <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-purple-400/30">
+                                  <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
+                                    <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-purple-400/30">
                                       FOUNDER
                                     </span>
                                   </div>
@@ -3968,8 +3979,8 @@ export default function App() {
                               }
                               if (isPVip) {
                                 return (
-                                  <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                                    <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-amber-300/40">
+                                  <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
+                                    <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[9px] font-black px-2.5 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-amber-300/40">
                                       VIP
                                     </span>
                                   </div>
@@ -3977,13 +3988,13 @@ export default function App() {
                               }
                               if (p.isAI || targetRole === 'owner') {
                                 return (
-                                  <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                                  <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
                                     {p.isAI ? (
-                                      <span className="bg-purple-600/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-purple-400/30">
+                                      <span className="bg-purple-600/90 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-purple-400/30">
                                         AI
                                       </span>
                                     ) : (
-                                      <span className="bg-blue-600/90 backdrop-blur-md text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-blue-400/30">
+                                      <span className="bg-blue-600/90 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-0.5 rounded-full shadow-md tracking-wider uppercase border border-blue-400/30">
                                         Host
                                       </span>
                                     )}
@@ -3994,38 +4005,38 @@ export default function App() {
                             })()}
 
                             {/* Top Right: Gear / Action overlay */}
-                            <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute top-2.5 right-2.5 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (!p.isLocal) setActiveActionUser(p);
                                 }}
-                                className="p-1 bg-black/60 hover:bg-black/80 text-white rounded-lg backdrop-blur-md"
+                                className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-xl backdrop-blur-md transition-colors"
                               >
                                 <Settings className="w-3.5 h-3.5" />
                               </button>
                             </div>
 
                             {/* Avatar / Camera Stream */}
-                            <div className="flex-1 w-full h-full flex items-center justify-center relative p-2 overflow-hidden">
+                            <div className="flex-1 w-full h-full flex items-center justify-center relative p-3 overflow-hidden">
                               <ParticipantAvatar
                                 photoUrl={pPhotoUrl}
                                 name={pName}
                                 color={backendP?.color || p.color}
-                                className="w-14 h-14 sm:w-20 sm:h-20"
+                                className="w-16 h-16 sm:w-20 sm:h-20"
                                 isCameraOn={p.isCameraOn}
                                 cameraTrack={p.cameraTrack}
                               />
                             </div>
 
                             {/* Bottom Card Strip (Name + Mic Status) */}
-                            <div className="w-full bg-black/80 backdrop-blur-md px-2.5 py-1.5 flex items-center justify-between z-20 border-t border-white/10">
-                              <span className="text-[11px] font-bold text-white max-w-[100px] sm:max-w-[120px] truncate" title={pName}>
+                            <div className="w-full bg-black/60 backdrop-blur-md px-3 py-2 flex items-center justify-between z-20 border-t border-white/10">
+                              <span className="text-xs font-bold text-white max-w-[100px] sm:max-w-[120px] truncate" title={pName}>
                                 {pName}
                               </span>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1.5">
                                 {p.muted ? (
-                                  <MicOff className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                                  <MicOff className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
                                 ) : (
                                   <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse flex-shrink-0" />
                                 )}
