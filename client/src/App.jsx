@@ -3193,11 +3193,10 @@ export default function App() {
 
           {/* Filters Header Row with Expand/Collapse & Language Chips */}
           {(() => {
-            const langCounts = { 'All Languages': rooms.length };
-            LANGUAGES.forEach(lang => {
+            const langCounts = { 'All Languages': (rooms || []).length };
+            (LANGUAGES || []).forEach(lang => {
               if (lang !== 'All Languages') {
-                counts = counts || {};
-                langCounts[lang] = rooms.filter(r => (r.language || '').toLowerCase() === lang.toLowerCase()).length;
+                langCounts[lang] = (rooms || []).filter(r => (r?.language || '').toLowerCase() === lang.toLowerCase()).length;
               }
             });
 
