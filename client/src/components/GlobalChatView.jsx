@@ -192,45 +192,39 @@ export default function GlobalChatView({ user, onSignIn }) {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full bg-[#090A0F] text-white overflow-hidden relative">
+    <div className="flex flex-col h-full w-full bg-[#090A0F] text-white overflow-hidden relative">
       <Meteors number={15} />
       
       {/* Global Header */}
-      <header className="w-full flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 lg:px-8 py-4 border-b border-[#1E212B] flex-shrink-0 bg-[#0C0E14]/80 backdrop-blur-xl sticky top-0 z-30">
+      <header className="w-full flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 lg:px-8 py-3.5 border-b border-[#1E212B] flex-shrink-0 bg-[#0C0E14]/80 backdrop-blur-xl sticky top-0 z-30">
         <div className="flex flex-col min-w-0">
           <span className="text-[10px] text-[#3B82F6] font-bold tracking-[0.2em] uppercase flex items-center gap-2">
             <Sparkles className="w-3 h-3" /> Live Feed
           </span>
-          <h1 className="text-2xl font-bold tracking-tight text-white mt-1">Global Chat</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-0.5">Global Chat</h1>
         </div>
         
-        <div className="flex items-center gap-4 sm:gap-5 flex-wrap justify-start sm:justify-end">
-          {/* Level / XP */}
-          <div className="flex items-center gap-2 text-[14px] font-mono text-[#888A92] bg-[#12141C] px-3 py-1.5 rounded-full border border-[#1E212B] shadow-sm">
-            <div className="w-2 h-2 rounded-full bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]"></div>
-            <span className="text-white font-bold">11</span>
-            <span className="text-[#555861]">/</span>
-            <span>6,470</span>
-          </div>
-          
-          {/* Inbox Icon */}
-          <button className="relative text-[#555861] hover:text-white transition-colors bg-[#12141C] p-2 rounded-full border border-[#1E212B] hover:bg-[#1A1D27]">
-            <Inbox className="w-[18px] h-[18px]" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#3B82F6] rounded-full text-[9px] font-bold text-white flex items-center justify-center shadow-md border border-[#090A0F]">5</span>
-          </button>
-
-          {/* Earn Button */}
-          <button className="flex items-center gap-2 text-white bg-[#12141C] hover:bg-[#1A1D27] px-4 py-2 rounded-full transition-colors font-semibold text-[13px] border border-[#1E212B]">
-            <Lock className="w-[14px] h-[14px] text-[#555861]" />
-            Earn
-          </button>
-
-          {/* Avatar */}
-          <img 
-            src={user?.photoUrl || "https://ui-avatars.com/api/?name=User"} 
-            alt="Profile" 
-            className="w-10 h-10 rounded-full cursor-pointer border border-[#1E212B] hover:border-[#3B82F6] transition-colors object-cover" 
-          />
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap justify-start sm:justify-end">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-xs font-mono text-[#888A92] bg-[#12141C] px-3.5 py-1.5 rounded-full border border-[#1E212B]">
+                <div className="w-2 h-2 rounded-full bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]" />
+                <span className="text-white font-bold">{user.xp || 0} XP</span>
+              </div>
+              <img 
+                src={user?.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}`} 
+                alt="Profile" 
+                className="w-9 h-9 rounded-full border border-[#1E212B] hover:border-[#3B82F6] transition-colors object-cover" 
+              />
+            </div>
+          ) : (
+            <button
+              onClick={onSignIn}
+              className="px-4 py-1.5 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold text-xs rounded-full transition-all shadow-md"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </header>
 
@@ -250,8 +244,10 @@ export default function GlobalChatView({ user, onSignIn }) {
           </div>
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2 bg-[#12141C] px-3 py-1.5 rounded-full border border-[#1E212B]">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></div>
-              <span className="text-[10px] font-bold text-white tracking-[0.1em]">{onlineMembers.length} ONLINE</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${onlineMembers.length > 0 ? 'bg-green-500 shadow-[0_0_8px_#22c55e]' : 'bg-blue-400 shadow-[0_0_8px_#3b82f6]'}`}></div>
+              <span className="text-[10px] font-bold text-white tracking-[0.1em]">
+                {onlineMembers.length > 0 ? `${onlineMembers.length} ONLINE` : `${onlineMembers.length + offlineMembers.length} MEMBERS`}
+              </span>
             </div>
             <button
               type="button"
