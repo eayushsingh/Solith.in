@@ -30,6 +30,7 @@ export const LiveKitService = {
   localUserMock: null,
   isMutedMock: true,
   isScreenSharingMock: false,
+  isCameraMock: false,
   triggerMockParticipantsList: () => {
     const local = LiveKitService.localUserMock || { id: 'local', name: 'You', photoUrl: '', color: '#ff4d4d', emoji: '👤' };
     participantCallback?.([
@@ -39,6 +40,7 @@ export const LiveKitService = {
         isLocal: true, 
         muted: LiveKitService.isMutedMock, 
         isScreenSharing: LiveKitService.isScreenSharingMock,
+        isCameraOn: LiveKitService.isCameraMock,
         photoUrl: local.photoUrl || '', 
         color: local.color || '#0d94a8', 
         emoji: local.emoji || '👤' 
@@ -47,6 +49,47 @@ export const LiveKitService = {
       { id: 'mock-user-2', name: 'Hiro', isLocal: false, muted: false, photoUrl: '', color: '#ffd11a', emoji: '🐼' },
       { id: 'mock-user-3', name: 'Elena', isLocal: false, muted: true, photoUrl: '', color: '#4da6ff', emoji: '🦁' }
     ]);
+  },
+
+  setLocalCamera: async (enable, isRealCall) => {
+    if (!isRealCall) {
+      console.log(`LiveKitService: Set mock camera to ${enable}`);
+      LiveKitService.isCameraMock = enable;
+      LiveKitService.triggerMockParticipantsList();
+      return enable;
+    }
+    try {
+      if (roomObject && roomObject.localParticipant) {
+        await roomObject.localParticipant.setCameraEnabled(enable);
+      }
+      return enable;
+    } catch (err) {
+      console.error('Camera error:', err);
+      throw new Error(err.message || 'Camera permission denied or camera device unavailable.');
+    }
+  },
+
+  setLocalScreenShare: async (enable, isRealCall) => {
+    if (!isRealCall) {
+      console.log(`LiveKitService: Set mock screen share to ${enable}`);
+      LiveKitService.isScreenSharingMock = enable;
+      LiveKitService.triggerMockParticipantsList();
+      return enable;
+    }
+    try {
+      if (enable) {
+        if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+          throw new Error('Screen sharing is not supported on this mobile browser version.');
+        }
+        await roomObject.localParticipant.setScreenShareEnabled(true);
+      } else {
+        await roomObject.localParticipant.setScreenShareEnabled(false);
+      }
+      return enable;
+    } catch (err) {
+      console.error('Screen share error:', err);
+      throw new Error(err.message || 'Screen share permission denied or not supported.');
+    }
   },
 
   /**
@@ -246,34 +289,6 @@ export const LiveKitService = {
       return muted;
     }
     return true;
-  },
-
-  setLocalCamera: async (enable, isRealCall) => {
-    if (!isRealCall) return false;
-    try {
-      if (roomObject && roomObject.localParticipant) {
-        await roomObject.localParticipant.setCameraEnabled(enable);
-      }
-      return enable;
-    } catch (err) {
-      console.error('Camera error:', err);
-      return false;
-    }
-  },
-
-  setLocalScreenShare: async (enable, isRealCall) => {
-    if (!isRealCall) return false;
-    try {
-      if (enable) {
-        await roomObject.localParticipant.setScreenShareEnabled(true);
-      } else {
-        await roomObject.localParticipant.setScreenShareEnabled(false);
-      }
-      return enable;
-    } catch (err) {
-      console.error('Screen share error:', err);
-      return false;
-    }
   }
 };
 
