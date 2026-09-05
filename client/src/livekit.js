@@ -191,6 +191,11 @@ export const LiveKitService = {
         updateParticipantsList();
       });
 
+      currentRoom.on(RoomEvent.ParticipantMetadataChanged, () => {
+        if (roomObject !== currentRoom) return;
+        updateParticipantsList();
+      });
+
       currentRoom.on(RoomEvent.LocalTrackPublished, () => {
         if (roomObject !== currentRoom) return;
         updateParticipantsList();
@@ -333,12 +338,12 @@ function updateParticipantsList() {
     const isMuted = !roomObject.localParticipant.isMicrophoneEnabled;
     const videoPubs = roomObject.localParticipant.videoTrackPublications;
     const screenSharePub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.ScreenShare) : null;
-    const isScreenSharing = !!screenSharePub;
-    const screenShareTrack = screenSharePub?.track;
+    const isScreenSharing = !!screenSharePub && !screenSharePub.isMuted && !!screenSharePub.track;
+    const screenShareTrack = isScreenSharing ? screenSharePub?.track : null;
 
     const cameraPub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.Camera) : null;
-    const isCameraOn = !!cameraPub;
-    const cameraTrack = cameraPub?.track;
+    const isCameraOn = !!cameraPub && !cameraPub.isMuted && !!cameraPub.track;
+    const cameraTrack = isCameraOn ? cameraPub?.track : null;
     let meta = {};
     try { if (roomObject.localParticipant.metadata) meta = JSON.parse(roomObject.localParticipant.metadata); } catch(e){}
     list.push({
@@ -352,7 +357,8 @@ function updateParticipantsList() {
       cameraTrack: cameraTrack,
       photoUrl: meta.photoUrl || '',
       color: meta.color || '#ff4d4d',
-      emoji: meta.emoji || '👤'
+      emoji: meta.emoji || '👤',
+      profileAnimation: meta.profileAnimation || 'none'
     });
   }
 
@@ -362,12 +368,12 @@ function updateParticipantsList() {
       const isMuted = !p.isMicrophoneEnabled;
       const videoPubs = p.videoTrackPublications;
       const screenSharePub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.ScreenShare) : null;
-      const isScreenSharing = !!screenSharePub;
-      const screenShareTrack = screenSharePub?.track;
+      const isScreenSharing = !!screenSharePub && !screenSharePub.isMuted && !!screenSharePub.track;
+      const screenShareTrack = isScreenSharing ? screenSharePub?.track : null;
 
       const cameraPub = videoPubs ? Array.from(videoPubs.values()).find(pub => pub.source === Track.Source.Camera) : null;
-      const isCameraOn = !!cameraPub;
-      const cameraTrack = cameraPub?.track;
+      const isCameraOn = !!cameraPub && !cameraPub.isMuted && !!cameraPub.track;
+      const cameraTrack = isCameraOn ? cameraPub?.track : null;
       let meta = {};
       try { if (p.metadata) meta = JSON.parse(p.metadata); } catch(e){}
       const isAI = p.identity.startsWith('agent');
@@ -383,7 +389,8 @@ function updateParticipantsList() {
         photoUrl: meta.photoUrl || '',
         color: meta.color || (isAI ? '#8b5cf6' : '#ff4d4d'),
         emoji: meta.emoji || (isAI ? '✨' : '👤'),
-        isAI: isAI
+        isAI: isAI,
+        profileAnimation: meta.profileAnimation || 'none'
       });
     });
   }

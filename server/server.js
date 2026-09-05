@@ -890,7 +890,7 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
       const at = new AccessToken(runtimeConfig.livekitApiKey, runtimeConfig.livekitApiSecret, {
         identity: userId,
         name: name,
-        metadata: JSON.stringify({ photoUrl: photoUrl || '', color: color || '#ff4d4d', emoji: emoji || '😊' }),
+        metadata: JSON.stringify({ photoUrl: photoUrl || '', color: color || '#ff4d4d', emoji: emoji || '😊', profileAnimation: profileAnimation || 'none' }),
         ttl: 24 * 60 * 60, // 24 hours
       });
       at.addGrant({ roomJoin: true, room: room.id, canPublish: true, canSubscribe: true });

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Crown, Check, Lock, Loader2, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { auth } from '../firebase';
 
 const ANIMATIONS = [
   {
@@ -64,6 +65,13 @@ export default function ProCustomizationModal({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedProfileAnim(user?.profileAnimation || 'none');
+      setSelectedGroupAnim(user?.groupAnimation || 'none');
+    }
+  }, [isOpen, user?.profileAnimation, user?.groupAnimation]);
+
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const handleSave = async () => {
@@ -77,12 +85,20 @@ export default function ProCustomizationModal({
     setSaveSuccess(false);
 
     try {
-      const token = user?.token;
+      let token = user?.token;
+      if (!token && auth?.currentUser) {
+        try {
+          token = await auth.currentUser.getIdToken();
+        } catch (e) {
+          console.warn("Could not get Firebase ID token:", e);
+        }
+      }
+
       const res = await fetch(`${API_URL}/api/users/customization`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           profileAnimation: selectedProfileAnim,
