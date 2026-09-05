@@ -12,7 +12,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
   ];
 
   return (
-    <aside className="fixed bottom-0 left-0 w-full h-16 md:h-screen md:w-[88px] md:top-0 bg-bg-base/95 backdrop-blur-md md:bg-bg-base border-t md:border-t-0 md:border-r border-border-color flex flex-row md:flex-col items-center justify-around md:justify-start px-3 md:px-0 py-0 md:py-6 z-50">
+    <aside className={`fixed bottom-0 left-0 w-full h-16 md:h-screen md:w-[88px] md:top-0 bg-bg-base/95 backdrop-blur-md md:bg-bg-base border-t md:border-t-0 md:border-r border-border-color flex flex-row md:flex-col items-center justify-around md:justify-start px-3 md:px-0 py-0 md:py-6 z-50 ${activeRoom && currentView === 'lobby' ? 'hidden md:flex' : 'flex'}`}>
       {/* Logo Area */}
       <div 
         onClick={() => setView('lobby')}
