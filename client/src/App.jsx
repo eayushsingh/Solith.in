@@ -3673,6 +3673,19 @@ export default function App() {
                 </div>
               )}
 
+              {/* Room Top Bar with Title + Language */}
+              <div className="absolute top-4 left-4 sm:left-6 z-40 flex items-center gap-3 bg-[#0B0D14]/85 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-2xl shadow-xl">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-white max-w-[150px] sm:max-w-[220px] truncate">
+                    {currentRoomData?.name || activeRoom?.name || 'Live Room'}
+                  </span>
+                  <span className="text-[10px] text-white/50 font-medium">
+                    {currentRoomData?.language || 'English'} • {safeParticipants.length} {safeParticipants.length === 1 ? 'user' : 'users'}
+                  </span>
+                </div>
+              </div>
+
               {/* Top Floating Controls — icon-only pill */}
               <div style={{
                 position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
