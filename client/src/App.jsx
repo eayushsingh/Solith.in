@@ -1139,11 +1139,11 @@ export default function App() {
             setCallState('joined');
           } else if (state === 'error') {
             const msg = error || '';
-            if (!msg.includes('Client initiated disconnect')) {
+            if (!msg.toLowerCase().includes('client initiated disconnect') && !msg.toLowerCase().includes('client initiated') && !msg.toLowerCase().includes('abort')) {
               setToastMessage(`Connection error: ${msg}`);
+              setActiveRoom(null);
+              setCallState('left');
             }
-            setActiveRoom(null);
-            setCallState('left');
           } else if (state === 'left') {
             teardownVoiceRoom();
           }
@@ -1170,11 +1170,14 @@ export default function App() {
       return true;
     } catch (err) {
       console.error('Error joining call room:', err);
-      setToastMessage(err.message || 'Could not join voice session.');
+      const msg = err?.message || '';
+      if (!msg.toLowerCase().includes('client initiated disconnect') && !msg.toLowerCase().includes('client initiated') && !msg.toLowerCase().includes('abort')) {
+        setToastMessage(msg || 'Could not join voice session.');
+        setActiveRoom(null);
+        setCallState('left');
+        setRoomJoinTime(null);
+      }
       setIsMuted(true);
-      setActiveRoom(null);
-      setCallState('left');
-      setRoomJoinTime(null);
       return false;
     } finally {
       setJoiningRoomId(null);

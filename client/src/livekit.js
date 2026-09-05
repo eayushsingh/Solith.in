@@ -138,13 +138,18 @@ export const LiveKitService = {
       console.log(`[LiveKit] Connecting to:`, livekitUrl);
       connectionCallback?.({ state: 'joining' });
 
-      // Cleanup existing room object if any
+      // Clean up previous room object if any, ensuring its listeners are removed first
       if (roomObject) {
-        await cleanupRealCall();
+        const oldRoom = roomObject;
+        roomObject = null;
+        try {
+          oldRoom.removeAllListeners();
+          await oldRoom.disconnect();
+        } catch (e) {}
       }
 
       // Create new Room object
-      roomObject = new Room({
+      const currentRoom = new Room({
         adaptiveStream: false,
         dynacast: false,
         disconnectOnPageLeave: false, // Prevents background ping timeouts
@@ -157,55 +162,67 @@ export const LiveKitService = {
           noiseSuppression: true,
         }
       });
+      roomObject = currentRoom;
 
-      // Bind LiveKit events
-      roomObject.on(RoomEvent.Connected, () => {
+      // Bind LiveKit events specifically scoped to currentRoom
+      currentRoom.on(RoomEvent.Connected, () => {
+        if (roomObject !== currentRoom) return;
         console.log('LiveKitService: RoomEvent.Connected fired!');
         playSound('join');
         connectionCallback?.({ state: 'joined', isMock: false });
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.Disconnected, () => {
-        console.log('LiveKitService: RoomEvent.Disconnected fired!');
+      currentRoom.on(RoomEvent.Disconnected, (reason) => {
+        if (roomObject !== currentRoom) return;
+        console.log('LiveKitService: RoomEvent.Disconnected fired!', reason);
         playSound('leave');
-        connectionCallback?.({ state: 'left' });
-        cleanupRealCall();
+        connectionCallback?.({ state: 'left', reason });
+        cleanupRealCall(currentRoom);
       });
 
-      roomObject.on(RoomEvent.ParticipantConnected, () => {
+      currentRoom.on(RoomEvent.ParticipantConnected, () => {
+        if (roomObject !== currentRoom) return;
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.ParticipantDisconnected, () => {
+      currentRoom.on(RoomEvent.ParticipantDisconnected, () => {
+        if (roomObject !== currentRoom) return;
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.LocalTrackPublished, () => {
+      currentRoom.on(RoomEvent.LocalTrackPublished, () => {
+        if (roomObject !== currentRoom) return;
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.LocalTrackUnpublished, () => {
+      currentRoom.on(RoomEvent.LocalTrackUnpublished, () => {
+        if (roomObject !== currentRoom) return;
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.TrackPublished, () => {
+      currentRoom.on(RoomEvent.TrackPublished, () => {
+        if (roomObject !== currentRoom) return;
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.TrackUnpublished, () => {
+      currentRoom.on(RoomEvent.TrackUnpublished, () => {
+        if (roomObject !== currentRoom) return;
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.TrackMuted, () => {
+      currentRoom.on(RoomEvent.TrackMuted, () => {
+        if (roomObject !== currentRoom) return;
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.TrackUnmuted, () => {
+      currentRoom.on(RoomEvent.TrackUnmuted, () => {
+        if (roomObject !== currentRoom) return;
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      currentRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (roomObject !== currentRoom) return;
         if (track.kind === Track.Kind.Audio) {
           const element = track.attach();
           if (element) {
@@ -216,14 +233,16 @@ export const LiveKitService = {
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+      currentRoom.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+        if (roomObject !== currentRoom) return;
         const detached = track.detach();
         const els = Array.isArray(detached) ? detached : (detached ? [detached] : []);
         els.forEach(el => el.remove());
         updateParticipantsList();
       });
 
-      roomObject.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+      currentRoom.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+        if (roomObject !== currentRoom) return;
         if (audioLevelCallback) {
           const levels = {};
           if (speakers) {
@@ -237,15 +256,18 @@ export const LiveKitService = {
       });
 
       // Join the room
-      await roomObject.connect(livekitUrl, token);
+      await currentRoom.connect(livekitUrl, token);
       
       // Start microphone muted by default (fire-and-forget for faster join)
-      roomObject.localParticipant.setMicrophoneEnabled(false).catch(() => {});
+      currentRoom.localParticipant?.setMicrophoneEnabled(false).catch(() => {});
 
       return true;
     } catch (err) {
       console.error('LiveKitService.join failed:', err);
-      connectionCallback?.({ state: 'error', error: err.message });
+      const isClientDisconnect = err?.message?.toLowerCase().includes('client initiated disconnect');
+      if (!isClientDisconnect) {
+        connectionCallback?.({ state: 'error', error: err.message });
+      }
       await cleanupRealCall();
       throw err;
     }
@@ -266,12 +288,15 @@ export const LiveKitService = {
     }
 
     if (roomObject) {
+      const toDestroy = roomObject;
+      roomObject = null;
       try {
-        await roomObject.disconnect();
+        toDestroy.removeAllListeners();
+        await toDestroy.disconnect();
       } catch (err) {
         console.error('LiveKitService.leave error:', err);
       } finally {
-        await cleanupRealCall();
+        await cleanupRealCall(toDestroy);
       }
     }
   },
