@@ -1521,9 +1521,11 @@ export default function App() {
     };
   }, [activeRoom, user, isRealCall]);
 
+  const currentRoomData = activeRoom ? (rooms.find(r => r?.id === activeRoom?.id) || activeRoom) : null;
+  const safeParticipants = (participants || []).filter(p => p != null && p.id != null);
+
   const getRole = (userId) => {
     if (!activeRoom) return 'guest';
-    const currentRoomData = rooms.find(r => r?.id === activeRoom?.id);
     return currentRoomData?.roles?.[userId] || 'guest';
   };
 
@@ -1545,7 +1547,7 @@ export default function App() {
     return (b.participants?.length || 0) - (a.participants?.length || 0);
   });
 
-  const totalListeners = rooms.reduce((sum, r) => sum + r.participants.length, 0);
+  const totalListeners = rooms.reduce((sum, r) => sum + (r.participants?.length || 0), 0);
 
   const levelInfo = user ? getLevelInfo(user.xp || 0) : null;
   const xpPercentage = user && levelInfo ? Math.min(100, Math.floor(((user.xp - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100)) : 0;
@@ -2746,7 +2748,7 @@ export default function App() {
       {/* Focused Video / Profile Fullscreen View */}
       {focusedVideoParticipant && (() => {
         const currentP = safeParticipants.find(sp => sp.id === focusedVideoParticipant.id) || focusedVideoParticipant;
-        const backendP = currentRoomData.participants?.find(bp => bp?.id === currentP?.id);
+        const backendP = currentRoomData?.participants?.find(bp => bp?.id === currentP?.id);
         const pPhotoUrl = getAvatarUrl(currentP.isLocal ? user?.photoUrl : (backendP?.photoUrl || currentP.photoUrl), currentP.id);
         const pName = currentP.isLocal ? (user?.name || 'You') : (backendP?.name || currentP.name || 'User');
         const targetRole = getRole(currentP.id);
