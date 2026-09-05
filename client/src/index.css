@@ -44,6 +44,9 @@ html {
   background: var(--bg-base);
   color: var(--text-primary);
   scroll-behavior: smooth;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
 }
 
 
