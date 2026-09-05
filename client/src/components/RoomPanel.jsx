@@ -430,8 +430,10 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
   if (!isChatOpen) return null;
 
   return (
-    <div className={`fixed bottom-20 right-4 sm:right-8 z-50 bg-[#0f1115]/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300 animate-fade-in w-[calc(100vw-32px)] ${
-      isExpanded ? 'sm:w-[680px] h-[580px] max-h-[80vh]' : 'sm:w-[380px] h-[480px] max-h-[70vh]'
+    <div className={`fixed z-50 bg-[#0f1115]/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300 animate-fade-in ${
+      isExpanded 
+        ? 'inset-x-3 bottom-20 top-16 sm:top-auto sm:bottom-6 sm:right-6 sm:left-auto sm:w-[680px] sm:h-[580px] sm:max-h-[85vh]' 
+        : 'inset-x-3 bottom-20 top-20 sm:top-auto sm:bottom-6 sm:right-6 sm:left-auto sm:w-[380px] sm:h-[520px] sm:max-h-[75vh]'
     }`}>
       
       {/* Top Navigation Tabs Header */}
@@ -526,13 +528,10 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
         {activeTab === 'chat' && (
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Room Info */}
-            <div style={{
-              background:'#111827', padding:'10px 16px',
-              borderBottom:'1px solid rgba(255,255,255,0.07)', flexShrink:0
-            }}>
-              <div style={{color:'rgba(255,255,255,0.9)',fontSize:12,fontWeight:700,marginBottom:4}}>Room Info</div>
-              <div style={{color:'rgba(255,255,255,0.4)',fontSize:11}}>Language: {activeRoom?.language}</div>
-              {activeRoom?.topic && <div style={{color:'rgba(255,255,255,0.4)',fontSize:11,marginTop:2}}>Topic: {activeRoom.topic}</div>}
+            <div className="bg-white/[0.03] px-4 py-2.5 border-b border-white/10 flex-shrink-0">
+              <div className="text-white/90 text-xs font-bold mb-1">Room Info</div>
+              <div className="text-white/40 text-[11px]">Language: {activeRoom?.language || 'English'}</div>
+              {activeRoom?.topic && <div className="text-white/40 text-[11px] mt-0.5">Topic: {activeRoom.topic}</div>}
             </div>
 
 

@@ -3692,65 +3692,81 @@ export default function App() {
               )}
 
               {/* Room Top Bar with Title + Language */}
-              <div className="absolute top-4 left-4 sm:left-6 z-40 flex items-center gap-3 bg-[#0B0D14]/85 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-2xl shadow-xl">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-white max-w-[150px] sm:max-w-[220px] truncate">
+              <div className="absolute top-3 left-3 md:top-4 md:left-[108px] z-40 flex items-center gap-2.5 sm:gap-3 bg-[#0B0D14]/85 backdrop-blur-xl border border-white/10 px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl shadow-xl max-w-[160px] sm:max-w-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-white truncate">
                     {currentRoomData?.name || activeRoom?.name || 'Live Room'}
                   </span>
-                  <span className="text-[10px] text-white/50 font-medium">
+                  <span className="text-[10px] text-white/50 font-medium truncate">
                     {currentRoomData?.language || 'English'} • {safeParticipants.length} {safeParticipants.length === 1 ? 'user' : 'users'}
                   </span>
                 </div>
               </div>
 
-              {/* Top Floating Controls — icon-only pill */}
-              <div style={{
-                position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)',
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'rgba(15,21,32,0.85)', backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 16, padding: '8px 12px', zIndex: 50
-              }}>
-                <button onClick={toggleMute} style={{
-                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
-                  background: isMuted ? '#1877f2' : 'rgba(255,255,255,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  {isMuted ? <MicOff size={20} color="white" /> : <Mic size={20} color="white" />}
+              {/* Top Floating Controls */}
+              <div className="fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 sm:gap-2 bg-[#0B0D14]/85 backdrop-blur-2xl border border-white/10 rounded-2xl p-1.5 sm:p-2 shadow-2xl max-w-[calc(100vw-20px)] overflow-x-auto hide-scrollbar">
+                <button 
+                  onClick={toggleMute} 
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
+                    isMuted ? 'bg-[#1877f2] text-white' : 'bg-white/10 text-white hover:bg-white/15'
+                  }`}
+                  title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
+                >
+                  {isMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </button>
 
-                <button onClick={toggleCamera} style={{
-                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
-                  background: isCameraOn ? '#1877f2' : 'rgba(255,255,255,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <Camera size={20} color="white" />
+                <button 
+                  onClick={toggleCamera} 
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
+                    isCameraOn ? 'bg-[#1877f2] text-white' : 'bg-white/10 text-white hover:bg-white/15'
+                  }`}
+                  title={isCameraOn ? "Turn off camera" : "Turn on camera"}
+                >
+                  <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
 
-                <button onClick={toggleScreenShare} style={{
-                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
-                  background: isScreenSharing ? '#1877f2' : 'rgba(255,255,255,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <Monitor size={20} color="white" />
+                <button 
+                  onClick={toggleScreenShare} 
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
+                    isScreenSharing ? 'bg-[#1877f2] text-white' : 'bg-white/10 text-white hover:bg-white/15'
+                  }`}
+                  title={isScreenSharing ? "Stop sharing" : "Share screen"}
+                >
+                  <Monitor className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
 
-                <button style={{
-                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'default',
-                  background: 'rgba(255,255,255,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-                }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', display: 'block' }} />
-                  <BarChart2 size={18} color="white" />
+                <button 
+                  onClick={() => setIsChatOpen(!isChatOpen)}
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 relative ${
+                    isChatOpen ? 'bg-blue-600 text-white shadow-md' : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15'
+                  }`}
+                  title={isChatOpen ? "Close Chat & Tools" : "Open Chat & Tools"}
+                >
+                  <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                  {chatMessages.length > 0 && !isChatOpen && (
+                    <span className="absolute top-2 right-2 w-2 h-2 bg-sky-400 rounded-full animate-pulse" />
+                  )}
                 </button>
 
-                <button onClick={leaveVoiceRoom} style={{
-                  width: 48, height: 48, borderRadius: 12, border: 'none', cursor: 'pointer',
-                  background: '#dc2626',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <LogOut size={20} color="white" />
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    setToastMessage('Room link copied to clipboard!');
+                    setTimeout(() => setToastMessage(null), 3000);
+                  }}
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 text-white/70 hover:text-white hover:bg-white/15 flex items-center justify-center transition-all flex-shrink-0"
+                  title="Share Room Link"
+                >
+                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+
+                <button 
+                  onClick={leaveVoiceRoom} 
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#dc2626] hover:bg-red-700 text-white flex items-center justify-center transition-all flex-shrink-0"
+                  title="Leave Room"
+                >
+                  <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
 
@@ -3915,67 +3931,69 @@ export default function App() {
 
                 // Default view: Free4Talk style square participant cards centered in room
                 return (
-                  <div className="flex-1 w-full h-full relative flex flex-col items-center justify-center p-3 sm:p-6 overflow-hidden min-h-0 z-10">
-                    {/* Right Vertical Floating Toolbar */}
-                    <div className="fixed right-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5 bg-[#0B0D14]/85 backdrop-blur-xl border border-white/10 p-2 rounded-2xl shadow-2xl">
-                      <button 
-                        onClick={() => setIsChatOpen(!isChatOpen)} 
-                        className={`p-2.5 rounded-xl transition-all ${isChatOpen ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/10'}`} 
-                        title="Toggle Chat Panel"
-                      >
-                        <MessageSquare className="w-5 h-5" />
-                      </button>
+                  <div className="flex-1 w-full h-full relative flex flex-col items-center justify-center p-3 sm:p-6 overflow-hidden min-h-0 z-10 md:pl-[88px]">
+                    {/* Right Vertical Floating Toolbar — only visible when chat/RoomPanel is closed */}
+                    {!isChatOpen && (
+                      <div className="fixed right-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5 bg-[#0B0D14]/85 backdrop-blur-xl border border-white/10 p-2 rounded-2xl shadow-2xl animate-fade-in">
+                        <button 
+                          onClick={() => setIsChatOpen(true)} 
+                          className="p-2.5 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-all" 
+                          title="Open Chat & Tools"
+                        >
+                          <MessageSquare className="w-5 h-5" />
+                        </button>
 
-                      <button 
-                        onClick={hasRaisedHand ? lowerHand : raiseHand} 
-                        className={`p-2.5 rounded-xl transition-all ${hasRaisedHand ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'text-white/60 hover:text-white hover:bg-white/10'}`} 
-                        title={hasRaisedHand ? "Lower Hand" : "Raise Hand"}
-                      >
-                        <span className="text-base leading-none">✋</span>
-                      </button>
+                        <button 
+                          onClick={hasRaisedHand ? lowerHand : raiseHand} 
+                          className={`p-2.5 rounded-xl transition-all ${hasRaisedHand ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'text-white/60 hover:text-white hover:bg-white/10'}`} 
+                          title={hasRaisedHand ? "Lower Hand" : "Raise Hand"}
+                        >
+                          <span className="text-base leading-none">✋</span>
+                        </button>
 
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText(window.location.href);
-                          setToastMessage('Room link copied to clipboard!');
-                          setTimeout(() => setToastMessage(null), 3000);
-                        }} 
-                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
-                        title="Share Room Link"
-                      >
-                        <Share2 className="w-5 h-5" />
-                      </button>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(window.location.href);
+                            setToastMessage('Room link copied to clipboard!');
+                            setTimeout(() => setToastMessage(null), 3000);
+                          }} 
+                          className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
+                          title="Share Room Link"
+                        >
+                          <Share2 className="w-5 h-5" />
+                        </button>
 
-                      <button 
-                        onClick={() => setShowGameSelector(!showGameSelector)} 
-                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all relative" 
-                        title="Games & Extras"
-                      >
-                        <Gamepad2 className="w-5 h-5" />
-                      </button>
-                      {showGameSelector && (
-                        <GameSelector
-                          onSelect={handleGameSelect}
-                          onClose={() => setShowGameSelector(false)}
-                        />
-                      )}
+                        <button 
+                          onClick={() => setShowGameSelector(!showGameSelector)} 
+                          className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all relative" 
+                          title="Games & Extras"
+                        >
+                          <Gamepad2 className="w-5 h-5" />
+                        </button>
+                        {showGameSelector && (
+                          <GameSelector
+                            onSelect={handleGameSelect}
+                            onClose={() => setShowGameSelector(false)}
+                          />
+                        )}
 
-                      <button 
-                        onClick={() => setShowSocialPanel(!showSocialPanel)} 
-                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
-                        title="Room Members & Social"
-                      >
-                        <Users className="w-5 h-5" />
-                      </button>
+                        <button 
+                          onClick={() => setShowSocialPanel(!showSocialPanel)} 
+                          className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
+                          title="Room Members & Social"
+                        >
+                          <Users className="w-5 h-5" />
+                        </button>
 
-                      <button 
-                        onClick={() => setShowProfileModal(true)} 
-                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
-                        title="Audio & Room Settings"
-                      >
-                        <Settings className="w-5 h-5" />
-                      </button>
-                    </div>
+                        <button 
+                          onClick={() => setShowProfileModal(true)} 
+                          className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
+                          title="Audio & Room Settings"
+                        >
+                          <Settings className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
 
                     {/* Square Participant Cards Grid */}
                     <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 max-w-4xl w-full my-auto px-2 overflow-y-auto max-h-[calc(100vh-140px)] hide-scrollbar">
