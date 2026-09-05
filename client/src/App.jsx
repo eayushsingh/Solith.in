@@ -869,7 +869,14 @@ export default function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
 
-    if (roomId && user && user.id && callState === 'left' && !activeRoom && !joiningRoomId) {
+    if (!roomId) return;
+
+    if (!authLoading && !user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    if (user && user.id && callState === 'left' && !activeRoom && !joiningRoomId) {
       const roomToJoin = rooms.find(r => r?.id === roomId);
       if (roomToJoin) {
         joinVoiceRoom(roomToJoin);
@@ -887,7 +894,7 @@ export default function App() {
           .catch(console.error);
       }
     }
-  }, [rooms, user, callState, activeRoom, joiningRoomId]);
+  }, [rooms, user, authLoading, callState, activeRoom, joiningRoomId]);
 
   const fetchConfig = async () => {
     try {
@@ -2712,7 +2719,11 @@ export default function App() {
                 </div>
                 <button onClick={() => {
                   const room = rooms.find(r => r?.id === p?.roomId);
-                  if (room) { joinVoiceRoom(room); setShowSocialPanel(false); }
+                  if (room) {
+                    const url = `${window.location.origin}/?room=${room.id}`;
+                    window.open(url, '_blank');
+                    setShowSocialPanel(false);
+                  }
                 }} style={{
                   background: 'rgba(24,119,242,0.15)', border: '1px solid rgba(24,119,242,0.3)',
                   borderRadius: 8, padding: '5px 10px', color: '#60a5fa',

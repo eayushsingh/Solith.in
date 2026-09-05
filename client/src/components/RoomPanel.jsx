@@ -1405,7 +1405,10 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                   </div>
                   <button onClick={() => {
                     const room = rooms.find(r => r.id === p.roomId);
-                    if (room) joinVoiceRoom(room);
+                    if (room) {
+                      const url = `${window.location.origin}/?room=${room.id}`;
+                      window.open(url, '_blank');
+                    }
                   }} style={{
                     background:'rgba(24,119,242,0.15)',border:'1px solid rgba(24,119,242,0.3)',
                     borderRadius:6,padding:'4px 8px',color:'#60a5fa',
