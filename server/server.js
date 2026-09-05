@@ -368,12 +368,43 @@ app.post('/livekit/webhook', express.raw({ type: 'application/webhook+json' }), 
     );
     const event = await receiver.receive(req.body.toString('utf8'), req.get('Authorization'));
 
-    if (event.event === 'participant_left' || event.event === 'participant_disconnected') {
-      const roomName = event.room.name;
+    if (event.event === 'participant_joined') {
+      const roomName = event.room ? event.room.name : null;
       const participant = event.participant;
       const room = rooms.find(r => r.id === roomName);
-      if (room) {
-        room.participants = room.participants.filter(p => p.id !== participant.identity);
+      if (room && participant && participant.identity) {
+        let meta = {};
+        try {
+          meta = JSON.parse(participant.metadata || '{}');
+        } catch (e) {}
+        const existingIdx = room.participants.findIndex(p => p && p.id === participant.identity);
+        const pObj = {
+          id: participant.identity,
+          name: participant.name || 'User',
+          color: meta.color || '#1877f2',
+          emoji: meta.emoji || '😊',
+          photoUrl: meta.photoUrl || '',
+          profileAnimation: meta.profileAnimation || 'none',
+          followersCount: meta.followersCount || 0,
+          joinedAt: Date.now(),
+          lastPing: Date.now()
+        };
+        if (existingIdx >= 0) {
+          room.participants[existingIdx] = { ...room.participants[existingIdx], ...pObj };
+        } else {
+          room.participants.push(pObj);
+        }
+        room.emptySince = null;
+        saveDB();
+      }
+    }
+
+    if (event.event === 'participant_left' || event.event === 'participant_disconnected') {
+      const roomName = event.room ? event.room.name : null;
+      const participant = event.participant;
+      const room = rooms.find(r => r.id === roomName);
+      if (room && participant) {
+        room.participants = (room.participants || []).filter(p => p && p.id !== participant.identity);
         purgeEmptyRooms(); // instant cleanup + socket emit
       }
     }
@@ -678,6 +709,42 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
   const ownerIsPremium = !!req.body.ownerIsPremium;
   const groupAnimation = typeof req.body.groupAnimation === 'string' ? req.body.groupAnimation : 'none';
 
+  let creatorFollowersCount = typeof req.body.creatorFollowersCount === 'number' ? req.body.creatorFollowersCount : 0;
+  if (req.user && !creatorFollowersCount) {
+    const adminInstance = initFirebaseAdmin();
+    if (adminInstance) {
+      try {
+        const db = adminInstance.firestore();
+        const userSnap = await db.collection('users').doc(req.user.uid).get();
+        if (userSnap.exists) {
+          const userData = userSnap.data();
+          creatorFollowersCount = userData.followers ? userData.followers.length : 0;
+        }
+      } catch (err) {
+        console.error('Error fetching follower count for creator:', err);
+      }
+    }
+  }
+
+  const creatorParticipant = req.user ? [{
+    id: req.user.uid,
+    name: req.body.creatorName || req.user.name || 'Host',
+    color: req.body.creatorColor || '#1877f2',
+    emoji: req.body.creatorEmoji || '😊',
+    photoUrl: req.body.creatorPhotoUrl || req.user.picture || '',
+    profileAnimation: req.body.creatorProfileAnimation || (ownerIsPremium ? (req.body.profileAnimation || 'none') : 'none'),
+    followersCount: creatorFollowersCount,
+    joinedAt: Date.now(),
+    lastPing: Date.now()
+  }] : [];
+
+  // Remove creator from other rooms
+  if (req.user) {
+    rooms.forEach(r => {
+      r.participants = (r.participants || []).filter(p => p && p.id !== req.user.uid);
+    });
+  }
+
   const newRoom = {
     id: roomId,
     name,
@@ -688,12 +755,12 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
     isOpenMic: !!isOpenMic,
     speakingQueue: [],
     allowedSpeakers: [],
-    participants: [],
+    participants: creatorParticipant,
     roles: req.user ? { [req.user.uid]: 'owner' } : {},
     ownerIsPremium,
     groupAnimation,
     messages: [],
-    emptySince: Date.now(),
+    emptySince: creatorParticipant.length > 0 ? null : Date.now(),
     createdAt: Date.now()
   };
 

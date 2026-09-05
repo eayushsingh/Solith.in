@@ -949,7 +949,13 @@ export default function App() {
           accessType: newRoomAccessType,
           isOpenMic: newRoomIsOpenMic,
           ownerIsPremium: !!user?.isPremium,
-          groupAnimation: user?.isPremium ? (user.groupAnimation || 'none') : 'none'
+          groupAnimation: user?.isPremium ? (user.groupAnimation || 'none') : 'none',
+          creatorName: user?.name,
+          creatorPhotoUrl: user?.photoUrl,
+          creatorColor: user?.color,
+          creatorEmoji: user?.emoji,
+          creatorProfileAnimation: user?.profileAnimation || 'none',
+          creatorFollowersCount: user?.followers?.length || 0
         }),
         signal: controller.signal
       });
@@ -966,14 +972,31 @@ export default function App() {
         throw new Error(newRoom.error || 'Failed to create room');
       }
 
-      setRooms(prev => [...prev, newRoom]);
+      const creatorParticipant = {
+        id: user.id,
+        name: user.name || 'Host',
+        color: user.color || '#1877f2',
+        emoji: user.emoji || '😊',
+        photoUrl: user.photoUrl || '',
+        profileAnimation: user.profileAnimation || 'none',
+        followersCount: user.followers?.length || 0,
+        joinedAt: Date.now(),
+        lastPing: Date.now()
+      };
+
+      const finalRoom = {
+        ...newRoom,
+        participants: (newRoom.participants && newRoom.participants.length > 0) ? newRoom.participants : [creatorParticipant]
+      };
+
+      setRooms(prev => [...prev.filter(r => r.id !== finalRoom.id), finalRoom]);
       setShowCreateModal(false);
       setNewRoomName('');
       setNewRoomTopic('');
       setNewRoomTags('Casual');
       setIsCreatingRoom(false);
       // Auto-join newly created room in the same tab
-      joinVoiceRoom(newRoom);
+      joinVoiceRoom(finalRoom);
     } catch (err) {
       setIsCreatingRoom(false);
       console.error('Error creating room:', err);
@@ -1005,6 +1028,34 @@ export default function App() {
     setIsMuted(true);
     setChatMessages([]);
     setCallState('joining');
+
+    // Optimistically update lobby rooms immediately with zero latency
+    const userParticipant = {
+      id: user.id,
+      name: user.name || 'You',
+      color: user.color || '#1877f2',
+      emoji: user.emoji || '😊',
+      photoUrl: user.photoUrl || '',
+      profileAnimation: user.profileAnimation || 'none',
+      followersCount: user.followers ? user.followers.length : 0,
+      joinedAt: Date.now(),
+      lastPing: Date.now()
+    };
+
+    setRooms(prev => prev.map(r => {
+      if (r.id === room.id) {
+        const existing = (r.participants || []).filter(p => p && p.id !== user.id);
+        return {
+          ...r,
+          participants: [userParticipant, ...existing],
+          emptySince: null
+        };
+      }
+      return {
+        ...r,
+        participants: (r.participants || []).filter(p => p && p.id !== user.id)
+      };
+    }));
 
     // Optimistically show room UI for zero-latency feel
     setActiveRoom(room);
@@ -1148,6 +1199,19 @@ export default function App() {
           }
         }
       }
+    }
+    if (activeRoom && user && user.id) {
+      setRooms(prev => prev.map(r => {
+        if (r.id === activeRoom.id) {
+          const remaining = (r.participants || []).filter(p => p && p.id !== user.id);
+          return {
+            ...r,
+            participants: remaining,
+            emptySince: remaining.length === 0 ? (r.emptySince || Date.now()) : null
+          };
+        }
+        return r;
+      }));
     }
     setActiveRoom(null);
     setCallState('left');
