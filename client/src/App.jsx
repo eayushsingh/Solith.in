@@ -1639,6 +1639,14 @@ export default function App() {
       </div>
 
       {/* MODALS MOVED HERE FOR GLOBAL ACCESS */}
+      {/* GAME SELECTOR MODAL */}
+      {showGameSelector && (
+        <GameSelector
+          onSelect={handleGameSelect}
+          onClose={() => setShowGameSelector(false)}
+        />
+      )}
+
       {/* PARTICIPANT ACTION CARD MODAL */}
       {activeActionUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/60 backdrop-blur-md p-4" onClick={() => setActiveActionUser(null)}>
@@ -3737,6 +3745,16 @@ export default function App() {
                 </button>
 
                 <button 
+                  onClick={() => setShowGameSelector(!showGameSelector)}
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 ${
+                    showGameSelector ? 'bg-purple-600 text-white shadow-md' : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15'
+                  }`}
+                  title="Games & Extras"
+                >
+                  <Gamepad2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+
+                <button 
                   onClick={() => setIsChatOpen(!isChatOpen)}
                   className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all flex-shrink-0 relative ${
                     isChatOpen ? 'bg-blue-600 text-white shadow-md' : 'bg-white/10 text-white/70 hover:text-white hover:bg-white/15'
@@ -3965,17 +3983,11 @@ export default function App() {
 
                         <button 
                           onClick={() => setShowGameSelector(!showGameSelector)} 
-                          className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all relative" 
+                          className={`p-2.5 rounded-xl transition-all ${showGameSelector ? 'bg-purple-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/10'}`} 
                           title="Games & Extras"
                         >
                           <Gamepad2 className="w-5 h-5" />
                         </button>
-                        {showGameSelector && (
-                          <GameSelector
-                            onSelect={handleGameSelect}
-                            onClose={() => setShowGameSelector(false)}
-                          />
-                        )}
 
                         <button 
                           onClick={() => setShowSocialPanel(!showSocialPanel)} 
