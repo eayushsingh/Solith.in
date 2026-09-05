@@ -2805,6 +2805,8 @@ export default function App() {
         const backendP = currentRoomData?.participants?.find(bp => bp?.id === currentP?.id);
         const pPhotoUrl = getAvatarUrl(currentP.isLocal ? user?.photoUrl : (backendP?.photoUrl || currentP.photoUrl), currentP.id);
         const pName = currentP.isLocal ? (user?.name || 'You') : (backendP?.name || currentP.name || 'User');
+        const pAnim = currentP.profileAnimation || backendP?.profileAnimation || (currentP.isLocal && user?.profileAnimation);
+        const pAnimClass = pAnim && pAnim !== 'none' ? `pro-anim-${pAnim}` : '';
         const targetRole = getRole(currentP.id);
 
         return (
@@ -2869,7 +2871,7 @@ export default function App() {
                   <VideoTrack track={currentP.cameraTrack} className="w-full h-full object-contain" />
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-4 animate-fade-in p-6 text-center">
-                    <div className="relative">
+                    <div className={`relative rounded-full p-1 ${pAnimClass}`}>
                       <ParticipantAvatar
                         photoUrl={pPhotoUrl}
                         name={pName}
@@ -2877,7 +2879,7 @@ export default function App() {
                         className="w-28 h-28 sm:w-44 sm:h-44"
                         isCameraOn={false}
                       />
-                      <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-md p-2 rounded-full border border-white/10">
+                      <div className="absolute bottom-1 right-1 bg-black/80 backdrop-blur-md p-2 rounded-full border border-white/10 z-20">
                         {currentP.muted ? (
                           <MicOff className="w-5 h-5 text-red-500" />
                         ) : (

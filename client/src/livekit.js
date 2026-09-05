@@ -32,7 +32,7 @@ export const LiveKitService = {
   isScreenSharingMock: false,
   isCameraMock: false,
   triggerMockParticipantsList: () => {
-    const local = LiveKitService.localUserMock || { id: 'local', name: 'You', photoUrl: '', color: '#ff4d4d', emoji: '👤' };
+    const local = LiveKitService.localUserMock || { id: 'local', name: 'You', photoUrl: '', color: '#ff4d4d', emoji: '👤', profileAnimation: 'none' };
     participantCallback?.([
       { 
         id: local.id, 
@@ -43,11 +43,12 @@ export const LiveKitService = {
         isCameraOn: LiveKitService.isCameraMock,
         photoUrl: local.photoUrl || '', 
         color: local.color || '#0d94a8', 
-        emoji: local.emoji || '👤' 
+        emoji: local.emoji || '👤',
+        profileAnimation: local.profileAnimation || 'none'
       },
-      { id: 'mock-user-1', name: 'Sophia', isLocal: false, muted: false, photoUrl: '', color: '#ff944d', emoji: '🦊' },
-      { id: 'mock-user-2', name: 'Hiro', isLocal: false, muted: false, photoUrl: '', color: '#ffd11a', emoji: '🐼' },
-      { id: 'mock-user-3', name: 'Elena', isLocal: false, muted: true, photoUrl: '', color: '#4da6ff', emoji: '🦁' }
+      { id: 'mock-user-1', name: 'Sophia', isLocal: false, muted: false, photoUrl: '', color: '#ff944d', emoji: '🦊', profileAnimation: 'none' },
+      { id: 'mock-user-2', name: 'Hiro', isLocal: false, muted: false, photoUrl: '', color: '#ffd11a', emoji: '🐼', profileAnimation: 'none' },
+      { id: 'mock-user-3', name: 'Elena', isLocal: false, muted: true, photoUrl: '', color: '#4da6ff', emoji: '🦁', profileAnimation: 'none' }
     ]);
   },
 
@@ -61,6 +62,7 @@ export const LiveKitService = {
     try {
       if (roomObject && roomObject.localParticipant) {
         await roomObject.localParticipant.setCameraEnabled(enable);
+        updateParticipantsList();
       }
       return enable;
     } catch (err) {
@@ -85,6 +87,7 @@ export const LiveKitService = {
       } else {
         await roomObject.localParticipant.setScreenShareEnabled(false);
       }
+      updateParticipantsList();
       return enable;
     } catch (err) {
       console.error('Screen share error:', err);
@@ -319,6 +322,7 @@ export const LiveKitService = {
 
     if (roomObject) {
       await roomObject.localParticipant.setMicrophoneEnabled(!muted);
+      updateParticipantsList();
       return muted;
     }
     return true;
