@@ -3465,7 +3465,7 @@ export default function App() {
           }
 
           return (
-            <div className="call-room-bg font-sans animate-fade-in w-full h-screen relative flex flex-col overflow-hidden">
+            <div className="call-room-bg font-sans animate-fade-in fixed inset-0 w-full h-full flex flex-col overflow-hidden select-none">
               {callState === 'joining' && (
                 <div style={{
                   position: 'absolute', top: '50%', left: '50%',
@@ -3700,7 +3700,7 @@ export default function App() {
 
                 // Default view: Free4Talk style square participant cards centered in room
                 return (
-                  <div className="flex-1 w-full h-full relative flex flex-col items-center justify-center p-4 overflow-y-auto min-h-0 z-10 pb-28 sm:pb-32">
+                  <div className="flex-1 w-full h-full relative flex flex-col items-center justify-center p-3 sm:p-6 overflow-hidden min-h-0 z-10">
                     {/* Right Vertical Floating Toolbar */}
                     <div className="fixed right-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5 bg-[#0B0D14]/85 backdrop-blur-xl border border-white/10 p-2 rounded-2xl shadow-2xl">
                       <button 
@@ -3709,6 +3709,14 @@ export default function App() {
                         title="Toggle Chat Panel"
                       >
                         <MessageSquare className="w-5 h-5" />
+                      </button>
+
+                      <button 
+                        onClick={hasRaisedHand ? lowerHand : raiseHand} 
+                        className={`p-2.5 rounded-xl transition-all ${hasRaisedHand ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'text-white/60 hover:text-white hover:bg-white/10'}`} 
+                        title={hasRaisedHand ? "Lower Hand" : "Raise Hand"}
+                      >
+                        <span className="text-base leading-none">✋</span>
                       </button>
 
                       <button 
@@ -3749,7 +3757,7 @@ export default function App() {
                     </div>
 
                     {/* Square Participant Cards Grid */}
-                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 max-w-4xl w-full my-auto px-2">
+                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 max-w-4xl w-full my-auto px-2 overflow-y-auto max-h-[calc(100vh-140px)] hide-scrollbar">
                       {safeParticipants.map(p => {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                         const backendP = currentRoomData.participants?.find(bp => bp?.id === p?.id);

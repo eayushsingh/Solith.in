@@ -429,8 +429,8 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
   if (!isChatOpen) return null;
 
   return (
-    <div className={`absolute bottom-[90px] right-4 md:right-8 z-40 bg-[#0f1115]/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300 animate-fade-in ${
-      isMinimized ? 'left-4 md:left-auto md:w-[380px] h-[55px]' : (isExpanded ? 'left-4 md:left-auto md:w-[680px] h-[580px] max-h-[80vh]' : 'left-4 md:left-auto md:w-[380px] h-[480px] max-h-[70vh]')
+    <div className={`fixed bottom-20 right-4 sm:right-8 z-50 bg-[#0f1115]/95 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col transition-all duration-300 animate-fade-in w-[calc(100vw-32px)] ${
+      isExpanded ? 'sm:w-[680px] h-[580px] max-h-[80vh]' : 'sm:w-[380px] h-[480px] max-h-[70vh]'
     }`}>
       
       {/* Top Navigation Tabs Header */}
@@ -505,21 +505,19 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
             {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
 
-          {/* Collapse Panel Button */}
+          {/* Close Panel Button */}
           <button 
             type="button"
-            onClick={() => setIsMinimized(!isMinimized)}
+            onClick={() => setIsChatOpen(false)}
             className="p-2 text-white/40 hover:text-white/80 rounded-xl transition-colors"
-            title={isMinimized ? "Restore Panel" : "Minimize Panel"}
+            title="Close Panel"
           >
-            {isMinimized ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>
       
-      {/* Hide content when minimized so we don't bleed or scroll */}
-      {!isMinimized && (
-        <div className="flex-1 overflow-hidden flex flex-col relative">
+      <div className="flex-1 overflow-hidden flex flex-col relative">
         
         {/* TABS CONTAINER */}
         
@@ -1419,7 +1417,6 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
         )}
 
       </div>
-      )}
 
       {/* LIGHTBOX MODAL FOR ATTACHED IMAGES */}
       {lightboxImage && (
