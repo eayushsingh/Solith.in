@@ -18,7 +18,7 @@ import StaticModals from './components/StaticModals';
 import {
   Mic, MicOff, LogOut, Flame, Award, Plus, Sparkles, MessageSquare, Camera,
   Send, Users, Globe, Settings, AlertTriangle, ShieldCheck, Search, ChevronRight, X, Volume2, ArrowLeft, ArrowRight, Shield, UserMinus, Flag, AlertCircle, Hand, Coffee, Info, Facebook, Lock, Inbox, MoreVertical, Trophy,
-  Monitor, Youtube, Gamepad2, Crown, BarChart2, PhoneCall
+  Monitor, Youtube, Gamepad2, Crown, BarChart2, PhoneCall, ChevronDown, ChevronUp, Share2
 } from 'lucide-react';
 import GameContainer from './components/games/GameContainer';
 import GameLobby from './components/games/GameLobby';
@@ -116,6 +116,7 @@ export default function App() {
   const [activeDm, setActiveDm] = useState(null); // { id: string, profile: object }
   const [msgTab, setMsgTab] = useState('global'); // 'global' or 'direct'
   const [isConnected, setIsConnected] = useState(false);
+  const [isLangExpanded, setIsLangExpanded] = useState(false);
 
   // Landing Page Interactive Eye Tracking & Node Lines States
   const heroRef = useRef(null);
@@ -3190,19 +3191,75 @@ export default function App() {
             </div>
           </div>
 
-          {/* Filters — Horizontal Scrollable on Mobile and Desktop */}
-          <div className="w-full max-w-[1400px] px-3 sm:px-6 lg:px-8 pt-2 pb-4 flex items-center gap-2 overflow-x-auto hide-scrollbar scroll-smooth whitespace-nowrap">
-            {LANGUAGES.map(lang => (
-              <button
-                key={lang}
-                onClick={() => setSelectedLanguage(lang)}
-                className={`filter-pill text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap transition-all duration-200 flex-shrink-0 ${selectedLanguage === lang ? 'active shadow-[0_4px_20px_rgba(37,99,235,0.4)] scale-[1.03]' : 'hover:border-white/20 hover:scale-[1.02]'
-                  }`}
-              >
-                {lang}
-              </button>
-            ))}
-          </div>
+          {/* Filters Header Row with Expand/Collapse & Language Chips */}
+          {(() => {
+            const langCounts = { 'All Languages': rooms.length };
+            LANGUAGES.forEach(lang => {
+              if (lang !== 'All Languages') {
+                counts = counts || {};
+                langCounts[lang] = rooms.filter(r => (r.language || '').toLowerCase() === lang.toLowerCase()).length;
+              }
+            });
+
+            return (
+              <div className="w-full max-w-[1400px] px-3 sm:px-6 lg:px-8 pt-2 pb-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar scroll-smooth py-1">
+                  <button
+                    onClick={() => setIsLangExpanded(!isLangExpanded)}
+                    className="px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all flex-shrink-0 shadow-sm"
+                    title={isLangExpanded ? "Collapse languages" : "Expand all languages"}
+                  >
+                    {isLangExpanded ? <ChevronUp className="w-3.5 h-3.5 text-blue-400" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-400" />}
+                    <span>{isLangExpanded ? 'Collapse' : 'Expand'}</span>
+                  </button>
+
+                  {!isLangExpanded && LANGUAGES.slice(0, 10).map(lang => {
+                    const count = langCounts[lang] || 0;
+                    const displayLabel = lang === 'All Languages' ? `All (${count})` : `${lang} (${count})`;
+                    const isActive = selectedLanguage === lang;
+
+                    return (
+                      <button
+                        key={lang}
+                        onClick={() => setSelectedLanguage(lang)}
+                        className={`filter-pill text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
+                          isActive 
+                            ? 'active shadow-[0_4px_20px_rgba(37,99,235,0.4)] scale-[1.03]' 
+                            : 'hover:border-white/20 hover:scale-[1.02]'
+                        }`}
+                      >
+                        {displayLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {isLangExpanded && (
+                  <div className="flex flex-wrap gap-2 pt-2 pb-1 animate-fade-in border-t border-white/10 mt-1">
+                    {LANGUAGES.map(lang => {
+                      const count = langCounts[lang] || 0;
+                      const displayLabel = lang === 'All Languages' ? `All (${count})` : `${lang} (${count})`;
+                      const isActive = selectedLanguage === lang;
+
+                      return (
+                        <button
+                          key={lang}
+                          onClick={() => setSelectedLanguage(lang)}
+                          className={`filter-pill text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap transition-all duration-200 ${
+                            isActive 
+                              ? 'active shadow-[0_4px_20px_rgba(37,99,235,0.4)] scale-[1.03]' 
+                              : 'hover:border-white/20 hover:scale-[1.02]'
+                          }`}
+                        >
+                          {displayLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Rooms Grid */}
           <div className="w-full max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16 animate-slide-up-delayed-2">
@@ -3547,76 +3604,127 @@ export default function App() {
                   );
                 }
 
-                // Default view: Responsive participant grid centered in room
+                // Default view: Free4Talk style square participant cards centered in room
                 return (
                   <div className="flex-1 w-full h-full relative flex flex-col items-center justify-center p-4 overflow-y-auto min-h-0 z-10 pb-28 sm:pb-32">
-                    {/* Participant Avatar Grid */}
-                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 max-w-3xl w-full my-auto px-2">
+                    {/* Right Vertical Floating Toolbar */}
+                    <div className="fixed right-3 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5 bg-[#0B0D14]/85 backdrop-blur-xl border border-white/10 p-2 rounded-2xl shadow-2xl">
+                      <button 
+                        onClick={() => setIsChatOpen(!isChatOpen)} 
+                        className={`p-2.5 rounded-xl transition-all ${isChatOpen ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/10'}`} 
+                        title="Toggle Chat Panel"
+                      >
+                        <MessageSquare className="w-5 h-5" />
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.href);
+                          setToastMessage('Room link copied to clipboard!');
+                          setTimeout(() => setToastMessage(null), 3000);
+                        }} 
+                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
+                        title="Share Room Link"
+                      >
+                        <Share2 className="w-5 h-5" />
+                      </button>
+
+                      <button 
+                        onClick={() => setShowGameSelector(!showGameSelector)} 
+                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
+                        title="Games & Extras"
+                      >
+                        <Gamepad2 className="w-5 h-5" />
+                      </button>
+
+                      <button 
+                        onClick={() => setShowSocialPanel(!showSocialPanel)} 
+                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
+                        title="Room Members & Social"
+                      >
+                        <Users className="w-5 h-5" />
+                      </button>
+
+                      <button 
+                        onClick={() => setShowProfileModal(true)} 
+                        className="p-2.5 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all" 
+                        title="Audio & Room Settings"
+                      >
+                        <Settings className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Square Participant Cards Grid */}
+                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 max-w-4xl w-full my-auto px-2">
                       {safeParticipants.map(p => {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                         const backendP = currentRoomData.participants?.find(bp => bp?.id === p?.id);
                         const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
-                        const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
                         const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
                         const targetRole = getRole(p.id);
 
                         return (
-                          <div key={p.id}
+                          <div 
+                            key={p.id}
                             onClick={() => !p.isLocal && setActiveActionUser(p)}
-                            className="group flex flex-col items-center gap-2 cursor-pointer transition-all"
-                          >
-                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden transition-all duration-200"
+                            className="group relative w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden bg-[#131722] border border-white/10 shadow-2xl flex flex-col justify-between cursor-pointer transition-all duration-200 hover:scale-105"
                             style={{
-                              border: isSpeaking ? (p.isAI ? '3px solid #a855f7' : '3px solid #1877f2') : '2.5px solid rgba(255,255,255,0.15)',
-                              boxShadow: isSpeaking ? (p.isAI ? '0 0 24px rgba(168,85,247,0.7)' : '0 0 24px rgba(24,119,242,0.7)') : 'none',
-                              flexShrink: 0, cursor: (p.isCameraOn && p.cameraTrack) ? 'zoom-in' : 'inherit'
+                              borderColor: isSpeaking ? '#3B82F6' : 'rgba(255,255,255,0.1)',
+                              boxShadow: isSpeaking ? '0 0 25px rgba(59,130,246,0.6)' : '0 8px 30px rgba(0,0,0,0.5)'
                             }}
-                            onClick={(e) => {
-                              if (p.isCameraOn && p.cameraTrack) {
-                                e.stopPropagation();
-                                setFocusedVideoParticipant(p);
-                              }
-                            }}>
+                          >
+                            {/* Top Gear / Action overlay */}
+                            <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!p.isLocal) setActiveActionUser(p);
+                                }}
+                                className="p-1 bg-black/60 hover:bg-black/80 text-white rounded-lg backdrop-blur-md"
+                              >
+                                <Settings className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Avatar / Camera Stream */}
+                            <div className="flex-1 w-full h-full flex items-center justify-center relative p-2 overflow-hidden">
                               {p.isCameraOn && p.cameraTrack ? (
-                                <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover" />
+                                <VideoTrack track={p.cameraTrack} className="w-full h-full object-cover rounded-xl" />
                               ) : pPhotoUrl ? (
                                 <img
                                   src={pPhotoUrl}
-                                  className="w-full h-full object-cover"
+                                  className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover shadow-lg border border-white/10"
                                   alt=""
                                   onError={(e) => {
                                     e.target.style.display = 'none';
-                                    e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
+                                    e.target.parentNode.innerHTML = `<div style="width:50px;height:50px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
                                   }}
                                 />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-extrabold text-white">
+                                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-blue-600 flex items-center justify-center text-xl sm:text-2xl font-extrabold text-white shadow-lg">
                                   {pName.slice(0, 2).toUpperCase()}
                                 </div>
                               )}
-                              {p.muted && (
-                                <div className="absolute bottom-1 right-1 bg-red-600 rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center border-2 border-[#080c14]">
-                                  <MicOff className="w-3 h-3 text-white" />
-                                </div>
-                              )}
-                              {!p.isLocal && (
-                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 rounded-md p-1">
-                                  <Settings className="w-3 h-3 text-white" />
-                                </div>
-                              )}
                             </div>
-                            <span className="text-white/90 text-xs font-semibold max-w-[90px] text-center truncate">
-                              {pName}
-                            </span>
-                            {p.isAI ? (
-                              <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-black px-2 py-0.5 rounded-full -mt-1 tracking-wider uppercase">
-                                AI HOST
+
+                            {/* Bottom Card Strip (Name + Mic Status) */}
+                            <div className="w-full bg-black/80 backdrop-blur-md px-2.5 py-1.5 flex items-center justify-between z-20 border-t border-white/10">
+                              <span className="text-[11px] font-bold text-white max-w-[80px] truncate">
+                                {pName}
                               </span>
-                            ) : targetRole === 'owner' ? (
-                              <span className="bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full -mt-1">
-                                Owner
-                              </span>
-                            ) : null}
+                              <div className="flex items-center gap-1">
+                                {p.isAI ? (
+                                  <span className="bg-purple-500/30 text-purple-300 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">AI</span>
+                                ) : targetRole === 'owner' ? (
+                                  <span className="bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">Host</span>
+                                ) : null}
+                                {p.muted ? (
+                                  <MicOff className="w-3.5 h-3.5 text-red-500" />
+                                ) : (
+                                  <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                                )}
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
