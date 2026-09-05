@@ -2874,24 +2874,24 @@ export default function App() {
           <header className="w-full flex items-center justify-between px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 bg-[#0B0D14]/80 backdrop-blur-2xl sticky top-0 z-30 border-b border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
 
             {/* Left: Actions */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               <button
                 onClick={() => { if (user) setShowCreateModal(true); else setShowAuthModal(true); }}
-                className="px-3 sm:px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(37,99,235,0.4)] hover:scale-105 active:scale-95 whitespace-nowrap"
+                className="px-2.5 sm:px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold rounded-xl text-xs sm:text-[13px] flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(37,99,235,0.4)] hover:scale-105 active:scale-95 whitespace-nowrap"
               >
-                <Plus className="w-4 h-4" /> <span>Start a Room</span>
+                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Start a Room</span><span className="sm:hidden">Start</span>
               </button>
 
               <button
                 onClick={() => { setView('premium'); window.location.hash = 'premium'; }}
-                className="flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all hover:scale-105 active:scale-95 whitespace-nowrap shadow-sm"
+                className="flex items-center gap-1.5 px-2 sm:px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all hover:scale-105 active:scale-95 whitespace-nowrap shadow-sm"
                 style={{
                   background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.15))',
                   border: '1px solid rgba(251,191,36,0.4)',
                   color: '#fbbf24'
                 }}
               >
-                <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span>Go Premium</span>
+                <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Go Premium</span>
               </button>
             </div>
 
@@ -3190,13 +3190,13 @@ export default function App() {
             </div>
           </div>
 
-          {/* Filters — Wrapped on Mobile and Desktop */}
-          <div className="w-full max-w-[1400px] px-3 sm:px-6 lg:px-8 pt-2 pb-4 flex items-center justify-start gap-2 flex-wrap">
+          {/* Filters — Horizontal Scrollable on Mobile and Desktop */}
+          <div className="w-full max-w-[1400px] px-3 sm:px-6 lg:px-8 pt-2 pb-4 flex items-center gap-2 overflow-x-auto hide-scrollbar scroll-smooth whitespace-nowrap">
             {LANGUAGES.map(lang => (
               <button
                 key={lang}
                 onClick={() => setSelectedLanguage(lang)}
-                className={`filter-pill text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap transition-all duration-200 ${selectedLanguage === lang ? 'active shadow-[0_4px_20px_rgba(37,99,235,0.4)] scale-[1.03]' : 'hover:border-white/20 hover:scale-[1.02]'
+                className={`filter-pill text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap transition-all duration-200 flex-shrink-0 ${selectedLanguage === lang ? 'active shadow-[0_4px_20px_rgba(37,99,235,0.4)] scale-[1.03]' : 'hover:border-white/20 hover:scale-[1.02]'
                   }`}
               >
                 {lang}
@@ -3547,14 +3547,11 @@ export default function App() {
                   );
                 }
 
-                // Default view: Circular participant avatars anchored at the bottom center
+                // Default view: Responsive participant grid centered in room
                 return (
-                  <div className="flex-1 w-full h-full relative flex flex-col items-center justify-end overflow-hidden" style={{ paddingBottom: 140 }}>
-                    {/* Circular participant avatars */}
-                    <div style={{
-                      position: 'absolute', bottom: 100, left: '50%', transform: 'translateX(-50%)',
-                      display: 'flex', alignItems: 'flex-end', gap: 20, zIndex: 10
-                    }}>
+                  <div className="flex-1 w-full h-full relative flex flex-col items-center justify-center p-4 overflow-y-auto min-h-0 z-10 pb-28 sm:pb-32">
+                    {/* Participant Avatar Grid */}
+                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 max-w-3xl w-full my-auto px-2">
                       {safeParticipants.map(p => {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
                         const backendP = currentRoomData.participants?.find(bp => bp?.id === p?.id);
@@ -3566,14 +3563,12 @@ export default function App() {
                         return (
                           <div key={p.id}
                             onClick={() => !p.isLocal && setActiveActionUser(p)}
-                            className="group"
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: p.isLocal ? 'default' : 'pointer' }}
+                            className="group flex flex-col items-center gap-2 cursor-pointer transition-all"
                           >
-                            <div style={{
-                              width: 80, height: 80, borderRadius: '50%', overflow: 'hidden',
-                              border: isSpeaking ? (p.isAI ? '2.5px solid #a855f7' : '2.5px solid #1877f2') : '2.5px solid rgba(255,255,255,0.12)',
-                              boxShadow: isSpeaking ? (p.isAI ? '0 0 20px rgba(168,85,247,0.6)' : '0 0 20px rgba(24,119,242,0.6)') : 'none',
-                              transition: 'all 0.2s ease',
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden transition-all duration-200"
+                            style={{
+                              border: isSpeaking ? (p.isAI ? '3px solid #a855f7' : '3px solid #1877f2') : '2.5px solid rgba(255,255,255,0.15)',
+                              boxShadow: isSpeaking ? (p.isAI ? '0 0 24px rgba(168,85,247,0.7)' : '0 0 24px rgba(24,119,242,0.7)') : 'none',
                               flexShrink: 0, cursor: (p.isCameraOn && p.cameraTrack) ? 'zoom-in' : 'inherit'
                             }}
                             onClick={(e) => {
@@ -3587,47 +3582,38 @@ export default function App() {
                               ) : pPhotoUrl ? (
                                 <img
                                   src={pPhotoUrl}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  className="w-full h-full object-cover"
                                   alt=""
                                   onError={(e) => {
                                     e.target.style.display = 'none';
-                                    e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
+                                    e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:white">${pName.slice(0, 2).toUpperCase()}</div>`;
                                   }}
                                 />
                               ) : (
-                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: 'white' }}>
+                                <div className="w-full h-full flex items-center justify-center text-xl sm:text-2xl font-extrabold text-white">
                                   {pName.slice(0, 2).toUpperCase()}
                                 </div>
                               )}
                               {p.muted && (
-                                <div style={{
-                                  position: 'absolute', bottom: 3, right: 3,
-                                  background: '#dc2626', borderRadius: '50%',
-                                  width: 20, height: 20,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  border: '2px solid #080c14'
-                                }}>
-                                  <MicOff size={10} color="white" />
+                                <div className="absolute bottom-1 right-1 bg-red-600 rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center border-2 border-[#080c14]">
+                                  <MicOff className="w-3 h-3 text-white" />
                                 </div>
                               )}
                               {!p.isLocal && (
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity" style={{
-                                  position: 'absolute', top: 4, right: 4,
-                                  background: 'rgba(0,0,0,0.7)', borderRadius: 6, padding: 3
-                                }}>
-                                  <Settings size={10} color="white" />
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 rounded-md p-1">
+                                  <Settings className="w-3 h-3 text-white" />
                                 </div>
                               )}
                             </div>
-                            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: 600, maxWidth: 80, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span className="text-white/90 text-xs font-semibold max-w-[90px] text-center truncate">
                               {pName}
                             </span>
                             {p.isAI ? (
-                              <span style={{ background: 'rgba(168,85,247,0.2)', color: '#c084fc', border: '1px solid rgba(168,85,247,0.3)', fontSize: 9, fontWeight: 900, padding: '2px 8px', borderRadius: 20, marginTop: -4, letterSpacing: '0.05em' }}>
+                              <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-black px-2 py-0.5 rounded-full -mt-1 tracking-wider uppercase">
                                 AI HOST
                               </span>
                             ) : targetRole === 'owner' ? (
-                              <span style={{ background: '#6c47ff', color: 'white', fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 20, marginTop: -4 }}>
+                              <span className="bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full -mt-1">
                                 Owner
                               </span>
                             ) : null}
