@@ -4,7 +4,7 @@ const { test, expect } = require('@playwright/test');
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
 
 test.describe('Automated Website E2E Testing Bot', () => {
-  
+
   test('Bot logs in, checks lobby, sends global chat, and manages rooms', async ({ page }) => {
     // 1. LOGIN BYPASS
     // Navigate to the app with the bot backdoor param
@@ -53,11 +53,11 @@ test.describe('Automated Website E2E Testing Bot', () => {
     console.log('Leaving Room...');
     const leaveBtn = page.getByRole('button', { name: /leave/i });
     await leaveBtn.click();
-    
+
     // Verify we are back in the lobby
     await expect(page.getByRole('button', { name: /start/i }).first()).toBeVisible({ timeout: 10000 });
     console.log('✅ Successfully left room and returned to lobby.');
-    
+
     console.log('🎉 ALL TESTS PASSED: Full Website Verification Complete.');
   });
 });
