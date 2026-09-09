@@ -1635,6 +1635,7 @@ export default function App() {
     onSettingsClick: () => setShowProfileModal(true),
     onLogoutClick: () => signOut(auth),
     onProCustomizationClick: () => setShowProCustomizationModal(true),
+    onSocialClick: () => setShowSocialPanel(prev => !prev),
     isAdmin,
     onlineStats,
     activeRoom

@@ -1,6 +1,6 @@
 import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee, Users, Sparkles } from 'lucide-react';
 
-export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, onProCustomizationClick, isAdmin, onlineStats, activeRoom }) {
+export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, onProCustomizationClick, onSocialClick, isAdmin, onlineStats, activeRoom }) {
   const isPro = !!(user?.isPremium || isAdmin);
   const navItems = [
     { id: 'lobby', icon: Home, title: 'Home' },
@@ -33,12 +33,16 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
 
       {/* Online Stats Indicator - Desktop Only */}
       {onlineStats && (
-        <div className="hidden md:flex flex-col items-center justify-center py-2 px-3 rounded-xl bg-bg-surface-elevated border border-[var(--accent-primary)]/20 mb-6 shadow-[0_0_15px_var(--accent-primary-glow)] animate-fade-in select-none group" title={`${onlineStats.online || 1} Users Online`}>
+        <div 
+          onClick={onSocialClick}
+          className="hidden md:flex flex-col items-center justify-center py-2 px-3 rounded-xl bg-bg-surface-elevated border border-[var(--accent-primary)]/20 mb-6 shadow-[0_0_15px_var(--accent-primary-glow)] animate-fade-in select-none group cursor-pointer hover:border-[var(--accent-primary)]/50 transition-all" 
+          title={`${onlineStats.online || 1} Real Users Online — Click to view`}
+        >
           <span className="text-[9px] font-black text-[var(--accent-primary)] tracking-widest uppercase flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full inline-block animate-pulse"></span>
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block animate-pulse"></span>
             ONLINE
           </span>
-          <span className="text-xs font-bold text-text-primary mt-1">
+          <span className="text-xs font-bold text-text-primary mt-1 group-hover:scale-110 transition-transform">
             {onlineStats.online || 1}
           </span>
         </div>

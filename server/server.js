@@ -1542,9 +1542,10 @@ const broadcastOnlineStats = async () => {
     }
   }
 
+  const realOnlineUsers = authenticatedOnline ? authenticatedOnline.size : 0;
   io.emit('online-stats', {
-    online: Math.max(authenticatedOnline ? authenticatedOnline.size : 0, io.engine.clientsCount || 1),
-    total: Math.max(cachedUserCount, io.engine.clientsCount || 1),
+    online: Math.max(realOnlineUsers, 1),
+    total: Math.max(cachedUserCount, realOnlineUsers || 1),
     onlineUserIds: authenticatedOnline ? [...authenticatedOnline] : []
   });
 };
