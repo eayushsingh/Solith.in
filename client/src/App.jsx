@@ -212,7 +212,7 @@ export default function App() {
   const [showDevModal, setShowDevModal] = useState(false);
   const [showSocialPanel, setShowSocialPanel] = useState(false);
   const [showStreakCard, setShowStreakCard] = useState(false);
-  const [socialTab, setSocialTab] = useState('All');
+  const [socialTab, setSocialTab] = useState('Online');
   const [allSocialUsers, setAllSocialUsers] = useState([]);
   const [socialSearch, setSocialSearch] = useState('');
   // Create Room fields
@@ -809,8 +809,7 @@ export default function App() {
   useEffect(() => {
     if (callState !== 'joined' || !activeRoom?.id || !user?.id) return;
 
-    // Send keep-alive ping to backend every 4 seconds
-    const pingInterval = setInterval(async () => {
+    const sendPing = async () => {
       if (!activeRoom?.id || !user?.id) return;
       try {
         const token = await getFreshToken();
@@ -824,7 +823,21 @@ export default function App() {
           body: JSON.stringify({ userId: user.id, isSpeaking: !isMuted })
         }).catch(err => console.warn('Ping error:', err));
       } catch (err) {}
-    }, 4000);
+    };
+
+    // Send initial ping immediately
+    sendPing();
+
+    // Send keep-alive ping to backend every 4 seconds
+    const pingInterval = setInterval(sendPing, 4000);
+
+    // If tab was backgrounded and user switches back, ping immediately
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        sendPing();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Add robust tab close cleanup to prevent ghost participants
     const handleBeforeUnload = () => {
@@ -840,6 +853,7 @@ export default function App() {
 
     return () => {
       clearInterval(pingInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [callState, activeRoom?.id, isMuted, isRealCall, user?.id]);
@@ -928,9 +942,9 @@ export default function App() {
     }
   };
 
-  // Fetch all users when Social panel opens on "All" tab
+  // Fetch all users when Social panel opens on "All" or "Online" tab
   useEffect(() => {
-    if (showSocialPanel && socialTab === 'All' && allSocialUsers.length === 0) {
+    if (showSocialPanel && (socialTab === 'All' || socialTab === 'Online') && allSocialUsers.length === 0) {
       fetch(`${API_URL}/api/users/all`)
         .then(res => res.json())
         .then(data => {
@@ -2675,16 +2689,20 @@ export default function App() {
             display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.07)',
             padding: '0 16px'
           }}>
-            {['All', 'Following', 'In Room'].map(tab => (
+            {['Online', 'In Room', 'All', 'Following'].map(tab => (
               <button key={tab}
                 onClick={() => setSocialTab(tab)}
                 style={{
-                  padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '10px 10px', background: 'none', border: 'none', cursor: 'pointer',
                   color: socialTab === tab ? '#1877f2' : 'rgba(255,255,255,0.4)',
-                  fontWeight: socialTab === tab ? 700 : 500, fontSize: 13,
+                  fontWeight: socialTab === tab ? 700 : 500, fontSize: 12,
                   borderBottom: socialTab === tab ? '2px solid #1877f2' : '2px solid transparent',
-                  marginBottom: -1
+                  marginBottom: -1,
+                  display: 'flex', alignItems: 'center', gap: 4
                 }}>
+                {tab === 'Online' && (
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+                )}
                 {tab}
               </button>
             ))}
@@ -2707,6 +2725,64 @@ export default function App() {
 
           {/* User list */}
           <div style={{ maxHeight: 360, overflowY: 'auto', padding: '8px 0' }}>
+            {socialTab === 'Online' && (() => {
+              const onlineList = allSocialUsers.filter(u => u.id !== user?.id && onlineUserIds.has(u.id) && u.name.toLowerCase().includes(socialSearch.toLowerCase()));
+              if (onlineList.length === 0) {
+                const roomOnline = usersInRooms.filter(u => u.id !== user?.id && u.name.toLowerCase().includes(socialSearch.toLowerCase()));
+                if (roomOnline.length > 0) {
+                  return roomOnline.map(p => (
+                    <div key={p.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 16px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <img src={p.photoUrl || `https://api.dicebear.com/7.x/lorelei/svg?seed=${p.id}`}
+                          style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                        <div>
+                          <div style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>{p.name}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>in {p.roomName}</div>
+                        </div>
+                      </div>
+                      <button onClick={() => {
+                        const room = rooms.find(r => r?.id === p?.roomId);
+                        if (room) {
+                          const url = `${window.location.origin}/?room=${room.id}`;
+                          window.open(url, '_blank');
+                          setShowSocialPanel(false);
+                        }
+                      }} style={{
+                        background: 'rgba(24,119,242,0.15)', border: '1px solid rgba(24,119,242,0.3)',
+                        borderRadius: 8, padding: '5px 10px', color: '#60a5fa',
+                        fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                      }}>Join</button>
+                    </div>
+                  ));
+                }
+                return (
+                  <div style={{ padding: '20px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+                    No other users currently online.
+                  </div>
+                );
+              }
+              return onlineList.map(u => (
+                <SocialUserRow
+                  key={u.id}
+                  userId={u.id}
+                  currentUser={user}
+                  onlineUserIds={onlineUserIds}
+                  openUserProfile={(id) => {
+                    setShowSocialPanel(false);
+                    openUserProfile(id);
+                  }}
+                  onDM={(id, profile) => {
+                    setActiveDm({ id, profile });
+                    setMsgTab('direct');
+                    setView('messages');
+                    setShowSocialPanel(false);
+                  }}
+                />
+              ));
+            })()}
             {socialTab === 'In Room' && usersInRooms.length === 0 && (
               <div style={{ padding: '20px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
                 No users currently in rooms.

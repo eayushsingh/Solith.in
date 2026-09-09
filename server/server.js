@@ -281,14 +281,16 @@ const evictStalePingParticipants = () => {
     const before = room.participants.length;
     room.participants = room.participants.filter(p => {
       if (p == null || p.id == null) return false;
-      // Evict participants whose last ping is older than 30 seconds
-      return !(p.lastPing && (now - p.lastPing > 30000));
+      // Evict participants whose last ping is older than 3 minutes (handles background tabs & brief lag)
+      return !(p.lastPing && (now - p.lastPing > 180000));
     });
     if (room.participants.length !== before) changed = true;
   });
   if (changed) {
     console.log('[evictStalePing] Evicted stale participants.');
     purgeEmptyRooms();
+    saveDB();
+    broadcastRoomsUpdated();
   }
 };
 setInterval(evictStalePingParticipants, 15000);
@@ -406,6 +408,8 @@ app.post('/livekit/webhook', express.raw({ type: 'application/webhook+json' }), 
       if (room && participant) {
         room.participants = (room.participants || []).filter(p => p && p.id !== participant.identity);
         purgeEmptyRooms(); // instant cleanup + socket emit
+        saveDB();
+        broadcastRoomsUpdated();
       }
     }
 
@@ -436,6 +440,8 @@ app.post('/api/rooms/:id/leave-beacon', express.text(), async (req, res) => {
       if (room) {
         room.participants = room.participants.filter(p => p.id !== userId);
         purgeEmptyRooms();
+        saveDB();
+        broadcastRoomsUpdated();
       }
       res.sendStatus(200);
     } catch (err) {
@@ -448,6 +454,8 @@ app.post('/api/rooms/:id/leave-beacon', express.text(), async (req, res) => {
     if (room) {
       room.participants = room.participants.filter(p => p.id !== token);
       purgeEmptyRooms();
+      saveDB();
+      broadcastRoomsUpdated();
     }
     res.sendStatus(200);
   }
@@ -1535,7 +1543,7 @@ const broadcastOnlineStats = async () => {
   }
 
   io.emit('online-stats', {
-    online: authenticatedOnline ? authenticatedOnline.size : (io.engine.clientsCount || 1),
+    online: Math.max(authenticatedOnline ? authenticatedOnline.size : 0, io.engine.clientsCount || 1),
     total: Math.max(cachedUserCount, io.engine.clientsCount || 1),
     onlineUserIds: authenticatedOnline ? [...authenticatedOnline] : []
   });
@@ -2110,16 +2118,20 @@ io.on('connection', (socket) => {
     console.log(chalk.yellow(`✗ Socket disconnected: ${socket.id}`));
     
     if (socket.data.uid) {
-      authenticatedOnline.delete(socket.data.uid);
+      // Check if user still has other active sockets connected (e.g. multi-tab / new room tab)
+      const hasOtherSockets = Array.from(io.sockets.sockets.values()).some(
+        s => s.id !== socket.id && s.data && s.data.uid === socket.data.uid
+      );
+      if (!hasOtherSockets) {
+        authenticatedOnline.delete(socket.data.uid);
+      }
     }
     
     const identity = socketToIdentity.get(socket.id);
     if (identity) {
       socketToIdentity.delete(socket.id);
       
-      // Grace period: wait 15s before removing participant
-      // This prevents transport upgrades (polling→websocket) and brief network blips
-      // from kicking users out of rooms
+      // Grace period: wait 60s before removing participant to prevent dropping users during tab switches/reconnects
       if (disconnectTimers.has(identity)) {
         clearTimeout(disconnectTimers.get(identity));
       }
@@ -2129,16 +2141,21 @@ io.on('connection', (socket) => {
         const stillConnected = Array.from(socketToIdentity.values()).includes(identity);
         if (!stillConnected) {
           console.log(chalk.yellow(`✗ Grace period expired for ${identity} — removing from rooms`));
+          let changed = false;
           for (const room of rooms) {
-            const before = room.participants.length;
-            room.participants = room.participants.filter(p => p != null && p.id != null && p.id !== identity);
-            if (room.participants.length !== before) break;
+            const before = (room.participants || []).length;
+            room.participants = (room.participants || []).filter(p => p != null && p.id != null && p.id !== identity);
+            if (room.participants.length !== before) changed = true;
           }
-          purgeEmptyRooms();
+          if (changed) {
+            purgeEmptyRooms();
+            saveDB();
+            broadcastRoomsUpdated();
+          }
           broadcastOnlineStats();
         }
         disconnectTimers.delete(identity);
-      }, 15000); // 15 second grace period
+      }, 60000); // 60 second grace period
       
       disconnectTimers.set(identity, timer);
     }
