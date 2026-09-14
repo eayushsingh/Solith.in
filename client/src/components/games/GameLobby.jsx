@@ -12,11 +12,11 @@ const GAME_INFO = {
 export default function GameLobby({ gameLobby, currentUser, onAccept, onCancel, onStart }) {
   if (!gameLobby) return null;
 
-  const info = GAME_INFO[gameLobby.gameType];
-  const isInitiator = gameLobby.initiator.id === currentUser.id;
-  const hasJoined = gameLobby.players.find(p => p?.id === currentUser.id);
-  const canStart = isInitiator && gameLobby.players.length >= info.min;
-  const isFull = gameLobby.players.length >= info.max;
+  const info = GAME_INFO[gameLobby.gameType] || { name: 'Game', emoji: '🎮', min: 2, max: 2, desc: '' };
+  const isInitiator = gameLobby.initiator?.id === currentUser?.id;
+  const hasJoined = (gameLobby.players || []).find(p => p?.id === currentUser?.id);
+  const canStart = isInitiator && (gameLobby.players || []).length >= info.min;
+  const isFull = (gameLobby.players || []).length >= info.max;
 
   return (
     <div style={{
@@ -46,17 +46,17 @@ export default function GameLobby({ gameLobby, currentUser, onAccept, onCancel, 
 
       {/* Invited by */}
       <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 16 }}>
-        {isInitiator ? 'You started this game invite' : `${gameLobby.initiator.name} invited everyone to play`}
+        {isInitiator ? 'You started this game invite' : `${gameLobby.initiator?.name || 'Someone'} invited everyone to play`}
       </div>
 
       {/* Player slots */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>
-          Players ({gameLobby.players.length}/{info.max})
+          Players ({(gameLobby.players || []).length}/{info.max})
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {Array.from({ length: info.max }).map((_, i) => {
-            const player = gameLobby.players[i];
+            const player = (gameLobby.players || [])[i];
             return (
               <div key={i} style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
