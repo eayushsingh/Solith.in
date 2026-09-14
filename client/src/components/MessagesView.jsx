@@ -35,17 +35,27 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
           // Filter out blocked users
           const blocked = currentUser?.blockedUsers || [];
           const validConvos = convos.filter(c => {
-            if (!c.participants || !Array.isArray(c.participants)) return false;
-            const otherId = c.participants.find(p => p !== currentUser.id);
-            return !blocked.includes(otherId);
+            if (!c || !c.participants || !Array.isArray(c.participants)) return false;
+            const otherId = c.participants.find(p => {
+              const pid = typeof p === 'string' ? p : p?.id;
+              return pid && pid !== currentUser?.id;
+            });
+            const actualOtherId = typeof otherId === 'string' ? otherId : (otherId?.id || otherId);
+            return actualOtherId && !blocked.includes(actualOtherId);
           });
 
           setConversations(validConvos);
 
           // Fetch profiles for the other participants
           const missingProfileIds = validConvos
-            .map(c => c.participants.find(p => p !== currentUser.id))
-            .filter(id => id && !profiles[id]);
+            .map(c => {
+              const other = c.participants?.find(p => {
+                const pid = typeof p === 'string' ? p : p?.id;
+                return pid && pid !== currentUser?.id;
+              });
+              return typeof other === 'string' ? other : (other?.id || other);
+            })
+            .filter(id => id && typeof id === 'string' && !profiles[id]);
 
           // Do not block UI loading on profile fetch
           setLoading(false);
@@ -59,7 +69,11 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
                 if (res.ok) {
                   const data = await res.json();
                   const fetchedProfiles = {};
-                  (data.profiles || []).forEach(p => { fetchedProfiles[p.id] = p; });
+                  (data?.profiles || []).forEach(p => { 
+                    if (p && p.id) {
+                      fetchedProfiles[p.id] = p; 
+                    }
+                  });
                   setProfiles(prev => ({ ...prev, ...fetchedProfiles }));
                 }
               } catch (err) {
@@ -120,9 +134,14 @@ export default function MessagesView({ currentUser, onOpenConversation }) {
         ) : (
           <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-[var(--line-subtle)] min-h-0">
             {conversations.map(convo => {
-              const otherId = convo.participants.find(p => p !== currentUser.id);
-              const profile = profiles[otherId] || { name: 'Unknown User' };
-              const isUnread = convo.lastMessageSenderId !== currentUser.id && convo.lastMessageSenderId; // Note: For a real unread system, we'd check messages readAt, but this is a simplified visual distinction.
+              if (!convo || !convo.participants) return null;
+              const otherParticipant = convo.participants.find(p => {
+                const pid = typeof p === 'string' ? p : p?.id;
+                return pid && pid !== currentUser?.id;
+              });
+              const otherId = typeof otherParticipant === 'string' ? otherParticipant : (otherParticipant?.id || otherParticipant);
+              const profile = (otherId && profiles[otherId]) || { name: 'Unknown User' };
+              const isUnread = convo.lastMessageSenderId !== currentUser?.id && convo.lastMessageSenderId; // Note: For a real unread system, we'd check messages readAt, but this is a simplified visual distinction.
 
               return (
                 <div 

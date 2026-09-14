@@ -239,12 +239,12 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#3B82F6]/20 via-[#8b5cf6]/10 to-transparent flex items-center justify-center mb-5 shadow-[0_0_50px_rgba(59,130,246,0.15)] border border-white/10">
               <Shield className="w-8 h-8 text-[#60A5FA]" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-1.5 tracking-tight">Direct Conversation with {targetProfile.name.split(' ')[0]}</h2>
+            <h2 className="text-xl font-bold text-white mb-1.5 tracking-tight">Direct Conversation with {targetProfile?.name ? targetProfile.name.split(' ')[0] : 'User'}</h2>
             <p className="text-[#888A92] max-w-sm text-xs leading-relaxed font-medium">Send a message to start practicing together in private.</p>
           </div>
         ) : (
           messages.map((msg, index) => {
-            const isMe = msg.senderId === currentUser.id;
+            const isMe = msg.senderId === currentUser?.id;
             const showTime = index === 0 || (msg.sentAt && messages[index-1]?.sentAt && (msg.sentAt.seconds - messages[index-1].sentAt.seconds > 300));
             
             return (
