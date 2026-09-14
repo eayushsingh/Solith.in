@@ -1385,10 +1385,10 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
             ))}
 
             {/* In Room list */}
-            {socialTab === 'In Room' && rooms && rooms.flatMap(r => 
-                (r.participants || []).map(p => ({ ...p, roomName: r.name, roomId: r.id }))
+            {socialTab === 'In Room' && (rooms || []).flatMap(r => 
+                (r?.participants || []).filter(Boolean).map(p => ({ ...p, roomName: r.name, roomId: r.id }))
               )
-              .filter(p => p.id !== user?.id)
+              .filter(p => p && p.id !== user?.id)
               .map(p => (
                 <div key={p.id} style={{
                   display:'flex', alignItems:'center', justifyContent:'space-between',
@@ -1403,7 +1403,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                     </div>
                   </div>
                   <button onClick={() => {
-                    const room = rooms.find(r => r.id === p.roomId);
+                    const room = rooms?.find(r => r?.id === p?.roomId);
                     if (room) {
                       const url = `${window.location.origin}/?room=${room.id}`;
                       window.open(url, '_blank');

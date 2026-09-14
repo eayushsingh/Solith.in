@@ -2897,7 +2897,7 @@ export default function App() {
 
       {/* Focused Video / Profile Fullscreen View */}
       {focusedVideoParticipant && (() => {
-        const currentP = safeParticipants.find(sp => sp.id === focusedVideoParticipant.id) || focusedVideoParticipant;
+        const currentP = safeParticipants?.find(sp => sp?.id === focusedVideoParticipant?.id) || focusedVideoParticipant;
         const backendP = currentRoomData?.participants?.find(bp => bp?.id === currentP?.id);
         const pPhotoUrl = getAvatarUrl(currentP.isLocal ? user?.photoUrl : (backendP?.photoUrl || currentP.photoUrl), currentP.id);
         const pName = currentP.isLocal ? (user?.name || 'You') : (backendP?.name || currentP.name || 'User');
@@ -3962,7 +3962,7 @@ export default function App() {
                       <div className="w-full lg:w-[240px] flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden hide-scrollbar py-2 justify-start items-center">
                         {safeParticipants.map(p => {
                           const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                          const backendP = currentRoomData.participants?.find(bp => bp?.id === p?.id);
+                          const backendP = currentRoomData?.participants?.find(bp => bp?.id === p?.id);
                           const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
                           const pColor = p.isLocal ? (user?.color || '#1877f2') : (backendP?.color || p.color || '#333');
                           const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
@@ -4097,7 +4097,7 @@ export default function App() {
                     <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 max-w-4xl w-full my-auto px-2 overflow-y-auto max-h-[calc(100vh-140px)] hide-scrollbar">
                       {safeParticipants.map(p => {
                         const isSpeaking = (audioLevels[p.id] || 0) > 0.05;
-                        const backendP = currentRoomData.participants?.find(bp => bp?.id === p?.id);
+                        const backendP = currentRoomData?.participants?.find(bp => bp?.id === p?.id);
                         const pPhotoUrl = getAvatarUrl(p.isLocal ? user?.photoUrl : (backendP?.photoUrl || p.photoUrl), p.id);
                         const pName = p.isLocal ? 'You' : (backendP?.name || p.name || 'User');
                         const pAnim = p.profileAnimation || backendP?.profileAnimation || (p.isLocal && user?.profileAnimation);
