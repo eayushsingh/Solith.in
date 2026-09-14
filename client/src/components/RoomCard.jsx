@@ -19,6 +19,8 @@ function getAvatarColor(name = '') {
 }
 
 export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJoining }) {
+  if (!room) return null;
+
   const participants = (room.participants || []).filter(p => p != null && p.id != null);
   
   // Calculate slots to show (based on room limit, default 2-4 slots)
@@ -29,7 +31,7 @@ export default function RoomCard({ room, onJoin, inThisRoom, isJoining, anyRoomJ
   const handleCardClick = (e) => {
     if (isFull) return;
     if (anyRoomJoining) return;
-    onJoin(room);
+    if (onJoin) onJoin(room);
   };
 
   // Language & Level formatting

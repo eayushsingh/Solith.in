@@ -63,25 +63,25 @@ export default function FollowListModal({ isOpen, onClose, title, ids, openUserP
               No users found.
             </div>
           ) : (
-            profiles.map(profile => (
+            profiles.filter(Boolean).map((profile, index) => (
               <div 
-                key={profile.id} 
+                key={profile.id || index} 
                 onClick={() => {
                   onClose();
-                  if (openUserProfile) openUserProfile(profile.id);
+                  if (openUserProfile && profile.id) openUserProfile(profile.id);
                 }}
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg-secondary)] border border-transparent hover:border-[var(--line-subtle)] transition-all cursor-pointer"
               >
                 {profile.photoUrl ? (
-                  <img src={profile.photoUrl} alt={profile.name} className="w-10 h-10 rounded-full object-cover bg-[var(--line)]" />
+                  <img src={profile.photoUrl} alt={profile.name || 'User'} className="w-10 h-10 rounded-full object-cover bg-[var(--line)]" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-[var(--line)] flex items-center justify-center">
                     <User className="w-5 h-5 text-text-secondary" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-text-primary truncate">{profile.name}</h4>
-                  <p className="text-xs text-text-secondary truncate">Level {Math.max(1, Math.floor(profile.xp / 100))}</p>
+                  <h4 className="text-sm font-medium text-text-primary truncate">{profile.name || 'Unknown'}</h4>
+                  <p className="text-xs text-text-secondary truncate">Level {Math.max(1, Math.floor((profile.xp || 0) / 100))}</p>
                 </div>
               </div>
             ))

@@ -15,11 +15,11 @@ export default function ReportModal({ isOpen, onClose, targetUser, currentUser, 
 
     try {
       await addDoc(collection(db, 'reports'), {
-        reporterId: currentUser.id,
-        reporterName: currentUser.name,
-        reporterEmail: currentUser.email,
-        reportedUserId: targetUser.id,
-        reportedUserName: targetUser.name,
+        reporterId: currentUser?.id,
+        reporterName: currentUser?.name || 'Anonymous',
+        reporterEmail: currentUser?.email || '',
+        reportedUserId: targetUser?.id,
+        reportedUserName: targetUser?.name || 'User',
         roomId: roomId || 'lobby',
         reason: reason,
         status: 'pending',
