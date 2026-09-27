@@ -397,6 +397,7 @@ export default function App() {
         if (currentUser && !currentUser.isAnonymous) {
           console.log("onAuthStateChanged: Authenticated as", currentUser.email);
           socket.emit('authenticate', currentUser.uid);
+          fetchRooms();
 
           // 1. Instantly get the token (cached by Firebase, very fast)
           const token = await currentUser.getIdToken();
@@ -765,6 +766,7 @@ export default function App() {
     // Socket.IO reconnection handler — re-authenticate and re-join active room
     const handleReconnect = () => {
       console.log('[socket] Reconnected — re-authenticating and re-joining room');
+      fetchRooms();
       if (auth?.currentUser) {
         socket.emit('authenticate', auth.currentUser.uid);
       }

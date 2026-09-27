@@ -773,9 +773,10 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
   };
 
   rooms.push(newRoom);
+  broadcastRoomsUpdated();
   saveDB();
 
-  // Dispatch Ananya
+  // Dispatch Ananya in background asynchronously (non-blocking)
   if (runtimeConfig.livekitApiKey && runtimeConfig.livekitApiSecret) {
     try {
       const dispatchClient = new AgentDispatchClient(
@@ -783,14 +784,14 @@ app.post('/api/rooms', verifyToken, roomCreationLimiter, async (req, res) => {
         runtimeConfig.livekitApiKey,
         runtimeConfig.livekitApiSecret
       );
-      await dispatchClient.createDispatch(roomId, 'agent-ananya');
-      console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`);
+      dispatchClient.createDispatch(roomId, 'agent-ananya')
+        .then(() => console.log(`[dispatch] ✓ Ananya dispatched to room ${roomId}`))
+        .catch(e => console.error('[dispatch] ✗ Failed:', e.message));
     } catch (e) {
       console.error('[dispatch] ✗ Failed:', e.message);
     }
   }
 
-  broadcastRoomsUpdated();
   res.status(201).json(newRoom);
 });
 
@@ -909,7 +910,7 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
     }
   }
 
-  // Ensure Ananya is dispatched to room if LiveKit is configured
+  // Ensure Ananya is dispatched to room if LiveKit is configured (non-blocking)
   if (isRealConnection) {
     try {
       const dispatchClient = new AgentDispatchClient(
@@ -917,8 +918,9 @@ app.post('/api/rooms/:id/join', verifyToken, async (req, res) => {
         runtimeConfig.livekitApiKey,
         runtimeConfig.livekitApiSecret
       );
-      await dispatchClient.createDispatch(id, 'agent-ananya');
-      console.log(`[dispatch] ✓ Ananya dispatched on join to room ${id}`);
+      dispatchClient.createDispatch(id, 'agent-ananya')
+        .then(() => console.log(`[dispatch] ✓ Ananya dispatched on join to room ${id}`))
+        .catch(e => console.error('[dispatch] ✗ Failed:', e.message));
     } catch (e) {
       // Ignore if dispatch already exists or duplicate
     }
@@ -1677,6 +1679,7 @@ io.on('connection', (socket) => {
       authenticatedOnline.add(uid);
       socket.data.uid = uid;
       broadcastOnlineStats();
+      socket.emit('rooms-updated', { rooms: rooms.filter(r => r.accessType !== 'invite') });
     }
   });
 
