@@ -55,7 +55,10 @@ const io = new Server(server, {
   allowUpgrades: true,
 });
 
-app.use(helmet()); // Set basic HTTP security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Don't break WebRTC/LiveKit/WebSocket connections
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(cors(corsOptions));
 
 // Apply global rate limiting (100 reqs / 15 mins per IP)
@@ -465,8 +468,9 @@ app.use(express.json({ limit: '10mb' }));
 
 // E2E Test Bot Backdoor (Only available if secret matches)
 app.post('/api/bot-token', async (req, res) => {
-  const { secret } = req.body;
-  if (secret !== 'e2e-test-secret') return res.status(403).json({ error: 'Forbidden' });
+  const expectedSecret = process.env.BOT_SECRET || (process.env.NODE_ENV !== 'production' ? 'e2e-test-secret' : null);
+  const { secret } = req.body || {};
+  if (!expectedSecret || secret !== expectedSecret) return res.status(403).json({ error: 'Forbidden' });
   const adminInstance = initFirebaseAdmin();
   if (adminInstance) {
     try {
@@ -1739,8 +1743,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('chat-message', (data) => {
+    if (!data || typeof data !== 'object') return;
     const { roomId, message } = data;
+    if (typeof roomId !== 'string' || !message || typeof message !== 'object') return;
     
+    // Sanitize message content and truncate long messages
+    if (message.text && typeof message.text === 'string') {
+      message.text = message.text.slice(0, 2000).trim();
+    }
+
     // Broadcast immediately to everyone else in the room
     socket.to(roomId).emit('chat-message', message);
 
@@ -1758,10 +1769,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('message-reaction', (data) => {
+    if (!data || typeof data !== 'object') return;
     const { roomId, messageId, emoji, userId } = data;
+    if (typeof roomId !== 'string' || typeof messageId !== 'string' || typeof emoji !== 'string' || typeof userId !== 'string') return;
     
     // Broadcast to everyone in the room (including sender)
-    io.in(roomId).emit('message-reaction', data);
+    io.in(roomId).emit('message-reaction', { roomId, messageId, emoji: emoji.slice(0, 10), userId });
 
     // Save to memory
     const room = rooms.find(r => r.id === roomId);
@@ -1779,13 +1792,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('draw-stroke', (data) => {
-    const { roomId } = data;
-    socket.to(roomId).emit('draw-stroke', data);
+    if (!data || typeof data !== 'object' || typeof data.roomId !== 'string') return;
+    socket.to(data.roomId).emit('draw-stroke', data);
   });
 
   socket.on('clear-canvas', (data) => {
-    const { roomId } = data;
-    socket.to(roomId).emit('clear-canvas', data);
+    if (!data || typeof data !== 'object' || typeof data.roomId !== 'string') return;
+    socket.to(data.roomId).emit('clear-canvas', data);
   });
 
   // UNO deck builder
