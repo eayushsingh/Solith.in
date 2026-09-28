@@ -2,6 +2,11 @@
 /* Cache buster */
 
 :root {
+  /* ── Premium Typography System ── */
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: 'Outfit', 'Plus Jakarta Sans', 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', SFMono-Regular, Consolas, monospace;
+
   /* ── Apple-Grade Minimal Dark Palette ── */
   --bg-base: #0A0B0E;
   --bg-surface: #14161C;
@@ -28,7 +33,7 @@
 
   --border-color: #242731;
 
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
@@ -109,8 +114,8 @@ a {
 
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Inter', system-ui, sans-serif;
-  letter-spacing: -0.02em;
+  font-family: var(--font-heading);
+  letter-spacing: -0.025em;
   margin: 0;
   font-weight: 700;
 }
@@ -346,15 +351,16 @@ textarea:focus-visible {
 }
 
 /* Editorial typography utilities */
+/* Editorial typography utilities */
 .editorial-title {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-heading);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
 .mono-meta {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-mono);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -388,7 +394,7 @@ textarea:focus-visible {
 
 .tag {
   position: absolute;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
@@ -427,7 +433,7 @@ textarea:focus-visible {
 
 .headline {
   color: #fff;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-heading);
   font-size: 36px;
   font-weight: 800;
   letter-spacing: -0.5px;
@@ -437,7 +443,7 @@ textarea:focus-visible {
 .sub {
   color: rgba(255, 255, 255, 0.75);
   font-size: 13px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-weight: 500;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -457,7 +463,7 @@ textarea:focus-visible {
   cursor: pointer;
   background: #ffffff;
   transition: all 0.2s;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   text-decoration: none;
   box-shadow: 0 4px 24px rgba(0,0,0,0.15);
 }
@@ -496,7 +502,7 @@ textarea:focus-visible {
   position: absolute;
   top: 20px;
   right: 20px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
