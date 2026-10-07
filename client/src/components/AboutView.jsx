@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import { Info, ArrowLeft, Globe, Zap, Shield, Sparkles, BookOpen, MessageSquare, Award, HelpCircle, CheckCircle2, ChevronDown, Rocket, Users, Heart, Search } from 'lucide-react';
 import { Meteors } from './Meteors';
+import { ABOUT_FAQS, filterFaqsByQuery } from '../utils/aboutData';
 
 export default function AboutView({ onBack, onNavigate }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [faqSearch, setFaqSearch] = useState('');
 
-  const faqs = [
-    { q: "Is solith.in completely free to use?", a: "Yes! Creating an account, joining public voice rooms, tracking XP, and messaging other language learners is 100% free." },
-    { q: "How is my voice privacy protected?", a: "All audio is streamed directly using encrypted WebRTC protocol. Voice conversations are never recorded or stored on our servers." },
-    { q: "How does the XP and Streaks system work?", a: "You earn 1 XP for every 1.25 minutes you spend talking in active voice rooms. Maintaining daily talk time builds your streak!" },
-    { q: "What should I do if a user violates community guidelines?", a: "Every voice room includes quick reporting tools. Click the Report icon or report a profile directly to alert our moderation team." }
-  ];
+  const faqs = filterFaqsByQuery(ABOUT_FAQS, faqSearch);
 
   return (
     <div className="w-full min-h-[100dvh] bg-[#090A0F] relative overflow-x-hidden text-white flex flex-col items-center">
