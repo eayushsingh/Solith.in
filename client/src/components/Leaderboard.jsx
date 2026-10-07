@@ -294,13 +294,31 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
         </div>
 
         {/* Subscription Banner */}
-        <div className="mb-10 w-full bg-[#1A1D27] border border-[#2A2E3B] rounded-[20px] p-5 sm:p-6 flex items-center gap-5 shadow-xl relative overflow-hidden group">
+        <div className="mb-6 w-full bg-[#1A1D27] border border-[#2A2E3B] rounded-[20px] p-5 sm:p-6 flex items-center gap-5 shadow-xl relative overflow-hidden group">
           <div className="w-12 h-12 shrink-0 bg-[#3B82F6]/10 rounded-2xl flex items-center justify-center border border-[#3B82F6]/20">
             <Crown className="w-6 h-6 text-[#3B82F6]" />
           </div>
           <div>
             <h3 className="text-white font-bold text-[16px] mb-1 tracking-tight">Premium Subscription Reward</h3>
             <p className="text-[#888A92] text-[14px] font-medium">Rank in the <strong className="text-white">Top 3</strong> this month to automatically win a free Premium Subscription!</p>
+          </div>
+        </div>
+
+        {/* Aggregate Stats Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+          <div className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-4 flex flex-col justify-center">
+            <span className="text-[#555861] text-[11px] font-bold uppercase tracking-wider">Active Learners</span>
+            <span className="text-white text-[20px] font-bold mt-1">{leaders.length}</span>
+          </div>
+          <div className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-4 flex flex-col justify-center">
+            <span className="text-[#555861] text-[11px] font-bold uppercase tracking-wider">Total Practice</span>
+            <span className="text-[#60A5FA] text-[20px] font-bold mt-1">
+              {formatMinutes(leaders.reduce((sum, l) => sum + (l.dailyTalkTimeVal || l.weeklyTalkTimeVal || l.monthlyTalkTimeVal || l.allTimeTalkTimeVal || 0), 0))} mins
+            </span>
+          </div>
+          <div className="col-span-2 sm:col-span-1 bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-4 flex flex-col justify-center">
+            <span className="text-[#555861] text-[11px] font-bold uppercase tracking-wider">Top Contributor</span>
+            <span className="text-amber-400 text-[16px] font-bold truncate mt-1">{leaders[0]?.name || 'Top Speaker'}</span>
           </div>
         </div>
 
