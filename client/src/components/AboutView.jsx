@@ -8,6 +8,14 @@ export default function AboutView({ onBack, onNavigate }) {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [faqSearch, setFaqSearch] = useState('');
 
+  const logAboutViewed = (section) => {
+    try {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[Telemetry][About] Section viewed: ${section}`);
+      }
+    } catch (e) {}
+  };
+
   const faqs = filterFaqsByQuery(ABOUT_FAQS, faqSearch);
 
   return (
