@@ -205,10 +205,10 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                <Award className="w-3.5 h-3.5 text-[#3B82F6]" />
                <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#3B82F6]">Leaderboard</span>
             </div>
-            <h1 className="text-[42px] font-bold text-white tracking-tight leading-tight mb-2">
+            <h1 className="text-[32px] sm:text-[42px] font-bold text-white tracking-tight leading-tight mb-2">
               Hall of Fame
             </h1>
-            <p className="text-[#888A92] font-medium text-[15px]">
+            <p className="text-[#888A92] font-medium text-[14px] sm:text-[15px]">
               The most active language learners on solith.in.
             </p>
           </div>
