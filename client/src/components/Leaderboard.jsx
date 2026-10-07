@@ -163,6 +163,10 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
       handleFallback('Firebase connection failed. Check your config.');
     }
 
+    const pollInterval = setInterval(() => {
+      fetchLeaderboardFromAPI(activeTab);
+    }, 15000);
+
     const handleOnline = () => {
       console.log('Network restored, refreshing leaderboard data...');
       handleFallback('Network reconnected.');
@@ -171,6 +175,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
 
     return () => {
       isSubscribed = false;
+      clearInterval(pollInterval);
       window.removeEventListener('online', handleOnline);
       if (typeof unsubscribe === 'function') unsubscribe();
     };
