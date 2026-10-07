@@ -234,9 +234,15 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
 
         <div className="flex flex-col md:flex-row items-center justify-between mb-10 gap-6">
           <div className="flex flex-col items-start w-full md:w-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1A1D27] border border-[#2A2E3B] mb-5 shadow-sm">
-               <Award className="w-3.5 h-3.5 text-[#3B82F6]" />
-               <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#3B82F6]">Leaderboard</span>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1A1D27] border border-[#2A2E3B] shadow-sm">
+                 <Award className="w-3.5 h-3.5 text-[#3B82F6]" />
+                 <span className="text-[10px] font-bold tracking-[0.15em] uppercase text-[#3B82F6]">Leaderboard</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#12141C] border border-[#1E212B] text-[10px] font-bold text-[#888A92]">
+                <span className={`w-2 h-2 rounded-full ${isUsingFallback ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
+                <span>{isUsingFallback ? 'Offline / Cache Mode' : 'Live Stream'}</span>
+              </div>
             </div>
             <h1 className="text-[32px] sm:text-[42px] font-bold text-white tracking-tight leading-tight mb-2">
               Hall of Fame
