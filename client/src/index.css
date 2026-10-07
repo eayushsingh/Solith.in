@@ -184,6 +184,14 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.about-glow-card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.about-glow-card:hover {
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
 .animate-slide-up-delayed {
   animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
   opacity: 0;
