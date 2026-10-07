@@ -282,7 +282,23 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
           </div>
         </div>
 
-      <div className="bg-[#0C0E14] border border-[#1E212B] rounded-[24px] overflow-hidden shadow-2xl relative min-w-0">
+        {/* Fallback Mode Indicator */}
+        {isUsingFallback && (
+          <div className="mb-4 px-4 py-2.5 rounded-xl bg-[#1A1D27]/80 border border-[#3B82F6]/30 flex items-center justify-between text-[12px] text-[#888A92]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              <span>Offline / Offline Mode Active — Displaying cached rankings</span>
+            </div>
+            <button 
+              onClick={() => setActiveTab(t => t)}
+              className="text-[#60A5FA] hover:underline font-bold"
+            >
+              Re-sync
+            </button>
+          </div>
+        )}
+
+        <div className="bg-[#0C0E14] border border-[#1E212B] rounded-[24px] overflow-hidden shadow-2xl relative min-w-0">
         
         {loading ? (
           <div className="divide-y divide-[#1E212B]">
