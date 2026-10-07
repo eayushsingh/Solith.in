@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Info, ArrowLeft, Globe, Zap, Shield, Sparkles, BookOpen, MessageSquare, Award, HelpCircle, CheckCircle2, ChevronDown, Rocket, Users, Heart } from 'lucide-react';
+import { Info, ArrowLeft, Globe, Zap, Shield, Sparkles, BookOpen, MessageSquare, Award, HelpCircle, CheckCircle2, ChevronDown, Rocket, Users, Heart, Search } from 'lucide-react';
 import { Meteors } from './Meteors';
 
 export default function AboutView({ onBack, onNavigate }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [faqSearch, setFaqSearch] = useState('');
 
   const faqs = [
     { q: "Is solith.in completely free to use?", a: "Yes! Creating an account, joining public voice rooms, tracking XP, and messaging other language learners is 100% free." },
