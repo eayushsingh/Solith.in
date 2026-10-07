@@ -24,9 +24,13 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
         .then(data => {
           if (data && data.profiles && data.profiles[0]) {
             setProfile(data.profiles[0]);
+          } else {
+            setProfile({ id, name: 'Language Learner', xp: 100 });
           }
         })
-        .catch(console.warn);
+        .catch(() => {
+          setProfile({ id, name: 'Language Learner', xp: 100 });
+        });
     }
   }, [userId]);
 
