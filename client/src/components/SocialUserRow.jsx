@@ -6,9 +6,28 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
 
   useEffect(() => {
     if (!userId) return;
-    getDoc(doc(db, 'users', userId)).then(snap => {
-      if (snap.exists()) setProfile({ id: snap.id, ...snap.data() });
-    });
+    if (db) {
+      getDoc(doc(db, 'users', userId)).then(snap => {
+        if (snap.exists()) setProfile({ id: snap.id, ...snap.data() });
+        else fetchFallbackProfile(userId);
+      }).catch(err => {
+        console.warn('SocialUserRow getDoc error, trying API fallback:', err);
+        fetchFallbackProfile(userId);
+      });
+    } else {
+      fetchFallbackProfile(userId);
+    }
+
+    function fetchFallbackProfile(id) {
+      fetch(`/api/users/profiles?ids=${id}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.profiles && data.profiles[0]) {
+            setProfile(data.profiles[0]);
+          }
+        })
+        .catch(console.warn);
+    }
   }, [userId]);
 
   if (!profile || !currentUser || !currentUser.id) return null;
