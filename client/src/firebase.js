@@ -16,20 +16,27 @@ const firebaseConfig = {
 // Initialize Firebase only if config is present (prevents crash on first load without env vars)
 let app, auth, db, googleProvider;
 
-if (firebaseConfig.apiKey) {
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  auth = getAuth(app);
-  
-  // Attempt local persistence, fallback to memory if blocked (e.g. Incognito / Extensions)
-  setPersistence(auth, browserLocalPersistence).catch((error) => {
-    console.warn("Local persistence failed, falling back to in-memory:", error);
-    setPersistence(auth, inMemoryPersistence).catch(console.error);
-  });
+try {
+  if (firebaseConfig.apiKey) {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    
+    // Attempt local persistence, fallback to memory if blocked (e.g. Incognito / Extensions)
+    setPersistence(auth, browserLocalPersistence).catch((error) => {
+      console.warn("Local persistence failed, falling back to in-memory:", error);
+      setPersistence(auth, inMemoryPersistence).catch(console.error);
+    });
 
-  db = getFirestore(app);
-  googleProvider = new GoogleAuthProvider();
-} else {
-  console.warn("Firebase configuration is missing! Please add VITE_FIREBASE_* variables to your client/.env file.");
+    db = getFirestore(app);
+    googleProvider = new GoogleAuthProvider();
+  } else {
+    console.warn("Firebase configuration is missing! Please add VITE_FIREBASE_* variables to your client/.env file.");
+  }
+} catch (err) {
+  console.error("Firebase initialization failed:", err);
 }
 
+export const isFirebaseConfigured = () => Boolean(app && db && firebaseConfig.apiKey);
+
 export { auth, db, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, setPersistence, inMemoryPersistence, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, arrayUnion, arrayRemove, onSnapshot, limit, getCountFromServer, deleteDoc, signInWithCustomToken };
+
