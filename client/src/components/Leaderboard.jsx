@@ -10,6 +10,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
   const [error, setError] = useState('');
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryAttempt, setRetryAttempt] = useState(0);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   const CACHE_KEY_PREFIX = 'solith_leaderboard_cache_';
 
