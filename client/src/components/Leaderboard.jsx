@@ -278,6 +278,16 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
               >
                 <Globe className="w-4 h-4" /> All-Time
               </button>
+              <button
+                onClick={() => {
+                  setLoading(true);
+                  fetchLeaderboardFromAPI(activeTab).then(() => setLoading(false));
+                }}
+                className="p-2.5 rounded-[12px] text-[#888A92] hover:text-white transition-colors border border-transparent hover:bg-[#1A1D27]"
+                title="Refresh rankings"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
