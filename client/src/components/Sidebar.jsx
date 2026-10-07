@@ -1,4 +1,4 @@
-import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee, Users, Sparkles } from 'lucide-react';
+import { Home, MessageSquare, Award, BookOpen, Shield, Crown, LogOut, Settings, LogIn, Coffee, Users, Sparkles, Info } from 'lucide-react';
 
 export default function Sidebar({ currentView, setView, user, onAuthClick, onSettingsClick, onLogoutClick, onProCustomizationClick, onSocialClick, isAdmin, onlineStats, activeRoom }) {
   const isPro = !!(user?.isPremium || isAdmin);
@@ -8,6 +8,7 @@ export default function Sidebar({ currentView, setView, user, onAuthClick, onSet
     { id: 'messages', icon: MessageSquare, title: 'Global Chat' },
     { id: 'leaderboard', icon: Award, title: 'Leaderboard' },
     { id: 'guidelines', icon: BookOpen, title: 'Guidelines' },
+    { id: 'about', icon: Info, title: 'About Us' },
     { id: 'premium', icon: Crown, title: 'Premium' },
     ...(isPro && onProCustomizationClick ? [{ id: 'pro_custom', icon: Sparkles, title: 'Pro Customization', action: onProCustomizationClick, isCustomBadge: true }] : []),
     ...(isAdmin ? [{ id: 'admin', icon: Shield, title: 'Admin' }] : []),
