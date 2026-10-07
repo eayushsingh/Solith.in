@@ -1266,6 +1266,75 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
   }
 });
 
+// ─── GET LEADERBOARD (API Fallback for Leaderboard UI) ──────────────────────
+app.get('/api/leaderboard', async (req, res) => {
+  const period = req.query.period || 'daily';
+  const limitCount = parseInt(req.query.limit, 10) || 50;
+
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) {
+    return res.json({
+      success: true,
+      source: 'fallback',
+      period,
+      leaders: []
+    });
+  }
+
+  try {
+    const db = adminInstance.firestore();
+    const snapshot = await db.collection('users').get();
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+    const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+    const currentDayId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
+
+    const mappedLeaders = data.map(u => {
+      const isDailyCurrent = u.dailyXpId === currentDayId;
+      const isWeeklyCurrent = u.weeklyXpId === currentWeekId;
+      const isMonthlyCurrent = u.monthlyXpId === currentMonthId;
+      return {
+        ...u,
+        dailyXpVal: isDailyCurrent ? (u.dailyXp || 0) : 0,
+        weeklyXpVal: isWeeklyCurrent ? (u.weeklyXp || 0) : 0,
+        monthlyXpVal: isMonthlyCurrent ? (u.monthlyXp || 0) : 0,
+        allTimeXpVal: u.xp || 0,
+        dailyTalkTimeVal: isDailyCurrent ? (u.dailyTalkTimeSeconds ?? ((u.dailyXp || 0) / 1.25)) : 0,
+        weeklyTalkTimeVal: isWeeklyCurrent ? (u.weeklyTalkTimeSeconds ?? ((u.weeklyXp || 0) / 1.25)) : 0,
+        monthlyTalkTimeVal: isMonthlyCurrent ? (u.monthlyTalkTimeSeconds ?? ((u.monthlyXp || 0) / 1.25)) : 0,
+        allTimeTalkTimeVal: u.talkTimeSeconds ?? ((u.xp || 0) / 1.25)
+      };
+    });
+
+    if (period === 'daily') {
+      mappedLeaders.sort((a, b) => b.dailyTalkTimeVal - a.dailyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    } else if (period === 'weekly') {
+      mappedLeaders.sort((a, b) => b.weeklyTalkTimeVal - a.weeklyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    } else if (period === 'monthly') {
+      mappedLeaders.sort((a, b) => b.monthlyTalkTimeVal - a.monthlyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    } else {
+      mappedLeaders.sort((a, b) => b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    }
+
+    res.json({
+      success: true,
+      source: 'firestore-admin',
+      period,
+      leaders: mappedLeaders.slice(0, limitCount)
+    });
+  } catch (error) {
+    console.error('Error in /api/leaderboard:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard data' });
+  }
+});
+
 // ─── GET ALL USERS (for Social "All" tab) ────────────────────────────────────
 app.get('/api/users/all', async (req, res) => {
   const adminInstance = initFirebaseAdmin();
