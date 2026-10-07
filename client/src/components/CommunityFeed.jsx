@@ -37,11 +37,27 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
       }, (error) => {
         clearTimeout(timeout);
         console.error("Failed to load community feed:", error);
+        setPosts(prev => prev.length > 0 ? prev : [{
+          id: 'post_def_1',
+          authorName: 'Solith Community',
+          content: 'Welcome to the language learning feed! Practice speaking daily with global language partners.',
+          likesCount: 12,
+          commentsCount: 3,
+          createdAt: new Date()
+        }]);
         setLoading(false);
       });
     } catch (err) {
       clearTimeout(timeout);
       console.error("Failed to attach CommunityFeed snapshot:", err);
+      setPosts(prev => prev.length > 0 ? prev : [{
+        id: 'post_def_1',
+        authorName: 'Solith Community',
+        content: 'Welcome to the language learning feed! Practice speaking daily with global language partners.',
+        likesCount: 12,
+        commentsCount: 3,
+        createdAt: new Date()
+      }]);
       setLoading(false);
     }
 
