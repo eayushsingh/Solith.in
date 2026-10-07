@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCircle, RefreshCw, Crown, Activity } from 'lucide-react';
 import { db, collection, onSnapshot } from '../firebase';
 import { Meteors } from './Meteors';
+import { mapAndSortLeaders, formatMinutes } from '../utils/leaderboardUtils';
 
 export default function Leaderboard({ onBack, user, openUserProfile }) {
   const [activeTab, setActiveTab] = useState('daily');
