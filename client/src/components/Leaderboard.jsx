@@ -9,65 +9,115 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const fetchLeaderboardFromAPI = async (tab) => {
+    try {
+      const res = await fetch(`/api/leaderboard?period=${tab}`);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const json = await res.json();
+      if (json && Array.isArray(json.leaders)) {
+        setLeaders(json.leaders);
+        setError('');
+        return true;
+      }
+      throw new Error('Invalid leaderboard payload from backend');
+    } catch (apiErr) {
+      console.warn('Backend REST API fallback error:', apiErr);
+      return false;
+    }
+  };
+
   useEffect(() => {
     setLoading(true);
     setError('');
+    let isSubscribed = true;
 
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      try {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const now = new Date();
-        const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-        const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
-        const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
-        const currentDayId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
-
-        const mappedLeaders = data.map(u => {
-          const isDailyCurrent = u.dailyXpId === currentDayId;
-          const isWeeklyCurrent = u.weeklyXpId === currentWeekId;
-          const isMonthlyCurrent = u.monthlyXpId === currentMonthId;
-          return {
-            ...u,
-            dailyXpVal: isDailyCurrent ? (u.dailyXp || 0) : 0,
-            weeklyXpVal: isWeeklyCurrent ? (u.weeklyXp || 0) : 0,
-            monthlyXpVal: isMonthlyCurrent ? (u.monthlyXp || 0) : 0,
-            allTimeXpVal: u.xp || 0,
-            dailyTalkTimeVal: isDailyCurrent ? (u.dailyTalkTimeSeconds ?? ((u.dailyXp || 0) / 1.25)) : 0,
-            weeklyTalkTimeVal: isWeeklyCurrent ? (u.weeklyTalkTimeSeconds ?? ((u.weeklyXp || 0) / 1.25)) : 0,
-            monthlyTalkTimeVal: isMonthlyCurrent ? (u.monthlyTalkTimeSeconds ?? ((u.monthlyXp || 0) / 1.25)) : 0,
-            allTimeTalkTimeVal: u.talkTimeSeconds ?? ((u.xp || 0) / 1.25)
-          };
-        });
-
-        if (activeTab === 'daily') {
-          mappedLeaders.sort((a, b) => b.dailyTalkTimeVal - a.dailyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
-        } else if (activeTab === 'weekly') {
-          mappedLeaders.sort((a, b) => b.weeklyTalkTimeVal - a.weeklyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
-        } else if (activeTab === 'monthly') {
-          mappedLeaders.sort((a, b) => b.monthlyTalkTimeVal - a.monthlyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
-        } else {
-          mappedLeaders.sort((a, b) => b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    if (!db) {
+      fetchLeaderboardFromAPI(activeTab).then(success => {
+        if (!isSubscribed) return;
+        if (!success) {
+          setError('Firebase connection failed. Check your config.');
         }
-
-        setLeaders(mappedLeaders.slice(0, 50));
         setLoading(false);
-      } catch (err) {
-        console.error('Failed to process leaderboard data:', err);
-        setError(err.message || 'Failed to load leaderboard.');
-        setLoading(false);
-      }
-    }, (err) => {
-      console.error('Leaderboard snapshot error:', err);
-      setError('Firebase connection failed. Check your config.');
-      setLoading(false);
-    });
+      });
+      return () => { isSubscribed = false; };
+    }
 
-    return () => unsubscribe();
+    let unsubscribe = () => {};
+
+    try {
+      unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+        if (!isSubscribed) return;
+        try {
+          const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+          const now = new Date();
+          const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+          const dayNum = d.getUTCDay() || 7;
+          d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+          const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+          const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+          const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+          const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+          const currentDayId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
+
+          const mappedLeaders = data.map(u => {
+            const isDailyCurrent = u.dailyXpId === currentDayId;
+            const isWeeklyCurrent = u.weeklyXpId === currentWeekId;
+            const isMonthlyCurrent = u.monthlyXpId === currentMonthId;
+            return {
+              ...u,
+              dailyXpVal: isDailyCurrent ? (u.dailyXp || 0) : 0,
+              weeklyXpVal: isWeeklyCurrent ? (u.weeklyXp || 0) : 0,
+              monthlyXpVal: isMonthlyCurrent ? (u.monthlyXp || 0) : 0,
+              allTimeXpVal: u.xp || 0,
+              dailyTalkTimeVal: isDailyCurrent ? (u.dailyTalkTimeSeconds ?? ((u.dailyXp || 0) / 1.25)) : 0,
+              weeklyTalkTimeVal: isWeeklyCurrent ? (u.weeklyTalkTimeSeconds ?? ((u.weeklyXp || 0) / 1.25)) : 0,
+              monthlyTalkTimeVal: isMonthlyCurrent ? (u.monthlyTalkTimeSeconds ?? ((u.monthlyXp || 0) / 1.25)) : 0,
+              allTimeTalkTimeVal: u.talkTimeSeconds ?? ((u.xp || 0) / 1.25)
+            };
+          });
+
+          if (activeTab === 'daily') {
+            mappedLeaders.sort((a, b) => b.dailyTalkTimeVal - a.dailyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+          } else if (activeTab === 'weekly') {
+            mappedLeaders.sort((a, b) => b.weeklyTalkTimeVal - a.weeklyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+          } else if (activeTab === 'monthly') {
+            mappedLeaders.sort((a, b) => b.monthlyTalkTimeVal - a.monthlyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+          } else {
+            mappedLeaders.sort((a, b) => b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+          }
+
+          setLeaders(mappedLeaders.slice(0, 50));
+          setLoading(false);
+        } catch (err) {
+          console.error('Failed to process leaderboard data:', err);
+          fetchLeaderboardFromAPI(activeTab).then(success => {
+            if (!isSubscribed) return;
+            if (!success) setError(err.message || 'Failed to load leaderboard.');
+            setLoading(false);
+          });
+        }
+      }, (err) => {
+        console.error('Leaderboard snapshot error, switching to API fallback:', err);
+        fetchLeaderboardFromAPI(activeTab).then(success => {
+          if (!isSubscribed) return;
+          if (!success) setError('Firebase connection failed. Check your config.');
+          setLoading(false);
+        });
+      });
+    } catch (err) {
+      console.error('Failed to attach onSnapshot:', err);
+      fetchLeaderboardFromAPI(activeTab).then(success => {
+        if (!isSubscribed) return;
+        if (!success) setError('Firebase connection failed. Check your config.');
+        setLoading(false);
+      });
+    }
+
+    return () => {
+      isSubscribed = false;
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, [activeTab]);
 
   const userRankIndex = leaders.findIndex(l => l.id === user?.id);
