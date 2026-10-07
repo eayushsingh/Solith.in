@@ -26,29 +26,38 @@ export default function DirectMessage({ conversationId, currentUser, targetProfi
       orderBy('sentAt', 'asc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMessages(msgs);
-      setLoading(false);
-      
-      // Play sound on new message
-      if (previousMessagesLength.current > 0 && msgs.length > previousMessagesLength.current) {
-        const lastMsg = msgs[msgs.length - 1];
-        if (lastMsg && lastMsg.senderId !== currentUser?.id) {
-          playSound('message');
+    let unsubscribe = () => {};
+    try {
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMessages(msgs);
+        setLoading(false);
+        
+        // Play sound on new message
+        if (previousMessagesLength.current > 0 && msgs.length > previousMessagesLength.current) {
+          const lastMsg = msgs[msgs.length - 1];
+          if (lastMsg && lastMsg.senderId !== currentUser?.id) {
+            playSound('message');
+          }
         }
-      }
-      previousMessagesLength.current = msgs.length;
-      
-      // Update read status for messages sent by the other user
-      msgs.forEach(msg => {
-        if (msg.senderId !== currentUser?.id && !msg.readAt) {
-          updateDoc(doc(db, 'conversations', conversationId, 'messages', msg.id), {
-            readAt: serverTimestamp()
-          }).catch(console.error);
-        }
+        previousMessagesLength.current = msgs.length;
+        
+        // Update read status for messages sent by the other user
+        msgs.forEach(msg => {
+          if (msg.senderId !== currentUser?.id && !msg.readAt) {
+            updateDoc(doc(db, 'conversations', conversationId, 'messages', msg.id), {
+              readAt: serverTimestamp()
+            }).catch(console.error);
+          }
+        });
+      }, (err) => {
+        console.warn('DirectMessage Firestore listener error:', err);
+        setLoading(false);
       });
-    });
+    } catch (err) {
+      console.warn('DirectMessage snapshot setup error:', err);
+      setLoading(false);
+    }
 
     return () => unsubscribe();
   }, [conversationId, currentUser?.id]);
