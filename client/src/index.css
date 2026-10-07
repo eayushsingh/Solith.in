@@ -178,6 +178,12 @@ h1, h2, h3, h4, h5, h6 {
   animation: gold-shimmer 3s ease-in-out infinite;
 }
 
+.glass-card {
+  background: rgba(12, 14, 20, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .animate-slide-up-delayed {
   animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
   opacity: 0;
