@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import RoomCard from './components/RoomCard';
 import Guidelines from './components/Guidelines';
+import AboutView from './components/AboutView';
 import AdminPanel from './components/AdminPanel';
 import ReportModal from './components/ReportModal';
 import FollowListModal from './components/FollowListModal';
@@ -332,9 +333,9 @@ export default function App() {
       const hash = window.location.hash.replace('#', '');
       const path = window.location.pathname.replace('/', '');
 
-      if (hash && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(hash)) {
+      if (hash && ['admin', 'guidelines', 'about', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(hash)) {
         setView(hash);
-      } else if (path && ['admin', 'guidelines', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(path)) {
+      } else if (path && ['admin', 'guidelines', 'about', 'messages', 'leaderboard', 'lobby', 'landing', 'feed', 'premium'].includes(path)) {
         setView(path);
       }
     };
@@ -3186,6 +3187,11 @@ export default function App() {
         {/* Guidelines View */}
         <div className={view === 'guidelines' ? 'block' : 'hidden'}>
           <Guidelines onBack={() => { setView('lobby'); window.history.pushState({}, '', '/'); }} />
+        </div>
+
+        {/* About View */}
+        <div className={view === 'about' ? 'block' : 'hidden'}>
+          <AboutView onBack={() => { setView('lobby'); window.history.pushState({}, '', '/'); }} onNavigate={setView} />
         </div>
 
         {/* Messages View */}
