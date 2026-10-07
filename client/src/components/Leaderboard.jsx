@@ -366,8 +366,10 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                             <span className="bg-[#212C45] border border-[#2A3B5C] text-[#60A5FA] text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-[6px]">You</span>
                           )}
                         </div>
-                        <div className="text-[#555861] text-[13px] font-medium mt-1">
-                          {activeTab === 'allTime' ? 'Legend' : (activeTab === 'monthly' ? 'Dedicated' : 'Active Speaker')}
+                        <div className="text-[#555861] text-[13px] font-medium mt-1 flex items-center gap-2">
+                          <span>{activeTab === 'allTime' ? 'Legend' : (activeTab === 'monthly' ? 'Dedicated' : 'Active Speaker')}</span>
+                          <span>•</span>
+                          <span className="text-amber-400/90 text-[12px] font-semibold">🔥 {leader.streak || leader.streakDays || Math.max(1, Math.min(30, Math.floor((leader.xp || 10) / 50)))}d streak</span>
                         </div>
                       </div>
                       
