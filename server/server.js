@@ -1267,6 +1267,17 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
 });
 
 // ─── GET LEADERBOARD (API Fallback for Leaderboard UI) ──────────────────────
+function getMockLeaderboardSeedData(period) {
+  const mockUsers = [
+    { id: 'mock_1', name: 'Sophia Chen', emoji: '🌟', xp: 4850, dailyTalkTimeVal: 3600, weeklyTalkTimeVal: 18000, monthlyTalkTimeVal: 72000, allTimeTalkTimeVal: 232000 },
+    { id: 'mock_2', name: 'Alexander Wright', emoji: '🎯', xp: 3920, dailyTalkTimeVal: 2800, weeklyTalkTimeVal: 14500, monthlyTalkTimeVal: 58000, allTimeTalkTimeVal: 188000 },
+    { id: 'mock_3', name: 'Elena Rostova', emoji: '👑', xp: 3410, dailyTalkTimeVal: 2400, weeklyTalkTimeVal: 12000, monthlyTalkTimeVal: 49000, allTimeTalkTimeVal: 163000 },
+    { id: 'mock_4', name: 'Lucas Silva', emoji: '🔥', xp: 2950, dailyTalkTimeVal: 1900, weeklyTalkTimeVal: 9800, monthlyTalkTimeVal: 39000, allTimeTalkTimeVal: 141000 },
+    { id: 'mock_5', name: 'Aarav Patel', emoji: '🚀', xp: 2600, dailyTalkTimeVal: 1600, weeklyTalkTimeVal: 8400, monthlyTalkTimeVal: 33000, allTimeTalkTimeVal: 124000 }
+  ];
+  return mockUsers;
+}
+
 app.get('/api/leaderboard', async (req, res) => {
   const period = req.query.period || 'daily';
   const limitCount = parseInt(req.query.limit, 10) || 50;
@@ -1275,9 +1286,9 @@ app.get('/api/leaderboard', async (req, res) => {
   if (!adminInstance) {
     return res.json({
       success: true,
-      source: 'fallback',
+      source: 'mock-seed',
       period,
-      leaders: []
+      leaders: getMockLeaderboardSeedData(period)
     });
   }
 
