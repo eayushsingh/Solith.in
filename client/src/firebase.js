@@ -27,7 +27,7 @@ try {
       setPersistence(auth, inMemoryPersistence).catch(console.error);
     });
 
-    db = getFirestore(app);
+    db = getFirestore(app); // Firestore instance with client offline stream failover
     googleProvider = new GoogleAuthProvider();
   } else {
     console.warn("Firebase configuration is missing! Please add VITE_FIREBASE_* variables to your client/.env file.");
