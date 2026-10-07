@@ -42,6 +42,17 @@ export default function StaticModals({ activeModal, closeModal }) {
         <div className="space-y-4 text-sm text-text-secondary">
           <p>solith.in was built with a simple mission: to connect language learners around the world through free, high-quality voice conversations.</p>
           <p>Whether you're practicing English for an upcoming interview, trying to pick up conversational Spanish, or helping others learn your native tongue, our platform provides a safe, low-latency environment to practice real-world speaking.</p>
+          <div className="pt-2 flex justify-center">
+            <button
+              onClick={() => {
+                closeModal();
+                window.location.hash = 'about';
+              }}
+              className="px-5 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 font-bold hover:bg-purple-500/20 transition-all text-xs flex items-center gap-2"
+            >
+              <Info className="w-4 h-4" /> Open Guided Platform Overview
+            </button>
+          </div>
           <p className="text-center font-bold text-text-primary mt-4">Built with ❤️ for the global language community.</p>
         </div>
       );
