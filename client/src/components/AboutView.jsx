@@ -130,6 +130,32 @@ export default function AboutView({ onBack, onNavigate }) {
           </div>
         </div>
 
+        {/* Language Learner Speaking Guide */}
+        <div className="mb-12 bg-gradient-to-r from-[#12141C] via-[#0C0E14] to-[#12141C] border border-[#1E212B] rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+          <div className="flex items-center gap-2 mb-4">
+            <BookOpen className="w-5 h-5 text-purple-400" />
+            <h2 className="text-[20px] font-bold text-white tracking-tight">Speaking Tips for Learners</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[14px]">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-1" />
+              <p className="text-[#888A92]"><strong className="text-white">Don't Fear Mistakes:</strong> Native speakers appreciate effort. Stumbling is a natural part of fluency growth!</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-1" />
+              <p className="text-[#888A92]"><strong className="text-white">Ask Open Questions:</strong> Ask your speaking partners about their culture, daily routine, or favorite movies.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-1" />
+              <p className="text-[#888A92]"><strong className="text-white">Use AI Prompts:</strong> Stuck on topics? Use the built-in AI assistant prompts in voice rooms to spark ideas.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-1" />
+              <p className="text-[#888A92]"><strong className="text-white">Practice Daily:</strong> Even 15 minutes of speaking every day creates rapid fluency gains over time.</p>
+            </div>
+          </div>
+        </div>
+
         {/* FAQ Accordion Section */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-6">
