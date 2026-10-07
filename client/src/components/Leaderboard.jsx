@@ -356,13 +356,13 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
             
             {/* Pinned Current User if not in Top 50 */}
             {!loading && user && !currentUserInTop50 && (
-              <div className="border-t border-[#1E212B] bg-[#090A0F] p-6 relative overflow-hidden">
+              <div className="border-t border-[#1E212B] bg-gradient-to-r from-[#12141C] via-[#0C0E14] to-[#12141C] p-6 relative overflow-hidden shadow-2xl">
                  <div className="flex items-center gap-4 sm:gap-6 px-2 relative z-10">
                     <div className="w-8 flex justify-center">
-                      <span className="font-mono text-[#555861] text-[13px] font-bold">-</span>
+                      <span className="font-mono text-[#60A5FA] text-[13px] font-bold">50+</span>
                     </div>
                     
-                    <div className="w-12 h-12 rounded-[14px] overflow-hidden bg-[#1E212B] flex items-center justify-center flex-shrink-0 border border-[#2A2E3B] shadow-sm" style={{ backgroundColor: user.color || '#1E212B' }}>
+                    <div className="w-12 h-12 rounded-[14px] overflow-hidden bg-[#1E212B] flex items-center justify-center flex-shrink-0 border border-[#3B82F6]/40 shadow-sm" style={{ backgroundColor: user.color || '#1E212B' }}>
                       {user.photoUrl ? (
                         <img src={user.photoUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -375,7 +375,14 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                         <span className="font-bold text-white text-[16px] truncate tracking-tight">{user.name}</span>
                         <span className="bg-[#212C45] border border-[#2A3B5C] text-[#60A5FA] text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-[6px]">You</span>
                       </div>
-                      <div className="text-[#3B82F6] text-[13px] font-bold tracking-wide">Keep talking to rank up!</div>
+                      <div className="text-[#3B82F6] text-[13px] font-bold tracking-wide">Keep speaking in voice rooms to reach the Top 3!</div>
+                    </div>
+
+                    <div className="text-right flex flex-col items-end justify-center shrink-0">
+                      <div className="font-bold text-[18px] text-[#60A5FA] tracking-tight leading-none mb-1">
+                        {user.xp || 0} XP
+                      </div>
+                      <div className="text-[10px] text-[#555861] font-bold uppercase tracking-[0.1em]">Total XP</div>
                     </div>
                  </div>
               </div>
