@@ -169,6 +169,15 @@ h1, h2, h3, h4, h5, h6 {
   animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes gold-shimmer {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.6); }
+}
+
+.leader-gold-glow {
+  animation: gold-shimmer 3s ease-in-out infinite;
+}
+
 .animate-slide-up-delayed {
   animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
   opacity: 0;
