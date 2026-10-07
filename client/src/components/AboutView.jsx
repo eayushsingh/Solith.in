@@ -217,6 +217,23 @@ export default function AboutView({ onBack, onNavigate }) {
             <span className="px-3 py-1 rounded-full bg-[#12141C] border border-[#1E212B] text-[12px] font-mono text-[#888A92]">Socket.io Realtime Sync</span>
           </div>
         </div>
+
+        {/* Quick-Start CTA Banner */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl text-center sm:text-left">
+          <div>
+            <h3 className="text-white text-[22px] font-extrabold mb-1">Ready to Practice Speaking?</h3>
+            <p className="text-blue-100 text-[14px]">Join thousands of active speakers in live WebRTC voice rooms today.</p>
+          </div>
+          <button
+            onClick={() => {
+              if (typeof onNavigate === 'function') onNavigate('lobby');
+              else if (typeof onBack === 'function') onBack();
+            }}
+            className="px-6 py-3 rounded-xl bg-white text-blue-900 font-extrabold text-[14px] hover:bg-blue-50 transition-colors shadow-lg shrink-0 flex items-center gap-2"
+          >
+            <Rocket className="w-4 h-4" /> Start Speaking Now
+          </button>
+        </div>
       </div>
     </div>
   );
