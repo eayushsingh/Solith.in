@@ -14,6 +14,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
   const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(25);
+  const [selectedLanguage, setSelectedLanguage] = useState('All');
 
   const CACHE_KEY_PREFIX = 'solith_leaderboard_cache_';
 
