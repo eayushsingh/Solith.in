@@ -309,7 +309,9 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                     <div 
                       key={leader.id} 
                       onClick={() => {
-                        if (openUserProfile) openUserProfile(leader.id);
+                        if (typeof openUserProfile === 'function') {
+                          openUserProfile(leader.id || leader);
+                        }
                       }}
                       className={`flex items-center gap-4 sm:gap-6 px-6 sm:px-8 py-5 transition-all group cursor-pointer ${
                         leader.id === user?.id ? 'bg-[#12141C]/50' : ''
