@@ -9,6 +9,33 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const CACHE_KEY_PREFIX = 'solith_leaderboard_cache_';
+
+  const getCachedLeaderboard = (tab) => {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY_PREFIX + tab);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.data) && parsed.data.length > 0) {
+        return parsed.data;
+      }
+    } catch (e) {
+      console.warn('Failed to parse leaderboard cache:', e);
+    }
+    return null;
+  };
+
+  const setCachedLeaderboard = (tab, data) => {
+    try {
+      localStorage.setItem(CACHE_KEY_PREFIX + tab, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.warn('Failed to save leaderboard cache:', e);
+    }
+  };
+
   const fetchLeaderboardFromAPI = async (tab) => {
     try {
       const res = await fetch(`/api/leaderboard?period=${tab}`);
@@ -16,6 +43,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
       const json = await res.json();
       if (json && Array.isArray(json.leaders)) {
         setLeaders(json.leaders);
+        setCachedLeaderboard(tab, json.leaders);
         setError('');
         return true;
       }
@@ -27,18 +55,33 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
   };
 
   useEffect(() => {
-    setLoading(true);
+    const initialCache = getCachedLeaderboard(activeTab);
+    if (initialCache) {
+      setLeaders(initialCache);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     setError('');
     let isSubscribed = true;
 
-    if (!db) {
-      fetchLeaderboardFromAPI(activeTab).then(success => {
-        if (!isSubscribed) return;
-        if (!success) {
-          setError('Firebase connection failed. Check your config.');
+    const handleFallback = async (fallbackErr) => {
+      const success = await fetchLeaderboardFromAPI(activeTab);
+      if (!isSubscribed) return;
+      if (!success) {
+        const cached = getCachedLeaderboard(activeTab);
+        if (cached) {
+          setLeaders(cached);
+          setError('');
+        } else {
+          setError(fallbackErr || 'Firebase connection failed. Check your config.');
         }
-        setLoading(false);
-      });
+      }
+      setLoading(false);
+    };
+
+    if (!db) {
+      handleFallback('Firebase configuration is missing or unreachable.');
       return () => { isSubscribed = false; };
     }
 
@@ -87,31 +130,22 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
             mappedLeaders.sort((a, b) => b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
           }
 
-          setLeaders(mappedLeaders.slice(0, 50));
+          const topLeaders = mappedLeaders.slice(0, 50);
+          setLeaders(topLeaders);
+          setCachedLeaderboard(activeTab, topLeaders);
+          setError('');
           setLoading(false);
         } catch (err) {
           console.error('Failed to process leaderboard data:', err);
-          fetchLeaderboardFromAPI(activeTab).then(success => {
-            if (!isSubscribed) return;
-            if (!success) setError(err.message || 'Failed to load leaderboard.');
-            setLoading(false);
-          });
+          handleFallback(err.message || 'Failed to load leaderboard.');
         }
       }, (err) => {
-        console.error('Leaderboard snapshot error, switching to API fallback:', err);
-        fetchLeaderboardFromAPI(activeTab).then(success => {
-          if (!isSubscribed) return;
-          if (!success) setError('Firebase connection failed. Check your config.');
-          setLoading(false);
-        });
+        console.error('Leaderboard snapshot error, switching to API/Cache fallback:', err);
+        handleFallback('Firebase connection failed. Check your config.');
       });
     } catch (err) {
       console.error('Failed to attach onSnapshot:', err);
-      fetchLeaderboardFromAPI(activeTab).then(success => {
-        if (!isSubscribed) return;
-        if (!success) setError('Firebase connection failed. Check your config.');
-        setLoading(false);
-      });
+      handleFallback('Firebase connection failed. Check your config.');
     }
 
     return () => {
