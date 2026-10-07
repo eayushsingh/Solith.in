@@ -87,6 +87,40 @@ export default function AboutView({ onBack, onNavigate }) {
             </div>
           </div>
         </div>
+
+        {/* Feature Showcase Section */}
+        <div className="mb-12">
+          <div className="flex items-center gap-2 mb-6">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+            <h2 className="text-[22px] font-bold text-white tracking-tight">Platform Features Showcase</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-5 flex flex-col items-start">
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 mb-3 text-blue-400">
+                <Globe className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-white text-[15px] mb-1">Global Voice Rooms</h4>
+              <p className="text-[#888A92] text-[13px]">Real-time WebRTC audio rooms with low-latency communication.</p>
+            </div>
+
+            <div className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-5 flex flex-col items-start">
+              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 mb-3 text-purple-400">
+                <Zap className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-white text-[15px] mb-1">AI Conversation Prompts</h4>
+              <p className="text-[#888A92] text-[13px]">Smart AI topic suggestions and discussion starters built right into voice rooms.</p>
+            </div>
+
+            <div className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-5 flex flex-col items-start">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-3 text-amber-400">
+                <Award className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-white text-[15px] mb-1">Gamified Hall of Fame</h4>
+              <p className="text-[#888A92] text-[13px]">Track active minutes spoken and win monthly Premium Subscriptions.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
