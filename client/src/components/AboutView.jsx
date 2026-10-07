@@ -186,6 +186,19 @@ export default function AboutView({ onBack, onNavigate }) {
           </div>
         </div>
 
+        {/* Community Safety Pledge Section */}
+        <div className="mb-12 bg-[#12141C] border border-[#2A2E3B] rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+          <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 text-blue-400">
+            <Shield className="w-7 h-7" />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-[18px] mb-1">Our Community Safety Commitment</h3>
+            <p className="text-[#888A92] text-[14px] leading-relaxed">
+              We enforce strict zero-tolerance policies against harassment, hate speech, and spam. Our real-time report tools and active moderation system ensure every learner feels safe and respected.
+            </p>
+          </div>
+        </div>
+
         {/* Tech Stack & Architecture Section */}
         <div className="mb-12 border-t border-[#1E212B] pt-10">
           <div className="flex items-center gap-2 mb-4">
