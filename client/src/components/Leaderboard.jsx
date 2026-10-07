@@ -352,10 +352,19 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                       
                       <div className={`w-12 h-12 rounded-[14px] overflow-hidden bg-[#1E212B] flex items-center justify-center flex-shrink-0 shadow-md border ${index === 0 ? 'border-amber-400/50 shadow-amber-500/20' : index === 1 ? 'border-slate-300/50 shadow-slate-400/20' : index === 2 ? 'border-amber-600/50 shadow-amber-700/20' : 'border-[#2A2E3B]'}`} style={{ backgroundColor: leader.color || '#1E212B' }}>
                         {leader.photoUrl ? (
-                          <img src={leader.photoUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-xl">{leader.emoji || '👤'}</span>
-                        )}
+                          <img 
+                            src={leader.photoUrl} 
+                            alt="" 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextSibling && (e.currentTarget.nextSibling.style.display = 'inline');
+                            }}
+                          />
+                        ) : null}
+                        <span className="text-xl" style={{ display: leader.photoUrl ? 'none' : 'inline' }}>
+                          {leader.emoji || (leader.name ? leader.name.charAt(0).toUpperCase() : '👤')}
+                        </span>
                       </div>
                       
                       <div className="flex-1 min-w-0">
