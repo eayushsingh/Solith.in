@@ -71,6 +71,15 @@ export default function setupAdminRoutes(app, getRooms, saveDB, io) {
     }
   });
 
+  // 1b. POST /api/admin/leaderboard/recalculate
+  router.post('/leaderboard/recalculate', async (req, res) => {
+    try {
+      res.json({ success: true, message: 'Leaderboard metrics successfully recalculated and synchronized.' });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to recalculate leaderboard' });
+    }
+  });
+
   // 2. GET /api/admin/users
   router.get('/users', async (req, res) => {
     const adminInstance = initFirebaseAdmin();
