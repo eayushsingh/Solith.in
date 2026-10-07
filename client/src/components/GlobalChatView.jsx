@@ -40,63 +40,69 @@ export default function GlobalChatView({ user, onSignIn }) {
       limit(100)
     );
 
-    unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedMessages = [];
-      const uniqueUsers = new Map();
+    try {
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const fetchedMessages = [];
+        const uniqueUsers = new Map();
 
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        fetchedMessages.push({ id: docSnap.id, ...data });
-        
-        if (data.uid) {
-          if (!uniqueUsers.has(data.uid)) {
-            uniqueUsers.set(data.uid, {
-              uid: data.uid,
-              displayName: data.displayName || 'Anonymous',
-              photoUrl: data.photoUrl,
-              lastSeen: data.createdAt?.toDate() || new Date()
-            });
-          } else {
-            const existing = uniqueUsers.get(data.uid);
-            const currentMsgDate = data.createdAt?.toDate() || new Date();
-            if (currentMsgDate > existing.lastSeen) {
-              uniqueUsers.set(data.uid, { ...existing, lastSeen: currentMsgDate });
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          fetchedMessages.push({ id: docSnap.id, ...data });
+          
+          if (data.uid) {
+            if (!uniqueUsers.has(data.uid)) {
+              uniqueUsers.set(data.uid, {
+                uid: data.uid,
+                displayName: data.displayName || 'Anonymous',
+                photoUrl: data.photoUrl,
+                lastSeen: data.createdAt?.toDate() || new Date()
+              });
+            } else {
+              const existing = uniqueUsers.get(data.uid);
+              const currentMsgDate = data.createdAt?.toDate() || new Date();
+              if (currentMsgDate > existing.lastSeen) {
+                uniqueUsers.set(data.uid, { ...existing, lastSeen: currentMsgDate });
+              }
             }
           }
+        });
+
+        const reversedMsgs = fetchedMessages.reverse();
+        persistMessages(reversedMsgs);
+        setLoadError('');
+        setIsLoading(false);
+
+        // Play sound on new incoming message
+        if (previousMessagesLength.current > 0 && reversedMsgs.length > previousMessagesLength.current) {
+          const lastMsg = reversedMsgs[reversedMsgs.length - 1];
+          if (lastMsg && (!user || lastMsg.uid !== user.id)) {
+            playSound('message');
+          }
         }
+        previousMessagesLength.current = reversedMsgs.length;
+
+        // Sort members: online (last seen < 10min) vs offline
+        const now = new Date();
+        const online = [];
+        const offline = [];
+        Array.from(uniqueUsers.values()).forEach(u => {
+          const diffMinutes = (now - u.lastSeen) / 1000 / 60;
+          if (diffMinutes < 10) online.push(u);
+          else offline.push(u);
+        });
+        setOnlineMembers(online);
+        setOfflineMembers(offline);
+
+      }, (error) => {
+        console.error("Error fetching global chat:", error);
+        setLoadError('Live feed is temporarily unavailable. Showing cached messages.');
+        setIsLoading(false);
       });
-
-      const reversedMsgs = fetchedMessages.reverse();
-      persistMessages(reversedMsgs);
-      setLoadError('');
-      setIsLoading(false);
-
-      // Play sound on new incoming message
-      if (previousMessagesLength.current > 0 && reversedMsgs.length > previousMessagesLength.current) {
-        const lastMsg = reversedMsgs[reversedMsgs.length - 1];
-        if (lastMsg && (!user || lastMsg.uid !== user.id)) {
-          playSound('message');
-        }
-      }
-      previousMessagesLength.current = reversedMsgs.length;
-
-      // Sort members: online (last seen < 10min) vs offline
-      const now = new Date();
-      const online = [];
-      const offline = [];
-      Array.from(uniqueUsers.values()).forEach(u => {
-        const diffMinutes = (now - u.lastSeen) / 1000 / 60;
-        if (diffMinutes < 10) online.push(u);
-        else offline.push(u);
-      });
-      setOnlineMembers(online);
-      setOfflineMembers(offline);
-
-    }, (error) => {
-      console.error("Error fetching global chat:", error);
+    } catch (err) {
+      console.error("Failed to attach GlobalChat snapshot:", err);
       setLoadError('Live feed is temporarily unavailable. Showing cached messages.');
       setIsLoading(false);
-    });
+    }
 
     const timeout = setTimeout(() => {
       setIsLoading(false);
