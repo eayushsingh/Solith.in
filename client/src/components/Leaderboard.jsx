@@ -151,8 +151,15 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
       handleFallback('Firebase connection failed. Check your config.');
     }
 
+    const handleOnline = () => {
+      console.log('Network restored, refreshing leaderboard data...');
+      handleFallback('Network reconnected.');
+    };
+    window.addEventListener('online', handleOnline);
+
     return () => {
       isSubscribed = false;
+      window.removeEventListener('online', handleOnline);
       if (typeof unsubscribe === 'function') unsubscribe();
     };
   }, [activeTab]);
