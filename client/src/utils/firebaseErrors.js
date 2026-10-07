@@ -46,3 +46,13 @@ export function parseFirebaseError(err) {
     retryable: true
   };
 }
+
+export function logLeaderboardEvent(eventName, payload = {}) {
+  try {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Telemetry][Leaderboard] ${eventName}:`, payload);
+    }
+  } catch (e) {
+    // Ignore telemetry errors
+  }
+}
