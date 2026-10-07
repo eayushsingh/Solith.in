@@ -177,6 +177,25 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
     return <span className="font-mono text-[#555861] w-5 text-center font-bold">{index + 1}</span>;
   };
 
+  const exportLeaderboardCSV = () => {
+    if (!leaders || leaders.length === 0) return;
+    const headers = ["Rank", "Name", "Total XP", "Talk Time (Mins)"];
+    const rows = leaders.map((l, idx) => [
+      idx + 1,
+      `"${(l.name || 'User').replace(/"/g, '""')}"`,
+      l.xp || 0,
+      formatMinutes(l.dailyTalkTimeVal || l.weeklyTalkTimeVal || l.monthlyTalkTimeVal || l.allTimeTalkTimeVal)
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `solith_leaderboard_${activeTab}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const formatMinutes = (seconds) => {
     const mins = Math.floor((seconds || 0) / 60);
     return mins > 0 ? mins.toLocaleString() : "0";
