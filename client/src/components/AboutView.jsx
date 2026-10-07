@@ -4,6 +4,14 @@ import { Meteors } from './Meteors';
 
 export default function AboutView({ onBack, onNavigate }) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
+
+  const faqs = [
+    { q: "Is solith.in completely free to use?", a: "Yes! Creating an account, joining public voice rooms, tracking XP, and messaging other language learners is 100% free." },
+    { q: "How is my voice privacy protected?", a: "All audio is streamed directly using encrypted WebRTC protocol. Voice conversations are never recorded or stored on our servers." },
+    { q: "How does the XP and Streaks system work?", a: "You earn 1 XP for every 1.25 minutes you spend talking in active voice rooms. Maintaining daily talk time builds your streak!" },
+    { q: "What should I do if a user violates community guidelines?", a: "Every voice room includes quick reporting tools. Click the Report icon or report a profile directly to alert our moderation team." }
+  ];
 
   return (
     <div className="w-full min-h-[100dvh] bg-[#090A0F] relative overflow-x-hidden text-white flex flex-col items-center">
@@ -119,6 +127,36 @@ export default function AboutView({ onBack, onNavigate }) {
               <h4 className="font-bold text-white text-[15px] mb-1">Gamified Hall of Fame</h4>
               <p className="text-[#888A92] text-[13px]">Track active minutes spoken and win monthly Premium Subscriptions.</p>
             </div>
+          </div>
+        </div>
+
+        {/* FAQ Accordion Section */}
+        <div className="mb-12">
+          <div className="flex items-center gap-2 mb-6">
+            <HelpCircle className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-[22px] font-bold text-white tracking-tight">Frequently Asked Questions</h2>
+          </div>
+
+          <div className="space-y-3">
+            {faqs.map((faq, idx) => (
+              <div 
+                key={idx} 
+                className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl overflow-hidden transition-all"
+              >
+                <button
+                  onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                  className="w-full p-5 flex items-center justify-between text-left hover:bg-[#12141C] transition-colors"
+                >
+                  <span className="font-bold text-white text-[15px]">{faq.q}</span>
+                  <ChevronDown className={`w-4 h-4 text-[#888A92] transition-transform ${openFaqIndex === idx ? 'rotate-180 text-[#3B82F6]' : ''}`} />
+                </button>
+                {openFaqIndex === idx && (
+                  <div className="px-5 pb-5 text-[#888A92] text-[14px] leading-relaxed border-t border-[#1E212B]/50 pt-3">
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
