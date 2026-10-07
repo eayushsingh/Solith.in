@@ -185,6 +185,24 @@ export default function AboutView({ onBack, onNavigate }) {
             ))}
           </div>
         </div>
+
+        {/* Tech Stack & Architecture Section */}
+        <div className="mb-12 border-t border-[#1E212B] pt-10">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-5 h-5 text-blue-400" />
+            <h2 className="text-[20px] font-bold text-white tracking-tight">Built For Low-Latency Audio</h2>
+          </div>
+          <p className="text-[#888A92] text-[14px] leading-relaxed mb-6">
+            solith.in is powered by modern real-time WebRTC media servers (LiveKit), WebSockets, React 18, and Firebase Firestore to guarantee sub-100ms audio latency globally.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="px-3 py-1 rounded-full bg-[#12141C] border border-[#1E212B] text-[12px] font-mono text-[#888A92]">WebRTC Media Streaming</span>
+            <span className="px-3 py-1 rounded-full bg-[#12141C] border border-[#1E212B] text-[12px] font-mono text-[#888A92]">React 18 + Vite</span>
+            <span className="px-3 py-1 rounded-full bg-[#12141C] border border-[#1E212B] text-[12px] font-mono text-[#888A92]">Node.js + Express</span>
+            <span className="px-3 py-1 rounded-full bg-[#12141C] border border-[#1E212B] text-[12px] font-mono text-[#888A92]">Firebase Firestore</span>
+            <span className="px-3 py-1 rounded-full bg-[#12141C] border border-[#1E212B] text-[12px] font-mono text-[#888A92]">Socket.io Realtime Sync</span>
+          </div>
+        </div>
       </div>
     </div>
   );
