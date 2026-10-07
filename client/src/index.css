@@ -52,6 +52,9 @@ html {
   overscroll-behavior: none;
   overscroll-behavior-y: none;
   touch-action: manipulation;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 
