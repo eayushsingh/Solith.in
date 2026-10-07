@@ -16,22 +16,34 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
       console.warn("Firebase connection timeout in CommunityFeed. Please make sure the Cloud Firestore API is enabled in your Firebase project.");
     }, 15000);
 
-    // Listen to the last 100 posts in real-time
+    const cached = localStorage.getItem('solith_community_posts');
+    if (cached) {
+      try { setPosts(JSON.parse(cached)); } catch(e) {}
+    }
+
     const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(100));
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    let unsubscribe = () => {};
+    try {
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        clearTimeout(timeout);
+        const list = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setPosts(list);
+        try { localStorage.setItem('solith_community_posts', JSON.stringify(list)); } catch(e) {}
+        setLoading(false);
+      }, (error) => {
+        clearTimeout(timeout);
+        console.error("Failed to load community feed:", error);
+        setLoading(false);
+      });
+    } catch (err) {
       clearTimeout(timeout);
-      const list = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setPosts(list);
+      console.error("Failed to attach CommunityFeed snapshot:", err);
       setLoading(false);
-    }, (error) => {
-      clearTimeout(timeout);
-      console.error("Failed to load community feed:", error);
-      setLoading(false);
-    });
+    }
 
     return () => {
       clearTimeout(timeout);
