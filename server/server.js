@@ -1346,6 +1346,11 @@ app.get('/api/leaderboard', async (req, res) => {
   }
 });
 
+app.get('/api/users/leaderboard', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  res.redirect(307, `/api/leaderboard${query ? '?' + query : ''}`);
+});
+
 // ─── GET ALL USERS (for Social "All" tab) ────────────────────────────────────
 app.get('/api/users/all', async (req, res) => {
   const adminInstance = initFirebaseAdmin();
