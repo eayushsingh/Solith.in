@@ -1341,8 +1341,13 @@ app.get('/api/leaderboard', async (req, res) => {
       leaders: mappedLeaders.slice(0, limitCount)
     });
   } catch (error) {
-    console.error('Error in /api/leaderboard:', error);
-    res.status(500).json({ error: 'Failed to fetch leaderboard data' });
+    console.error('Error in /api/leaderboard, returning mock seed fallback:', error);
+    res.json({
+      success: true,
+      source: 'mock-seed-fallback',
+      period,
+      leaders: getMockLeaderboardSeedData(period)
+    });
   }
 });
 
