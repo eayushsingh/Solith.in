@@ -1364,12 +1364,17 @@ app.get('/api/leaderboard', async (req, res) => {
       mappedLeaders.sort((a, b) => b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
     }
 
+    const rankedLeaders = mappedLeaders.slice(0, limitCount).map((l, idx) => ({
+      ...l,
+      rank: idx + 1
+    }));
+
     res.json({
       success: true,
       source: 'firestore-admin',
       period,
       totalCount: mappedLeaders.length,
-      leaders: mappedLeaders.slice(0, limitCount)
+      leaders: rankedLeaders
     });
   } catch (error) {
     console.error('Error in /api/leaderboard Firestore query:', error);
