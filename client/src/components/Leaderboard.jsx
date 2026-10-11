@@ -15,6 +15,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(25);
   const [selectedLanguage, setSelectedLanguage] = useState('All');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const CACHE_KEY_PREFIX = 'solith_leaderboard_cache_';
 
@@ -193,7 +194,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
       window.removeEventListener('online', handleOnline);
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, [activeTab]);
+  }, [activeTab, refreshTrigger]);
 
   const userRankIndex = leaders.findIndex(l => l.id === user?.id);
   const currentUserInTop50 = userRankIndex !== -1;
@@ -343,7 +344,10 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
               <span>Offline / Offline Mode Active — Displaying cached rankings</span>
             </div>
             <button 
-              onClick={() => setActiveTab(t => t)}
+              onClick={() => {
+                setLoading(true);
+                setRefreshTrigger(v => v + 1);
+              }}
               className="text-[#60A5FA] hover:underline font-bold"
             >
               Re-sync
