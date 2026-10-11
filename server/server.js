@@ -1310,16 +1310,32 @@ app.get('/api/leaderboard', async (req, res) => {
       const isDailyCurrent = u.dailyXpId === currentDayId;
       const isWeeklyCurrent = u.weeklyXpId === currentWeekId;
       const isMonthlyCurrent = u.monthlyXpId === currentMonthId;
+
+      const dailyTalk = isDailyCurrent ? (u.dailyTalkTimeSeconds ?? ((u.dailyXp || 0) / 1.25)) : 0;
+      const weeklyTalk = isWeeklyCurrent ? (u.weeklyTalkTimeSeconds ?? ((u.weeklyXp || 0) / 1.25)) : 0;
+      const monthlyTalk = isMonthlyCurrent ? (u.monthlyTalkTimeSeconds ?? ((u.monthlyXp || 0) / 1.25)) : 0;
+      const allTimeTalk = u.talkTimeSeconds ?? ((u.xp || 0) / 1.25);
+
       return {
-        ...u,
+        id: u.id,
+        name: u.name || u.displayName || 'Anonymous Learner',
+        email: u.email || '',
+        photoUrl: u.photoUrl || '',
+        color: u.color || '#3B82F6',
+        emoji: u.emoji || '🌟',
+        streakDays: u.streak || 1,
+        isPremium: !!u.isPremium,
+        role: u.role || 'user',
+        profileAnimation: u.profileAnimation || 'none',
         dailyXpVal: isDailyCurrent ? (u.dailyXp || 0) : 0,
         weeklyXpVal: isWeeklyCurrent ? (u.weeklyXp || 0) : 0,
         monthlyXpVal: isMonthlyCurrent ? (u.monthlyXp || 0) : 0,
         allTimeXpVal: u.xp || 0,
-        dailyTalkTimeVal: isDailyCurrent ? (u.dailyTalkTimeSeconds ?? ((u.dailyXp || 0) / 1.25)) : 0,
-        weeklyTalkTimeVal: isWeeklyCurrent ? (u.weeklyTalkTimeSeconds ?? ((u.weeklyXp || 0) / 1.25)) : 0,
-        monthlyTalkTimeVal: isMonthlyCurrent ? (u.monthlyTalkTimeSeconds ?? ((u.monthlyXp || 0) / 1.25)) : 0,
-        allTimeTalkTimeVal: u.talkTimeSeconds ?? ((u.xp || 0) / 1.25)
+        dailyTalkTimeVal: dailyTalk,
+        weeklyTalkTimeVal: weeklyTalk,
+        monthlyTalkTimeVal: monthlyTalk,
+        allTimeTalkTimeVal: allTimeTalk,
+        talkTimeVal: period === 'daily' ? dailyTalk : period === 'weekly' ? weeklyTalk : period === 'monthly' ? monthlyTalk : allTimeTalk
       };
     });
 
