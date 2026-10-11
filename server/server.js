@@ -1465,13 +1465,17 @@ app.get('/api/users/profiles', async (req, res) => {
         const data = doc.data();
         return {
           id: doc.id,
-          name: data.name || 'Unknown',
+          name: data.name || data.displayName || 'Unknown Learner',
           photoUrl: data.photoUrl || '',
           xp: data.xp || 0,
+          streak: data.streak || 1,
+          color: data.color || '#3B82F6',
+          emoji: data.emoji || '👤',
           isPremium: !!data.isPremium,
           role: data.role || 'user',
           profileAnimation: data.profileAnimation || 'none',
-          groupAnimation: data.groupAnimation || 'none'
+          groupAnimation: data.groupAnimation || 'none',
+          followersCount: Array.isArray(data.followers) ? data.followers.length : 0
         };
       });
 
