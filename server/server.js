@@ -1420,9 +1420,18 @@ app.get('/api/users/all', async (req, res) => {
       const data = doc.data();
       return {
         id: doc.id,
-        name: data.name || 'Unknown',
+        name: data.name || data.displayName || 'Unknown Learner',
         photoUrl: data.photoUrl || '',
-        xp: data.xp || 0
+        xp: data.xp || 0,
+        talkTimeSeconds: data.talkTimeSeconds || 0,
+        streak: data.streak || 1,
+        color: data.color || '#3B82F6',
+        emoji: data.emoji || '👤',
+        isPremium: !!data.isPremium,
+        role: data.role || 'user',
+        profileAnimation: data.profileAnimation || 'none',
+        followersCount: Array.isArray(data.followers) ? data.followers.length : 0,
+        followingCount: Array.isArray(data.following) ? data.following.length : 0
       };
     });
     res.json({ users });
