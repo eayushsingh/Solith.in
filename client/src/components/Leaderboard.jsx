@@ -400,6 +400,12 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                       ? 'No active speaking time this month yet. Start practicing!'
                       : 'No users have tracked time yet.'}
                   </p>
+                  <button
+                    onClick={onBack}
+                    className="mt-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-[13px] shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+                  >
+                    <span>Start Speaking in a Room</span>
+                  </button>
                 </div>
               ) : (
                 leaders.map((leader, index) => {
