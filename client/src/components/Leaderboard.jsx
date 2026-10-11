@@ -467,6 +467,9 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                           <span className={`font-bold text-[16px] truncate tracking-tight ${index === 0 ? 'text-amber-200' : index === 1 ? 'text-slate-100' : index === 2 ? 'text-amber-300' : 'text-white'}`}>{leader.name}</span>
+                          {leader.isPremium && (
+                            <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" title="Premium Member" />
+                          )}
                           {badgeTag}
                           {leader.id === user?.id && (
                             <span className="bg-[#212C45] border border-[#2A3B5C] text-[#60A5FA] text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-[6px]">You</span>
@@ -475,7 +478,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                         <div className="text-[#555861] text-[13px] font-medium mt-1 flex items-center gap-2">
                           <span>{activeTab === 'allTime' ? 'Legend' : (activeTab === 'monthly' ? 'Dedicated' : 'Active Speaker')}</span>
                           <span>•</span>
-                          <span className="text-amber-400/90 text-[12px] font-semibold">🔥 {leader.streak || leader.streakDays || Math.max(1, Math.min(30, Math.floor((leader.xp || 10) / 50)))}d streak</span>
+                          <span className="text-amber-400/90 text-[12px] font-semibold">🔥 {leader.streak || leader.streakDays || 1}d streak</span>
                         </div>
                       </div>
                       
