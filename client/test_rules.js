@@ -53,6 +53,15 @@ async function runTests() {
     console.log("❌ Test 3 FAILED! Read was denied:", error.message);
   }
 
+  // Test 4: Verify querying users collection for leaderboard
+  try {
+    console.log("\nTest 4: Attempting to query users collection for leaderboard...");
+    const snap = await getDocs(collection(db, 'users'));
+    console.log(`✅ Test 4 PASSED! Successfully retrieved ${snap.size} user profiles.`);
+  } catch (error) {
+    console.log("❌ Test 4 FAILED! Query was denied:", error.message);
+  }
+
   console.log("\nTests complete. Exiting...");
   process.exit(0);
 }
