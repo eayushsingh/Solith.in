@@ -327,7 +327,16 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
           <div className="bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-4 flex flex-col justify-center">
             <span className="text-[#555861] text-[11px] font-bold uppercase tracking-wider">Total Practice</span>
             <span className="text-[#60A5FA] text-[20px] font-bold mt-1">
-              {formatMinutes(leaders.reduce((sum, l) => sum + (l.dailyTalkTimeVal || l.weeklyTalkTimeVal || l.monthlyTalkTimeVal || l.allTimeTalkTimeVal || 0), 0))} mins
+              {formatMinutes(leaders.reduce((sum, l) => {
+                const val = activeTab === 'daily' 
+                  ? (l.dailyTalkTimeVal || 0) 
+                  : activeTab === 'weekly' 
+                  ? (l.weeklyTalkTimeVal || 0) 
+                  : activeTab === 'monthly' 
+                  ? (l.monthlyTalkTimeVal || 0) 
+                  : (l.allTimeTalkTimeVal || 0);
+                return sum + val;
+              }, 0))} mins
             </span>
           </div>
           <div className="col-span-2 sm:col-span-1 bg-[#0C0E14] border border-[#1E212B] rounded-2xl p-4 flex flex-col justify-center">
