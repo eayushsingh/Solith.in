@@ -1354,17 +1354,31 @@ app.get('/api/leaderboard', async (req, res) => {
       };
     });
 
-    if (period === 'daily') {
-      mappedLeaders.sort((a, b) => b.dailyTalkTimeVal - a.dailyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
-    } else if (period === 'weekly') {
-      mappedLeaders.sort((a, b) => b.weeklyTalkTimeVal - a.weeklyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
-    } else if (period === 'monthly') {
-      mappedLeaders.sort((a, b) => b.monthlyTalkTimeVal - a.monthlyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
-    } else {
-      mappedLeaders.sort((a, b) => b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    const searchQuery = (req.query.search || '').trim().toLowerCase();
+    const langFilter = (req.query.language || req.query.lang || 'All').trim();
+
+    let filteredLeaders = mappedLeaders;
+    if (searchQuery) {
+      filteredLeaders = filteredLeaders.filter(u => (u.name || '').toLowerCase().includes(searchQuery));
+    }
+    if (langFilter && langFilter !== 'All') {
+      filteredLeaders = filteredLeaders.filter(u => {
+        const userLang = (u.learningLanguage || u.targetLanguage || u.language || '').toLowerCase();
+        return userLang === langFilter.toLowerCase();
+      });
     }
 
-    const rankedLeaders = mappedLeaders.slice(0, limitCount).map((l, idx) => ({
+    if (period === 'daily') {
+      filteredLeaders.sort((a, b) => b.dailyTalkTimeVal - a.dailyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    } else if (period === 'weekly') {
+      filteredLeaders.sort((a, b) => b.weeklyTalkTimeVal - a.weeklyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    } else if (period === 'monthly') {
+      filteredLeaders.sort((a, b) => b.monthlyTalkTimeVal - a.monthlyTalkTimeVal || b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    } else {
+      filteredLeaders.sort((a, b) => b.allTimeTalkTimeVal - a.allTimeTalkTimeVal || (a.name || '').localeCompare(b.name || ''));
+    }
+
+    const rankedLeaders = filteredLeaders.slice(0, limitCount).map((l, idx) => ({
       ...l,
       rank: idx + 1
     }));
@@ -1373,7 +1387,7 @@ app.get('/api/leaderboard', async (req, res) => {
       success: true,
       source: 'firestore-admin',
       period,
-      totalCount: mappedLeaders.length,
+      totalCount: filteredLeaders.length,
       leaders: rankedLeaders
     });
   } catch (error) {
