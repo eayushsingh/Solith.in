@@ -12,8 +12,8 @@ service cloud.firestore {
     
     // --- USERS COLLECTION ---
     match /users/{userId} {
-      // Anyone authenticated can read basic profiles
-      allow read: if isAuthenticated();
+      // Public profiles and leaderboard rankings are readable by all learners (including guests)
+      allow read: if true;
       
       // Allow users to initialize their profile, including streak and initial xp
       allow create: if isAuthenticated() && request.auth.uid == userId
