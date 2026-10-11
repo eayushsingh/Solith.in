@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCircle, RefreshCw, Crown, Activity } from 'lucide-react';
+import { Award, Trophy, Medal, ChevronLeft, Calendar, BarChart3, Globe, AlertCircle, RefreshCw, Crown, Activity, Search } from 'lucide-react';
 import { db, collection, onSnapshot } from '../firebase';
 import { Meteors } from './Meteors';
 import { mapAndSortLeaders, formatMinutes } from '../utils/leaderboardUtils';
@@ -196,7 +196,13 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
     };
   }, [activeTab, refreshTrigger]);
 
-  const userRankIndex = leaders.findIndex(l => l.id === user?.id);
+  const displayedLeaders = leaders.filter(l => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (l.name || '').toLowerCase().includes(q);
+  });
+
+  const userRankIndex = displayedLeaders.findIndex(l => l.id === user?.id);
   const currentUserInTop50 = userRankIndex !== -1;
 
   const renderRankIcon = (index) => {
@@ -364,6 +370,26 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
           </div>
         )}
 
+        {/* Real User Search & Export Controls */}
+        <div className="mb-4 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 text-[#888A92] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search learners by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-[#0C0E14] border border-[#1E212B] rounded-xl text-[13px] text-white placeholder-[#555861] focus:outline-none focus:border-[#3B82F6] transition-colors"
+            />
+          </div>
+          <button
+            onClick={exportLeaderboardCSV}
+            className="px-4 py-2 rounded-xl bg-[#12141C] border border-[#1E212B] hover:border-[#2A2E3B] text-[#888A92] hover:text-white text-[12px] font-bold transition-all shrink-0"
+          >
+            Export CSV
+          </button>
+        </div>
+
         <div className="bg-[#0C0E14] border border-[#1E212B] rounded-[24px] overflow-hidden shadow-2xl relative min-w-0">
         
         {loading ? (
@@ -394,14 +420,18 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
         ) : (
           <>
             <div className="divide-y divide-[#1E212B]">
-              {leaders.length === 0 ? (
+              {displayedLeaders.length === 0 ? (
                 <div className="py-24 flex flex-col items-center justify-center gap-4 text-center px-8">
                   <div className="w-16 h-16 rounded-2xl bg-[#12141C] border border-[#1E212B] flex items-center justify-center mb-2 shadow-inner">
                     <Trophy className="w-8 h-8 text-[#555861]" />
                   </div>
-                  <h3 className="text-[17px] font-bold text-white">No active speakers yet</h3>
+                  <h3 className="text-[17px] font-bold text-white">
+                    {searchQuery ? 'No matching learners found' : 'No active speakers yet'}
+                  </h3>
                   <p className="text-[#888A92] text-[14px] max-w-sm leading-relaxed mt-1">
-                    {activeTab === 'daily'
+                    {searchQuery
+                      ? `No learners found matching "${searchQuery}". Try a different name.`
+                      : activeTab === 'daily'
                       ? 'No time spent talking today. Join a voice room to lead the daily board!'
                       : activeTab === 'weekly'
                       ? 'No one has spent time talking this week. Join a voice room to rank up!'
@@ -417,7 +447,7 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
                   </button>
                 </div>
               ) : (
-                leaders.map((leader, index) => {
+                displayedLeaders.map((leader, index) => {
                   let topStyling = 'border-l-4 border-transparent hover:bg-[#12141C]';
                   let badgeTag = null;
                   if (index === 0) {
