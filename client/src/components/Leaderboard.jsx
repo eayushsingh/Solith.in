@@ -71,6 +71,25 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
     }
   };
 
+  useEffect(() => {
+    const initialCache = getCachedLeaderboard(activeTab);
+    if (initialCache) {
+      setLeaders(initialCache);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+    setError('');
+    let isSubscribed = true;
+
+    // Immediately fetch real data from backend API
+    fetchLeaderboardFromAPI(activeTab).then(success => {
+      if (isSubscribed && success) {
+        setIsUsingFallback(false);
+        setLoading(false);
+      }
+    });
+
     const handleFallback = async (fallbackErr) => {
       const success = await fetchLeaderboardFromAPI(activeTab);
       if (!isSubscribed) return;
