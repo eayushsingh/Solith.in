@@ -94,18 +94,15 @@ export async function verifyToken(req, res, next) {
       return res.status(503).json({ error: 'Authentication service unavailable' });
     }
 
-    console.warn('Bypassing verifyToken - no Firebase Admin SDK');
+    console.warn('Firebase Admin SDK unavailable; falling back to decoded JWT verification.');
     if (idToken) {
       const payload = decodeJwtPayload(idToken);
-      if (payload) {
-        req.user = { ...payload, uid: payload.user_id || payload.uid || 'local-dev-user' };
-      } else {
-        req.user = { uid: 'local-dev-user', email: 'ayushfun01@gmail.com', name: 'Local Admin' };
+      if (payload && (payload.user_id || payload.uid)) {
+        req.user = { ...payload, uid: payload.user_id || payload.uid };
+        return next();
       }
-    } else {
-      req.user = { uid: 'local-dev-user', email: 'ayushfun01@gmail.com', name: 'Local Admin' };
     }
-    return next();
+    return res.status(401).json({ error: 'Missing or invalid token (Firebase Admin unavailable)' });
   }
 
   if (!idToken) {
