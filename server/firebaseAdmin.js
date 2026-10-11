@@ -55,14 +55,24 @@ export const initFirebaseAdmin = () => {
         console.warn(chalk.yellow("⚠ FIREBASE_SERVICE_ACCOUNT_JSON is not set and firebase-service-account.json file not found across searched paths."));
         return null;
       }
-      serviceAccount = JSON.parse(serviceAccountJson);
+      try {
+        serviceAccount = JSON.parse(serviceAccountJson);
+      } catch (jsonErr) {
+        console.error(chalk.red("Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON environment variable:"), jsonErr.message);
+        return null;
+      }
+    }
+
+    if (!serviceAccount || !serviceAccount.project_id || !serviceAccount.client_email) {
+      console.warn(chalk.yellow("⚠ Service account credentials incomplete (missing project_id or client_email)."));
+      return null;
     }
 
     adminInstance = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
     
-    console.log(chalk.green.bold("✓ Firebase Admin initialized successfully."));
+    console.log(chalk.green.bold(`✓ Firebase Admin initialized successfully for project: ${serviceAccount.project_id}`));
     return adminInstance;
   } catch (error) {
     console.error(chalk.red.bold("✗ Failed to initialize Firebase Admin:"), error.message);
