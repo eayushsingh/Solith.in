@@ -550,6 +550,15 @@ const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
         newDailyTalkTime = data.dailyTalkTimeSeconds + secondsElapsed;
       }
 
+      const today = now.toDateString();
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      let newStreak = data.streak || 1;
+      if (data.lastActiveDay === yesterday) {
+        newStreak = (data.streak || 1) + 1;
+      } else if (data.lastActiveDay !== today) {
+        newStreak = 1;
+      }
+
       transaction.update(userRef, {
         xp: admin.firestore.FieldValue.increment(xpEarned),
         weeklyXp: newWeeklyXp,
@@ -561,7 +570,10 @@ const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
         talkTimeSeconds: admin.firestore.FieldValue.increment(secondsElapsed),
         weeklyTalkTimeSeconds: newWeeklyTalkTime,
         monthlyTalkTimeSeconds: newMonthlyTalkTime,
-        dailyTalkTimeSeconds: newDailyTalkTime
+        dailyTalkTimeSeconds: newDailyTalkTime,
+        streak: newStreak,
+        lastActiveDay: today,
+        lastActiveTimestamp: admin.firestore.FieldValue.serverTimestamp()
       });
     });
 
