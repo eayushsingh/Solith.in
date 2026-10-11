@@ -1353,6 +1353,7 @@ app.get('/api/leaderboard', async (req, res) => {
       success: true,
       source: 'firestore-admin',
       period,
+      totalCount: mappedLeaders.length,
       leaders: mappedLeaders.slice(0, limitCount)
     });
   } catch (error) {
