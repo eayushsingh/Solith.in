@@ -502,9 +502,11 @@ export function getISOPeriodIds(now = new Date()) {
 const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
   if (!userId || xpEarned <= 0) return;
 
+  const effectiveSeconds = secondsElapsed > 0 ? secondsElapsed : Math.round((xpEarned / 1.25) * 60);
+
   const adminInstance = initFirebaseAdmin();
   if (!adminInstance) {
-    console.warn(`Mock: Awarded ${xpEarned} XP to user ${userId}`);
+    console.warn(`Awarded ${xpEarned} XP (${effectiveSeconds}s) to user ${userId}`);
     return;
   }
 
@@ -535,19 +537,19 @@ const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
         newDailyXp = data.dailyXp + xpEarned;
       }
 
-      let newWeeklyTalkTime = secondsElapsed;
+      let newWeeklyTalkTime = effectiveSeconds;
       if (data.weeklyXpId === currentWeekId && typeof data.weeklyTalkTimeSeconds === 'number') {
-        newWeeklyTalkTime = data.weeklyTalkTimeSeconds + secondsElapsed;
+        newWeeklyTalkTime = data.weeklyTalkTimeSeconds + effectiveSeconds;
       }
 
-      let newMonthlyTalkTime = secondsElapsed;
+      let newMonthlyTalkTime = effectiveSeconds;
       if (data.monthlyXpId === currentMonthId && typeof data.monthlyTalkTimeSeconds === 'number') {
-        newMonthlyTalkTime = data.monthlyTalkTimeSeconds + secondsElapsed;
+        newMonthlyTalkTime = data.monthlyTalkTimeSeconds + effectiveSeconds;
       }
 
-      let newDailyTalkTime = secondsElapsed;
+      let newDailyTalkTime = effectiveSeconds;
       if (data.dailyXpId === currentDayId && typeof data.dailyTalkTimeSeconds === 'number') {
-        newDailyTalkTime = data.dailyTalkTimeSeconds + secondsElapsed;
+        newDailyTalkTime = data.dailyTalkTimeSeconds + effectiveSeconds;
       }
 
       const today = now.toDateString();
@@ -567,7 +569,7 @@ const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
         monthlyXpId: currentMonthId,
         dailyXp: newDailyXp,
         dailyXpId: currentDayId,
-        talkTimeSeconds: admin.firestore.FieldValue.increment(secondsElapsed),
+        talkTimeSeconds: admin.firestore.FieldValue.increment(effectiveSeconds),
         weeklyTalkTimeSeconds: newWeeklyTalkTime,
         monthlyTalkTimeSeconds: newMonthlyTalkTime,
         dailyTalkTimeSeconds: newDailyTalkTime,
