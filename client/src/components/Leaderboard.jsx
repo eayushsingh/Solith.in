@@ -24,6 +24,16 @@ export default function Leaderboard({ onBack, user, openUserProfile }) {
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.data) && parsed.data.length > 0) {
+        // Migration: detect and purge stale legacy dummy entries
+        const hasLegacyMock = parsed.data.some(d => 
+          (d.id && (d.id.startsWith('def_') || d.id.startsWith('mock_'))) ||
+          d.name === 'Sophia Chen' || 
+          d.name === 'Alexander Wright'
+        );
+        if (hasLegacyMock) {
+          localStorage.removeItem(CACHE_KEY_PREFIX + tab);
+          return null;
+        }
         return parsed.data;
       }
     } catch (e) {
