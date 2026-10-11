@@ -1,7 +1,11 @@
 import admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import chalk from 'chalk';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let adminInstance = null;
 const isProduction = process.env.NODE_ENV === 'production';
@@ -25,16 +29,30 @@ export const initFirebaseAdmin = () => {
 
   try {
     let serviceAccount;
-    const serviceAccountPath = path.resolve(process.cwd(), 'firebase-service-account.json');
+    const candidatePaths = [
+      process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
+      path.resolve(__dirname, 'firebase-service-account.json'),
+      path.resolve(process.cwd(), 'firebase-service-account.json'),
+      path.resolve(process.cwd(), 'server', 'firebase-service-account.json'),
+      path.resolve(__dirname, '..', 'firebase-service-account.json')
+    ].filter(Boolean);
 
-    if (fs.existsSync(serviceAccountPath)) {
-      console.log(chalk.blue('Found firebase-service-account.json file. Using it for Firebase Admin...'));
-      const fileContent = fs.readFileSync(serviceAccountPath, 'utf-8');
+    let resolvedPath = null;
+    for (const candidate of candidatePaths) {
+      if (fs.existsSync(candidate)) {
+        resolvedPath = candidate;
+        break;
+      }
+    }
+
+    if (resolvedPath) {
+      console.log(chalk.blue(`Found firebase-service-account.json at ${resolvedPath}. Using it for Firebase Admin...`));
+      const fileContent = fs.readFileSync(resolvedPath, 'utf-8');
       serviceAccount = JSON.parse(fileContent);
     } else {
       const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
       if (!serviceAccountJson) {
-        console.warn(chalk.yellow("⚠ FIREBASE_SERVICE_ACCOUNT_JSON is not set and firebase-service-account.json file not found. Firebase Admin will not run. Using mock data."));
+        console.warn(chalk.yellow("⚠ FIREBASE_SERVICE_ACCOUNT_JSON is not set and firebase-service-account.json file not found across searched paths."));
         return null;
       }
       serviceAccount = JSON.parse(serviceAccountJson);
