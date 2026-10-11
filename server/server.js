@@ -607,6 +607,21 @@ setInterval(syncWithLiveKit, 15000); // every 15s as a safety net
 // GET /api/health - Health check endpoint for Render
 app.get('/api/health', (req, res) => res.status(200).send('OK'));
 
+// GET /api/health/firestore - Verifies Firestore Admin live database connectivity
+app.get('/api/health/firestore', async (req, res) => {
+  const adminInstance = initFirebaseAdmin();
+  if (!adminInstance) {
+    return res.status(503).json({ status: 'unavailable', error: 'Firebase Admin not initialized' });
+  }
+  try {
+    const db = adminInstance.firestore();
+    const snap = await db.collection('users').limit(1).get();
+    res.json({ status: 'connected', activeUsersSample: snap.size });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
+  }
+});
+
 // GET /api/config - Returns configuration to the frontend
 app.get('/api/config', (req, res) => {
   if (!runtimeConfig.livekitApiKey || !runtimeConfig.livekitApiSecret) {
