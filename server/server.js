@@ -1283,6 +1283,13 @@ app.post('/api/users/:targetId/toggle-follow', verifyToken, async (req, res) => 
   }
 });
 
+// In-memory cache for raw Firestore users snapshot to prevent quota exhaustion
+const leaderboardUsersCache = {
+  data: null,
+  timestamp: 0,
+  ttlMs: 10000 // 10 seconds cache
+};
+
 // ─── GET LEADERBOARD (Real Firestore Data Endpoint) ──────────────────────
 app.get('/api/leaderboard', async (req, res) => {
   const period = req.query.period || 'daily';
@@ -1300,8 +1307,16 @@ app.get('/api/leaderboard', async (req, res) => {
 
   try {
     const db = adminInstance.firestore();
-    const snapshot = await db.collection('users').get();
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let data;
+    const nowMs = Date.now();
+    if (leaderboardUsersCache.data && (nowMs - leaderboardUsersCache.timestamp < leaderboardUsersCache.ttlMs)) {
+      data = leaderboardUsersCache.data;
+    } else {
+      const snapshot = await db.collection('users').get();
+      data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      leaderboardUsersCache.data = data;
+      leaderboardUsersCache.timestamp = nowMs;
+    }
 
     const now = new Date();
     const { currentDayId, currentWeekId, currentMonthId } = getISOPeriodIds(now);
