@@ -487,6 +487,18 @@ app.post('/api/bot-token', async (req, res) => {
   }
 });
 
+export function getISOPeriodIds(now = new Date()) {
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+  const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+  const currentDayId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
+  return { currentDayId, currentWeekId, currentMonthId };
+}
+
 const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
   if (!userId || xpEarned <= 0) return;
 
@@ -506,16 +518,7 @@ const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
 
       const data = doc.data();
       const now = new Date();
-      
-      // Get current week and month strings (e.g. "2023-W41", "2023-10")
-      // Simple ISO week calculation
-      const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-      const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
-      const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+      const { currentDayId, currentWeekId, currentMonthId } = getISOPeriodIds(now);
 
       let newWeeklyXp = xpEarned;
       if (data.weeklyXpId === currentWeekId && typeof data.weeklyXp === 'number') {
@@ -527,7 +530,6 @@ const awardUserXP = async (userId, xpEarned, secondsElapsed = 0) => {
         newMonthlyXp = data.monthlyXp + xpEarned;
       }
 
-      const currentDayId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
       let newDailyXp = xpEarned;
       if (data.dailyXpId === currentDayId && typeof data.dailyXp === 'number') {
         newDailyXp = data.dailyXp + xpEarned;
@@ -1302,14 +1304,7 @@ app.get('/api/leaderboard', async (req, res) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     const now = new Date();
-    const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    const currentWeekId = `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
-    const currentMonthId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}`;
-    const currentDayId = `${now.getUTCFullYear()}-${(now.getUTCMonth() + 1).toString().padStart(2, '0')}-${now.getUTCDate().toString().padStart(2, '0')}`;
+    const { currentDayId, currentWeekId, currentMonthId } = getISOPeriodIds(now);
 
     const mappedLeaders = data.map(u => {
       const isDailyCurrent = u.dailyXpId === currentDayId;
