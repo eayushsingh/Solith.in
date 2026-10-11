@@ -2,6 +2,8 @@ node_modules/
 client/node_modules/
 server/node_modules/
 server/firebase-service-account.json
+firebase-service-account.json
+**/firebase-service-account.json
 test-results/
 server/test-results/
 client/test-results/
