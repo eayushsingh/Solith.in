@@ -49,7 +49,33 @@ export function mapAndSortLeaders(users = [], activeTab = 'daily', now = new Dat
   return mappedLeaders;
 }
 
+export function safeNumber(val, defaultVal = 0) {
+  if (typeof val !== 'number' || isNaN(val)) return defaultVal;
+  return val;
+}
+
 export function formatMinutes(seconds) {
-  const mins = Math.floor((seconds || 0) / 60);
+  const safeSec = safeNumber(seconds, 0);
+  const mins = Math.floor(safeSec / 60);
   return mins > 0 ? mins.toLocaleString() : "0";
+}
+
+export function formatHoursAndMinutes(seconds) {
+  const safeSec = safeNumber(seconds, 0);
+  const totalMins = Math.floor(safeSec / 60);
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  if (hours > 0) {
+    return `${hours}h ${mins}m`;
+  }
+  return `${mins}m`;
+}
+
+export function calculateStreakTier(streak = 1) {
+  const s = safeNumber(streak, 1);
+  if (s >= 30) return { tier: 'Legend', color: '#F59E0B' };
+  if (s >= 14) return { tier: 'Diamond', color: '#3B82F6' };
+  if (s >= 7) return { tier: 'Gold', color: '#EAB308' };
+  if (s >= 3) return { tier: 'Silver', color: '#94A3B8' };
+  return { tier: 'Bronze', color: '#CD7F32' };
 }
