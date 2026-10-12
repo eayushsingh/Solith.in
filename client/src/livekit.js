@@ -45,10 +45,7 @@ export const LiveKitService = {
         color: local.color || '#0d94a8', 
         emoji: local.emoji || '👤',
         profileAnimation: local.profileAnimation || 'none'
-      },
-      { id: 'mock-user-1', name: 'Sophia', isLocal: false, muted: false, photoUrl: '', color: '#ff944d', emoji: '🦊', profileAnimation: 'none' },
-      { id: 'mock-user-2', name: 'Hiro', isLocal: false, muted: false, photoUrl: '', color: '#ffd11a', emoji: '🐼', profileAnimation: 'none' },
-      { id: 'mock-user-3', name: 'Elena', isLocal: false, muted: true, photoUrl: '', color: '#4da6ff', emoji: '🦁', profileAnimation: 'none' }
+      }
     ]);
   },
 
