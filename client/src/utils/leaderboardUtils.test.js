@@ -48,4 +48,25 @@ describe('leaderboardUtils Edge Cases', () => {
     expect(safeNumber(NaN, 10)).toBe(10);
     expect(safeNumber(undefined, 5)).toBe(5);
   });
+
+  test('mapAndSortLeaders correctly ranks realistic user dataset', () => {
+    const fixedNow = new Date('2026-10-12T12:00:00Z');
+    const { currentDayId } = getCurrentPeriodIds(fixedNow);
+
+    const testUsers = [
+      { id: '1', name: 'Ayush Singh', xp: 49623, talkTimeSeconds: 24420, dailyXpId: currentDayId, dailyTalkTimeSeconds: 3600 },
+      { id: '2', name: 'KLZ', xp: 24172, talkTimeSeconds: 19321, dailyXpId: currentDayId, dailyTalkTimeSeconds: 4200 },
+      { id: '3', name: 'Nax', xp: 11626, talkTimeSeconds: 9289, dailyXpId: '2026-09-01', dailyTalkTimeSeconds: 5000 }
+    ];
+
+    const dailySorted = mapAndSortLeaders(testUsers, 'daily', fixedNow);
+    expect(dailySorted[0].name).toBe('KLZ');
+    expect(dailySorted[1].name).toBe('Ayush Singh');
+    expect(dailySorted[2].name).toBe('Nax');
+
+    const allTimeSorted = mapAndSortLeaders(testUsers, 'allTime', fixedNow);
+    expect(allTimeSorted[0].name).toBe('Ayush Singh');
+    expect(allTimeSorted[1].name).toBe('KLZ');
+    expect(allTimeSorted[2].name).toBe('Nax');
+  });
 });
