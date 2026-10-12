@@ -48,15 +48,12 @@ To secure your backend, we need to tell it to only accept requests from your Ver
 4. Paste your Vercel URL (e.g., `https://solith-xxx.vercel.app`). *Make sure there is no trailing slash!*
 5. Click **Save Changes**. This will trigger a quick restart of your backend.
 
-### What to expect if you don't add Daily.co Keys
-If you skip adding `DAILY_API_KEY` and `DAILY_DOMAIN` during deployment, **the app will not crash**. 
-
-It will automatically fall back into **Demo Mode**. Real users visiting your Vercel URL will still be able to:
-- See the main lobby and UI
-- Create rooms (which will spawn mock Daily.co URLs)
-- Use real-time text chat using the Socket.IO backend
-- Interact with mock participants and the moderation UI (Kick, Mute, Report)
-
-However, they will **not** be able to hear or transmit real voice audio until you add your LiveKit credentials to the Render dashboard.
+### Real Production Data Architecture
+The application is fully synchronized with live production data:
+- **Leaderboards & User Stats**: Powered by Firestore with multi-path Firebase Admin discovery. Zero mock users (Sophia Chen, Alexander Wright, etc.) are injected; rankings reflect real registered learners (XP, talk time, and streaks).
+- **Graceful Live States**: Empty periods display clean waiting states rather than synthetic bots.
+- **Real Voice Rooms**: LiveKit and Socket.IO voice participant streams represent real connected speakers with media track visualizers.
+- **Global Chat & Community Feed**: Live Firestore streams with realtime subscriptions.
 
 Open to Contribute
+
