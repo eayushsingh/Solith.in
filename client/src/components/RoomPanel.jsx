@@ -1358,6 +1358,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                 currentUser={user}
                 onlineUserIds={onlineUserIds}
                 openUserProfile={openUserProfile}
+                API_URL={API_URL}
                 onDM={(id, profile) => {
                   setActiveDm({id, profile});
                   setMsgTab('direct');
@@ -1381,6 +1382,7 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                 currentUser={user}
                 onlineUserIds={onlineUserIds}
                 openUserProfile={openUserProfile}
+                API_URL={API_URL}
                 onDM={(id, profile) => {
                   setActiveDm({id, profile});
                   setMsgTab('direct');
