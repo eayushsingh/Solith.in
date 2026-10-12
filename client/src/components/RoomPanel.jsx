@@ -787,7 +787,13 @@ ${messagesText || '*No text messages were exchanged during this session.*'}
                   </div>
                 </div>
               );
-            })}
+            {(!participants || participants.filter(p => p && p.id).length <= 1) && (
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-dashed border-white/10 flex flex-col items-center justify-center text-center gap-2 mt-2">
+                <span className="text-xl animate-pulse">⏳</span>
+                <span className="text-xs font-bold text-white/80">Waiting for language partners</span>
+                <span className="text-[11px] text-white/40 max-w-[220px]">You are currently the only speaker in this room. Share the link or wait for others to join!</span>
+              </div>
+            )}
           </div>
         )}
 
