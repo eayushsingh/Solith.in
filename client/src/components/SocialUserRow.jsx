@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { db, doc, getDoc } from '../firebase';
 
-export default function SocialUserRow({ userId, currentUser, onDM, openUserProfile, onlineUserIds }) {
-  const [profile, setProfile] = useState(null);
+export default function SocialUserRow({ userId, userData, currentUser, onDM, openUserProfile, onlineUserIds, API_URL }) {
+  const [profile, setProfile] = useState(userData || null);
 
   useEffect(() => {
+    if (userData) {
+      setProfile(userData);
+      return;
+    }
     if (!userId) return;
+
+    let isMounted = true;
+
     if (db) {
       getDoc(doc(db, 'users', userId)).then(snap => {
-        if (snap.exists()) setProfile({ id: snap.id, ...snap.data() });
-        else fetchFallbackProfile(userId);
+        if (!isMounted) return;
+        if (snap.exists()) {
+          setProfile({ id: snap.id, ...snap.data() });
+        } else {
+          fetchFallbackProfile(userId);
+        }
       }).catch(err => {
+        if (!isMounted) return;
         console.warn('SocialUserRow getDoc error, trying API fallback:', err);
         fetchFallbackProfile(userId);
       });
@@ -19,20 +31,27 @@ export default function SocialUserRow({ userId, currentUser, onDM, openUserProfi
     }
 
     function fetchFallbackProfile(id) {
-      fetch(`/api/users/profiles?ids=${id}`)
+      const baseUrl = API_URL || (typeof window !== 'undefined' && window.__API_URL__) || '';
+      fetch(`${baseUrl}/api/users/profiles?ids=${id}`)
         .then(r => r.json())
         .then(data => {
+          if (!isMounted) return;
           if (data && data.profiles && data.profiles[0]) {
             setProfile(data.profiles[0]);
           } else {
-            setProfile({ id, name: 'Language Learner', xp: 100 });
+            setProfile({ id, name: 'Learner', xp: 0 });
           }
         })
         .catch(() => {
-          setProfile({ id, name: 'Language Learner', xp: 100 });
+          if (!isMounted) return;
+          setProfile({ id, name: 'Learner', xp: 0 });
         });
     }
-  }, [userId]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, userData, API_URL]);
 
   if (!profile || !currentUser || !currentUser.id) return null;
 
