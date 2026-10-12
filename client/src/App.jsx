@@ -948,14 +948,31 @@ export default function App() {
   // Fetch all users when Social panel opens on "All" or "Online" tab
   useEffect(() => {
     if (showSocialPanel && (socialTab === 'All' || socialTab === 'Online') && allSocialUsers.length === 0) {
+      const fetchFromFirestoreFallback = () => {
+        if (!db) return;
+        getDocs(query(collection(db, 'users'), orderBy('xp', 'desc'), limit(100)))
+          .then(snap => {
+            const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (list.length > 0) setAllSocialUsers(list);
+          })
+          .catch(e => console.warn('Fallback Firestore user query error:', e));
+      };
+
       fetch(`${API_URL}/api/users/all`)
         .then(res => res.json())
         .then(data => {
-          if (data.users) setAllSocialUsers(data.users);
+          if (data && data.users && data.users.length > 0) {
+            setAllSocialUsers(data.users);
+          } else {
+            fetchFromFirestoreFallback();
+          }
         })
-        .catch(err => console.error('Failed to fetch social users:', err));
+        .catch(err => {
+          console.warn('Failed to fetch social users from API, trying Firestore:', err);
+          fetchFromFirestoreFallback();
+        });
     }
-  }, [showSocialPanel, socialTab]);
+  }, [showSocialPanel, socialTab, allSocialUsers.length]);
 
 
   const saveDevSettings = async () => {
@@ -2772,8 +2789,10 @@ export default function App() {
                 <SocialUserRow
                   key={u.id}
                   userId={u.id}
+                  userData={u}
                   currentUser={user}
                   onlineUserIds={onlineUserIds}
+                  API_URL={API_URL}
                   openUserProfile={(id) => {
                     setShowSocialPanel(false);
                     openUserProfile(id);
@@ -2831,8 +2850,10 @@ export default function App() {
                 <SocialUserRow
                   key={u.id}
                   userId={u.id}
+                  userData={u}
                   currentUser={user}
                   onlineUserIds={onlineUserIds}
+                  API_URL={API_URL}
                   openUserProfile={(id) => {
                     setShowSocialPanel(false);
                     openUserProfile(id);
@@ -2854,24 +2875,29 @@ export default function App() {
                   You are not following anyone yet.
                 </div>
               );
-              return followingIds.slice(0, 20).map(followedId => (
-                <SocialUserRow
-                  key={followedId}
-                  userId={followedId}
-                  currentUser={user}
-                  onlineUserIds={onlineUserIds}
-                  openUserProfile={(id) => {
-                    setShowSocialPanel(false);
-                    openUserProfile(id);
-                  }}
-                  onDM={(id, profile) => {
-                    setActiveDm({ id, profile });
-                    setMsgTab('direct');
-                    setView('messages');
-                    setShowSocialPanel(false);
-                  }}
-                />
-              ));
+              return followingIds.slice(0, 20).map(followedId => {
+                const cachedUser = allSocialUsers.find(u => u.id === followedId);
+                return (
+                  <SocialUserRow
+                    key={followedId}
+                    userId={followedId}
+                    userData={cachedUser}
+                    currentUser={user}
+                    onlineUserIds={onlineUserIds}
+                    API_URL={API_URL}
+                    openUserProfile={(id) => {
+                      setShowSocialPanel(false);
+                      openUserProfile(id);
+                    }}
+                    onDM={(id, profile) => {
+                      setActiveDm({ id, profile });
+                      setMsgTab('direct');
+                      setView('messages');
+                      setShowSocialPanel(false);
+                    }}
+                  />
+                );
+              });
             })()}
           </div>
         </div>
