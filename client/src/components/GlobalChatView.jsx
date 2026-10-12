@@ -96,23 +96,13 @@ export default function GlobalChatView({ user, onSignIn }) {
       }, (error) => {
         console.error("Error fetching global chat:", error);
         setLoadError('');
-        setMessages(prev => prev.length > 0 ? prev : [{
-          id: 'welcome_1',
-          displayName: 'Solith Bot 🤖',
-          text: 'Welcome to Solith Global Community! Join a voice room or start chatting.',
-          createdAt: new Date()
-        }]);
+        setMessages(prev => prev.length > 0 ? prev : []);
         setIsLoading(false);
       });
     } catch (err) {
       console.error("Failed to attach GlobalChat snapshot:", err);
       setLoadError('');
-      setMessages(prev => prev.length > 0 ? prev : [{
-        id: 'welcome_1',
-        displayName: 'Solith Bot 🤖',
-        text: 'Welcome to Solith Global Community! Join a voice room or start chatting.',
-        createdAt: new Date()
-      }]);
+      setMessages(prev => prev.length > 0 ? prev : []);
       setIsLoading(false);
     }
 
