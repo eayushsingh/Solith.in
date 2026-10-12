@@ -6,9 +6,8 @@ let audioLevelCallback = null;
 let participantCallback = null;
 let connectionCallback = null;
 
-// Mock session interval timers
-let mockSpeakingInterval = null;
-let mockActiveSpeakers = {};
+// Live active speaker tracking
+let activeAudioLevels = {};
 
 export const LiveKitService = {
   /**
@@ -267,11 +266,7 @@ export const LiveKitService = {
    */
   leave: async (isReal) => {
     if (!isReal) {
-      console.log('LiveKitService: Leaving Mock Demo Mode');
-      if (mockSpeakingInterval) {
-        clearInterval(mockSpeakingInterval);
-        mockSpeakingInterval = null;
-      }
+      audioLevelCallback?.({});
       connectionCallback?.({ state: 'left' });
       return;
     }
