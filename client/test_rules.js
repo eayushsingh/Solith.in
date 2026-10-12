@@ -45,7 +45,29 @@ async function runTests() {
     const snap = await getDocs(collection(db, 'global_chat'));
     console.log(`✅ Test 3 PASSED! Read allowed for global_chat (count: ${snap.size}).`);
   } catch (error) {
-    console.log("ℹ️ Test 3 global_chat:", error.message);
+    console.log("❌ Test 3 global_chat:", error.message);
+  }
+
+  // Test 4: Unauthenticated read of posts (Community Feed) is allowed
+  try {
+    console.log("Test 4: Reading public posts...");
+    const snap = await getDocs(collection(db, 'posts'));
+    console.log(`✅ Test 4 PASSED! Read allowed for posts (count: ${snap.size}).`);
+  } catch (error) {
+    console.log("❌ Test 4 posts read:", error.message);
+  }
+
+  // Test 5: Unauthenticated write to posts must be rejected
+  try {
+    console.log("Test 5: Attempting unauthenticated write to /posts/fake_post...");
+    await setDoc(doc(db, 'posts', 'fake_post'), { text: 'Spam' });
+    console.log("❌ Test 5 FAILED! Unauthenticated write to posts succeeded.");
+  } catch (error) {
+    if (error.code === 'permission-denied') {
+      console.log("✅ Test 5 PASSED! Unauthenticated write to posts rejected by rules.");
+    } else {
+      console.log("ℹ️ Test 5 caught expected rejection:", error.code || error.message);
+    }
   }
 
   console.log("Rules test completed successfully.");
