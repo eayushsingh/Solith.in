@@ -233,10 +233,10 @@ export const LiveKitService = {
         if (roomObject !== currentRoom) return;
         if (audioLevelCallback) {
           const levels = {};
-          if (speakers) {
+          if (Array.isArray(speakers) && speakers.length > 0) {
             speakers.forEach(speaker => {
               const speakerId = speaker.isLocal ? (user?.id || 'local') : speaker.identity;
-              levels[speakerId] = speaker.audioLevel || 0.8;
+              levels[speakerId] = speaker.audioLevel > 0 ? speaker.audioLevel : 0.6;
             });
           }
           audioLevelCallback(levels);
