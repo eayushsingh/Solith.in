@@ -105,23 +105,7 @@ export const LiveKitService = {
 
       connectionCallback?.({ state: 'joined', isMock: true });
 
-      // Start simulated speaking pulses for mock participants
-      mockActiveSpeakers = {};
-      if (mockSpeakingInterval) clearInterval(mockSpeakingInterval);
-      mockSpeakingInterval = setInterval(() => {
-        const levels = {};
-        const mockIds = ['mock-user-1', 'mock-user-2', 'mock-user-3'];
-        mockIds.forEach(id => {
-          if (Math.random() > 0.6) {
-            levels[id] = Math.random() * 0.8 + 0.2; // random volume
-          } else {
-            levels[id] = 0;
-          }
-        });
-        audioLevelCallback?.(levels);
-      }, 1000);
-
-      // Trigger initial mock participant list
+      // Trigger initial participant list with local user only
       LiveKitService.localUserMock = user;
       LiveKitService.isMutedMock = true;
       LiveKitService.triggerMockParticipantsList();
