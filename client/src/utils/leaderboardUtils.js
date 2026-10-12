@@ -17,6 +17,7 @@ export function getCurrentPeriodIds(now = new Date()) {
 }
 
 export function mapAndSortLeaders(users = [], activeTab = 'daily', now = new Date()) {
+  if (!Array.isArray(users) || users.length === 0) return [];
   const { currentDayId, currentWeekId, currentMonthId } = getCurrentPeriodIds(now);
 
   const mappedLeaders = users.map(u => {
