@@ -68,7 +68,7 @@ export default function CommunityFeed({ user, openUserProfile, onBack }) {
     try {
       await addDoc(collection(db, 'posts'), {
         userId: user.id,
-        authorName: user.name,
+        authorName: user.name || 'Anonymous Learner',
         authorPhotoUrl: user.photoUrl || '',
         authorEmoji: user.emoji || '👤',
         authorColor: user.color || '#ff4d4d',
