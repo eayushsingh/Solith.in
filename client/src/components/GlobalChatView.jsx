@@ -139,8 +139,8 @@ export default function GlobalChatView({ user, onSignIn }) {
       id: `local-${Date.now()}`,
       text: messageToSend,
       uid: user.id,
-      displayName: user.name,
-      photoUrl: user.photoUrl,
+      displayName: user.name || 'Anonymous Learner',
+      photoUrl: user.photoUrl || '',
       createdAt: new Date(),
     };
 
@@ -150,11 +150,12 @@ export default function GlobalChatView({ user, onSignIn }) {
       await addDoc(collection(db, 'global_chat'), {
         text: messageToSend,
         uid: user.id,
-        displayName: user.name,
-        photoUrl: user.photoUrl,
+        displayName: user.name || 'Anonymous Learner',
+        photoUrl: user.photoUrl || '',
         createdAt: serverTimestamp(),
       });
       playSound('message');
+      setLoadError('');
     } catch (err) {
       console.error('Error sending message:', err);
       setLoadError('Message saved locally, but live sync is unavailable right now.');
