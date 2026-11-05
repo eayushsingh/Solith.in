@@ -8,5 +8,6 @@ content = content.replace("http://localhost:5173", "http://127.0.0.1:5173");
 content = content.replace("'text=ENGLISH'", "'text=English'");
 content = content.replace("'text=HINDI'", "'text=Hindi'");
 content = content.replace("'text=ARABIC'", "'text=Arabic'");
+content = content.replace("'text=MAGHI'", "'text=Maghi'");
 
 fs.writeFileSync('client/tests/solith.spec.js', content);
