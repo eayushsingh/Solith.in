@@ -9,5 +9,6 @@ content = content.replace("'text=ENGLISH'", "'text=English'");
 content = content.replace("'text=HINDI'", "'text=Hindi'");
 content = content.replace("'text=ARABIC'", "'text=Arabic'");
 content = content.replace("'text=MAGHI'", "'text=Maghi'");
+content = content.replace("'text=TELUGU'", "'text=Maghi'");
 
 fs.writeFileSync('client/tests/solith.spec.js', content);
